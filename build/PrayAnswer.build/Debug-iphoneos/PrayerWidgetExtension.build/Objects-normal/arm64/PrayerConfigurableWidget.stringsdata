@@ -1,0 +1,152 @@
+{
+  "source": "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/PrayerWidget/PrayerConfigurableWidget.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "즐겨찾기 없음",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 157
+        }
+      },
+      {
+        "comment": "",
+        "key": "외 %lld개",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 181
+        }
+      },
+      {
+        "comment": "",
+        "key": "%@ 즐겨찾기",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 211
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 222
+        }
+      },
+      {
+        "comment": "",
+        "key": "즐겨찾기한 기도가 없습니다",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 234
+        }
+      },
+      {
+        "comment": "",
+        "key": "외 %lld개의 기도",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 264
+        }
+      },
+      {
+        "comment": "",
+        "key": "%@ 보관소",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 296
+        }
+      },
+      {
+        "comment": "",
+        "key": "즐겨찾기 기도 목록",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 301
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 313
+        }
+      },
+      {
+        "comment": "",
+        "key": "즐겨찾기한 기도가 없습니다",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 332
+        }
+      },
+      {
+        "comment": "",
+        "key": "앱에서 기도에 하트를 눌러 즐겨찾기에 추가하세요",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 336
+        }
+      },
+      {
+        "comment": "",
+        "key": "외 %lld개의 기도",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 387
+        }
+      },
+      {
+        "comment": "",
+        "key": "Wait 보관소",
+        "location": {
+          "startingColumn": 35,
+          "startingLine": 428
+        }
+      },
+      {
+        "comment": "",
+        "key": "Wait 보관소의 즐겨찾기 기도들을 확인하세요.",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 429
+        }
+      },
+      {
+        "comment": "",
+        "key": "Yes 보관소",
+        "location": {
+          "startingColumn": 35,
+          "startingLine": 441
+        }
+      },
+      {
+        "comment": "",
+        "key": "Yes 보관소의 즐겨찾기 기도들을 확인하세요.",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 442
+        }
+      },
+      {
+        "comment": "",
+        "key": "No 보관소",
+        "location": {
+          "startingColumn": 35,
+          "startingLine": 454
+        }
+      },
+      {
+        "comment": "",
+        "key": "No 보관소의 즐겨찾기 기도들을 확인하세요.",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 455
+        }
+      }
+    ]
+  },
+  "version": 1
+}

@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftData
+import WidgetKit
 
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
@@ -70,6 +71,9 @@ struct PrayerListView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var allPrayers: [Prayer]
     @State private var selectedStorage: PrayerStorage = .wait
+    @State private var prayerViewModel: PrayerViewModel?
+    @State private var showingErrorAlert = false
+    @State private var errorMessage = ""
     
     // 선택된 보관소에 따른 기도 목록 필터링
     private var filteredPrayers: [Prayer] {
@@ -100,7 +104,9 @@ struct PrayerListView: View {
                                 .opacity(0)
                                 
                                 // 실제 보이는 UI
-                                ModernPrayerRow(prayer: prayer)
+                                ModernPrayerRow(prayer: prayer) {
+                                    toggleFavorite(prayer)
+                                }
                             }
                             .listRowBackground(Color.clear)
                             .listRowSeparator(.hidden)
@@ -125,18 +131,63 @@ struct PrayerListView: View {
             .navigationTitle("기도 목록")
             .navigationBarTitleDisplayMode(.large)
             .background(DesignSystem.Colors.background)
+            .onAppear {
+                if prayerViewModel == nil {
+                    prayerViewModel = PrayerViewModel(modelContext: modelContext)
+                }
+                
+                // 앱 실행 시 위젯 데이터 업데이트
+                updateWidgetDataOnAppear()
+            }
+            .alert("오류", isPresented: $showingErrorAlert) {
+                Button("확인") { }
+            } message: {
+                Text(errorMessage)
+            }
         }
     }
     
     private func deletePrayer(_ prayer: Prayer) {
-        modelContext.delete(prayer)
+        guard let viewModel = prayerViewModel else {
+            showError("삭제 중 오류가 발생했습니다.")
+            return
+        }
+        
         do {
-            try modelContext.save()
-            PrayerLogger.shared.prayerDeleted(title: prayer.title)
+            try viewModel.deletePrayer(prayer)
             PrayerLogger.shared.userAction("목록에서 기도 삭제")
         } catch {
+            showError("기도를 삭제하는 중 오류가 발생했습니다.")
             PrayerLogger.shared.prayerOperationFailed("삭제", error: error)
         }
+    }
+    
+    private func toggleFavorite(_ prayer: Prayer) {
+        guard let viewModel = prayerViewModel else {
+            showError("즐겨찾기 변경 중 오류가 발생했습니다.")
+            return
+        }
+        
+        do {
+            try viewModel.toggleFavorite(prayer)
+        } catch {
+            showError("즐겨찾기를 변경하는 중 오류가 발생했습니다.")
+            PrayerLogger.shared.prayerOperationFailed("즐겨찾기 토글", error: error)
+        }
+    }
+    
+    private func showError(_ message: String) {
+        errorMessage = message
+        showingErrorAlert = true
+    }
+    
+    private func updateWidgetDataOnAppear() {
+        // 모든 즐겨찾기 기도들을 가져와서 보관소별로 분류
+        let allFavorites = allPrayers.filter { $0.isFavorite }
+        let favoritesByStorage = Dictionary(grouping: allFavorites) { $0.storage }
+        
+        // 위젯 데이터 매니저를 통해 데이터 공유
+        WidgetDataManager.shared.shareFavoritePrayersByStorage(favoritesByStorage)
     }
 }
 
@@ -184,8 +235,6 @@ struct ModernStorageSelector: View {
         )
     }
 }
-
-
 
 #Preview {
     ContentView()

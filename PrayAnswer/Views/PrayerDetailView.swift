@@ -13,19 +13,9 @@ struct PrayerDetailView: View {
     @State private var editedTarget = ""
     @State private var showingStoragePicker = false
     @State private var showingDeleteAlert = false
-    
-    private var dateFormatter: DateFormatter {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .short
-        return formatter
-    }
-    
-    private var compactDateFormatter: DateFormatter {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yy.MM.dd HH:mm"
-        return formatter
-    }
+    @State private var prayerViewModel: PrayerViewModel?
+    @State private var showingErrorAlert = false
+    @State private var errorMessage = ""
     
     var body: some View {
         ScrollView {
@@ -207,7 +197,9 @@ struct PrayerDetailView: View {
                     .foregroundColor(DesignSystem.Colors.primary)
                     .fontWeight(.semibold)
                 } else {
-                    EmptyView()
+                    FavoriteButton(isFavorite: prayer.isFavorite) {
+                        toggleFavorite()
+                    }
                 }
             }
             
@@ -218,6 +210,11 @@ struct PrayerDetailView: View {
                     }
                     .foregroundColor(DesignSystem.Colors.secondaryText)
                 }
+            }
+        }
+        .onAppear {
+            if prayerViewModel == nil {
+                prayerViewModel = PrayerViewModel(modelContext: modelContext)
             }
         }
         .sheet(isPresented: $showingStoragePicker) {
@@ -236,6 +233,11 @@ struct PrayerDetailView: View {
             Button("취소", role: .cancel) { }
         } message: {
             Text("이 기도를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.")
+        }
+        .alert("오류", isPresented: $showingErrorAlert) {
+            Button("확인") { }
+        } message: {
+            Text(errorMessage)
         }
     }
     
@@ -260,42 +262,95 @@ struct PrayerDetailView: View {
     }
     
     private func saveChanges() {
-        prayer.updateContent(title: editedTitle, content: editedContent, category: editedCategory, target: editedTarget)
+        guard let viewModel = prayerViewModel else {
+            showError("수정 중 오류가 발생했습니다.")
+            return
+        }
+        
+        // 입력 검증
+        guard !editedTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+              !editedContent.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            showError("제목과 내용을 모두 입력해주세요.")
+            return
+        }
+        
+        // 길이 검증
+        if editedTitle.count > 100 {
+            showError("제목은 100자를 초과할 수 없습니다.")
+            return
+        }
+        
+        if editedContent.count > 2000 {
+            showError("기도 내용은 2000자를 초과할 수 없습니다.")
+            return
+        }
         
         do {
-            try modelContext.save()
-            PrayerLogger.shared.prayerUpdated(title: prayer.title)
+            try viewModel.updatePrayer(
+                prayer,
+                title: editedTitle.trimmingCharacters(in: .whitespacesAndNewlines),
+                content: editedContent.trimmingCharacters(in: .whitespacesAndNewlines),
+                category: editedCategory,
+                target: editedTarget.trimmingCharacters(in: .whitespacesAndNewlines)
+            )
+            
             PrayerLogger.shared.userAction("기도 수정")
             withAnimation(DesignSystem.Animation.standard) {
                 isEditing = false
             }
         } catch {
+            showError("기도를 수정하는 중 오류가 발생했습니다.")
             PrayerLogger.shared.prayerOperationFailed("수정", error: error)
         }
     }
     
     private func deletePrayer() {
-        modelContext.delete(prayer)
+        guard let viewModel = prayerViewModel else {
+            showError("삭제 중 오류가 발생했습니다.")
+            return
+        }
         
         do {
-            try modelContext.save()
-            PrayerLogger.shared.prayerDeleted(title: prayer.title)
+            try viewModel.deletePrayer(prayer)
             PrayerLogger.shared.userAction("기도 삭제")
             presentationMode.wrappedValue.dismiss()
         } catch {
+            showError("기도를 삭제하는 중 오류가 발생했습니다.")
             PrayerLogger.shared.prayerOperationFailed("삭제", error: error)
         }
     }
     
     private func movePrayerToStorage(_ newStorage: PrayerStorage) {
-        prayer.moveToStorage(newStorage)
+        guard let viewModel = prayerViewModel else {
+            showError("보관소 이동 중 오류가 발생했습니다.")
+            return
+        }
         
         do {
-            try modelContext.save()
-            PrayerLogger.shared.prayerMoved(title: prayer.title, to: newStorage)
+            try viewModel.movePrayer(prayer, to: newStorage)
             PrayerLogger.shared.userAction("기도 보관소 이동")
         } catch {
+            showError("기도를 이동하는 중 오류가 발생했습니다.")
             PrayerLogger.shared.prayerOperationFailed("이동", error: error)
         }
+    }
+    
+    private func toggleFavorite() {
+        guard let viewModel = prayerViewModel else {
+            showError("즐겨찾기 변경 중 오류가 발생했습니다.")
+            return
+        }
+        
+        do {
+            try viewModel.toggleFavorite(prayer)
+        } catch {
+            showError("즐겨찾기를 변경하는 중 오류가 발생했습니다.")
+            PrayerLogger.shared.prayerOperationFailed("즐겨찾기 토글", error: error)
+        }
+    }
+    
+    private func showError(_ message: String) {
+        errorMessage = message
+        showingErrorAlert = true
     }
 } 

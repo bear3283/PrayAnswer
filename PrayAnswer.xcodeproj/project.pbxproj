@@ -3,17 +3,80 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 77;
+	objectVersion = 90;
 	objects = {
+
+/* Begin PBXBuildFile section */
+		09858FBA2E177FD30062F295 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 09858FB92E177FD30062F295 /* WidgetKit.framework */; };
+		09858FBC2E177FD30062F295 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 09858FBB2E177FD30062F295 /* SwiftUI.framework */; };
+		09858FCD2E177FD50062F295 /* PrayerWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 09858FB72E177FD30062F295 /* PrayerWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		09858FCB2E177FD50062F295 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 090099142E10474300690554 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 09858FB62E177FD30062F295;
+			remoteInfo = PrayerWidgetExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		09858FD22E177FD50062F295 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			dstPath = "";
+			dstSubfolder = PlugIns;
+			files = (
+				09858FCD2E177FD50062F295 /* PrayerWidgetExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		0900991C2E10474300690554 /* PrayAnswer.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PrayAnswer.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		09858FB72E177FD30062F295 /* PrayerWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = PrayerWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		09858FB92E177FD30062F295 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		09858FBB2E177FD30062F295 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		09858FCE2E177FD50062F295 /* Exceptions for "PrayerWidget" folder in "PrayerWidgetExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 09858FB62E177FD30062F295 /* PrayerWidgetExtension */;
+		};
+		09858FD72E1AB8F30062F295 /* Exceptions for "PrayAnswer" folder in "PrayerWidgetExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				DesignSystem.swift,
+				Models/Prayer.swift,
+				Utils/Logger.swift,
+				Utils/WidgetDataManager.swift,
+				ViewModels/PrayerViewModel.swift,
+			);
+			target = 09858FB62E177FD30062F295 /* PrayerWidgetExtension */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		0900991E2E10474300690554 /* PrayAnswer */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				09858FD72E1AB8F30062F295 /* Exceptions for "PrayAnswer" folder in "PrayerWidgetExtension" target */,
+			);
 			path = PrayAnswer;
+			sourceTree = "<group>";
+		};
+		09858FBD2E177FD30062F295 /* PrayerWidget */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				09858FCE2E177FD50062F295 /* Exceptions for "PrayerWidget" folder in "PrayerWidgetExtension" target */,
+			);
+			path = PrayerWidget;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -21,10 +84,15 @@
 /* Begin PBXFrameworksBuildPhase section */
 		090099192E10474300690554 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
+		};
+		09858FB42E177FD30062F295 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			files = (
+				09858FBC2E177FD30062F295 /* SwiftUI.framework in Frameworks */,
+				09858FBA2E177FD30062F295 /* WidgetKit.framework in Frameworks */,
+			);
 		};
 /* End PBXFrameworksBuildPhase section */
 
@@ -33,6 +101,8 @@
 			isa = PBXGroup;
 			children = (
 				0900991E2E10474300690554 /* PrayAnswer */,
+				09858FBD2E177FD30062F295 /* PrayerWidget */,
+				09858FB82E177FD30062F295 /* Frameworks */,
 				0900991D2E10474300690554 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -41,8 +111,18 @@
 			isa = PBXGroup;
 			children = (
 				0900991C2E10474300690554 /* PrayAnswer.app */,
+				09858FB72E177FD30062F295 /* PrayerWidgetExtension.appex */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		09858FB82E177FD30062F295 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				09858FB92E177FD30062F295 /* WidgetKit.framework */,
+				09858FBB2E177FD30062F295 /* SwiftUI.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -55,20 +135,38 @@
 				090099182E10474300690554 /* Sources */,
 				090099192E10474300690554 /* Frameworks */,
 				0900991A2E10474300690554 /* Resources */,
+				09858FD22E177FD50062F295 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				09858FCC2E177FD50062F295 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				0900991E2E10474300690554 /* PrayAnswer */,
 			);
 			name = PrayAnswer;
-			packageProductDependencies = (
-			);
 			productName = PrayAnswer;
 			productReference = 0900991C2E10474300690554 /* PrayAnswer.app */;
 			productType = "com.apple.product-type.application";
+		};
+		09858FB62E177FD30062F295 /* PrayerWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 09858FCF2E177FD50062F295 /* Build configuration list for PBXNativeTarget "PrayerWidgetExtension" */;
+			buildPhases = (
+				09858FB32E177FD30062F295 /* Sources */,
+				09858FB42E177FD30062F295 /* Frameworks */,
+				09858FB52E177FD30062F295 /* Resources */,
+			);
+			buildRules = (
+			);
+			fileSystemSynchronizedGroups = (
+				09858FBD2E177FD30062F295 /* PrayerWidget */,
+			);
+			name = PrayerWidgetExtension;
+			productName = PrayerWidgetExtension;
+			productReference = 09858FB72E177FD30062F295 /* PrayerWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -83,6 +181,9 @@
 					0900991B2E10474300690554 = {
 						CreatedOnToolsVersion = 16.4;
 					};
+					09858FB62E177FD30062F295 = {
+						CreatedOnToolsVersion = 16.4;
+					};
 				};
 			};
 			buildConfigurationList = 090099172E10474300690554 /* Build configuration list for PBXProject "PrayAnswer" */;
@@ -94,12 +195,13 @@
 			);
 			mainGroup = 090099132E10474300690554;
 			minimizedProjectReferenceProxies = 1;
-			preferredProjectObjectVersion = 77;
+			preferredProjectObjectVersion = 90;
 			productRefGroup = 0900991D2E10474300690554 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
 				0900991B2E10474300690554 /* PrayAnswer */,
+				09858FB62E177FD30062F295 /* PrayerWidgetExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -107,25 +209,39 @@
 /* Begin PBXResourcesBuildPhase section */
 		0900991A2E10474300690554 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
+		};
+		09858FB52E177FD30062F295 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			files = (
+			);
 		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		090099182E10474300690554 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
+		};
+		09858FB32E177FD30062F295 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			files = (
+			);
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		09858FCC2E177FD50062F295 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 09858FB62E177FD30062F295 /* PrayerWidgetExtension */;
+			targetProxy = 09858FCB2E177FD50062F295 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
-		090099252E10474500690554 /* Debug */ = {
+		090099252E10474500690554 /* Debug configuration for PBXProject "PrayAnswer" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -188,7 +304,7 @@
 			};
 			name = Debug;
 		};
-		090099262E10474500690554 /* Release */ = {
+		090099262E10474500690554 /* Release configuration for PBXProject "PrayAnswer" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -244,11 +360,12 @@
 			};
 			name = Release;
 		};
-		090099282E10474500690554 /* Debug */ = {
+		090099282E10474500690554 /* Debug configuration for PBXNativeTarget "PrayAnswer" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = PrayAnswer/PrayAnswer.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 36CPZWS26C;
@@ -261,11 +378,12 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.restart.PrayAnswer;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -278,11 +396,12 @@
 			};
 			name = Debug;
 		};
-		090099292E10474500690554 /* Release */ = {
+		090099292E10474500690554 /* Release configuration for PBXNativeTarget "PrayAnswer" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = PrayAnswer/PrayAnswer.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 36CPZWS26C;
@@ -295,11 +414,12 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.restart.PrayAnswer;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -312,25 +432,87 @@
 			};
 			name = Release;
 		};
+		09858FD02E177FD50062F295 /* Debug configuration for PBXNativeTarget "PrayerWidgetExtension" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = PrayerWidget/PrayerWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 36CPZWS26C;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = PrayerWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = PrayerWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.restart.PrayAnswer.PrayerWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		09858FD12E177FD50062F295 /* Release configuration for PBXNativeTarget "PrayerWidgetExtension" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = PrayerWidget/PrayerWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 36CPZWS26C;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = PrayerWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = PrayerWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.restart.PrayAnswer.PrayerWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
 		090099172E10474300690554 /* Build configuration list for PBXProject "PrayAnswer" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				090099252E10474500690554 /* Debug */,
-				090099262E10474500690554 /* Release */,
+				090099252E10474500690554 /* Debug configuration for PBXProject "PrayAnswer" */,
+				090099262E10474500690554 /* Release configuration for PBXProject "PrayAnswer" */,
 			);
-			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 		090099272E10474500690554 /* Build configuration list for PBXNativeTarget "PrayAnswer" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				090099282E10474500690554 /* Debug */,
-				090099292E10474500690554 /* Release */,
+				090099282E10474500690554 /* Debug configuration for PBXNativeTarget "PrayAnswer" */,
+				090099292E10474500690554 /* Release configuration for PBXNativeTarget "PrayAnswer" */,
 			);
-			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		09858FCF2E177FD50062F295 /* Build configuration list for PBXNativeTarget "PrayerWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				09858FD02E177FD50062F295 /* Debug configuration for PBXNativeTarget "PrayerWidgetExtension" */,
+				09858FD12E177FD50062F295 /* Release configuration for PBXNativeTarget "PrayerWidgetExtension" */,
+			);
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */

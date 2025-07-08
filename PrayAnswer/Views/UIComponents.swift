@@ -5,6 +5,12 @@ import SwiftUI
 // 모던한 기도 행 컴포넌트
 struct ModernPrayerRow: View {
     let prayer: Prayer
+    let onFavoriteToggle: (() -> Void)?
+    
+    init(prayer: Prayer, onFavoriteToggle: (() -> Void)? = nil) {
+        self.prayer = prayer
+        self.onFavoriteToggle = onFavoriteToggle
+    }
     
     var body: some View {
         ModernCard {
@@ -27,7 +33,15 @@ struct ModernPrayerRow: View {
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     
-                    CategoryTag(category: prayer.category, size: .small)
+                    VStack(spacing: DesignSystem.Spacing.sm) {
+                        CategoryTag(category: prayer.category, size: .small)
+                        
+                        if let onFavoriteToggle = onFavoriteToggle {
+                            FavoriteButton(isFavorite: prayer.isFavorite) {
+                                onFavoriteToggle()
+                            }
+                        }
+                    }
                 }
                 
                 HStack {
@@ -67,7 +81,7 @@ struct EmptyStateView: View {
     var body: some View {
         VStack(spacing: DesignSystem.Spacing.xxxl) {
             // 상태 인디케이터를 더 큰 크기로 커스텀 구현
-            Image(systemName: storage.icon)
+            Image(systemName: storage.iconName)
                 .font(.system(size: 64, weight: .medium))
                 .foregroundColor(.white)
                 .frame(width: 100, height: 100)
@@ -184,6 +198,14 @@ struct ModernTextField: View {
     let title: String
     @Binding var text: String
     let placeholder: String
+    var focusedField: FocusState<Bool>.Binding?
+    
+    init(title: String, text: Binding<String>, placeholder: String, focusedField: FocusState<Bool>.Binding? = nil) {
+        self.title = title
+        self._text = text
+        self.placeholder = placeholder
+        self.focusedField = focusedField
+    }
     
     var body: some View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
@@ -205,6 +227,7 @@ struct ModernTextField: View {
                         )
                 )
                 .animation(DesignSystem.Animation.quick, value: text.isEmpty)
+                .focused(focusedField ?? FocusState<Bool>().projectedValue)
         }
     }
 }
@@ -476,5 +499,34 @@ struct ModernStorageOptionCard: View {
             }
         }
         .buttonStyle(PlainButtonStyle())
+    }
+}
+
+// MARK: - Favorite Components
+
+// 즐겨찾기 토글 버튼
+struct FavoriteButton: View {
+    let isFavorite: Bool
+    let onTap: () -> Void
+    
+    var body: some View {
+        Button(action: onTap) {
+            Image(systemName: isFavorite ? "heart.fill" : "heart")
+                .font(.system(size: 16, weight: .medium))
+                .foregroundColor(isFavorite ? Color.red : DesignSystem.Colors.secondaryText)
+                .frame(width: 32, height: 32)
+                .background(
+                    Circle()
+                        .fill(isFavorite ? Color.red.opacity(0.1) : DesignSystem.Colors.secondaryBackground)
+                )
+                .overlay(
+                    Circle()
+                        .stroke(isFavorite ? Color.red.opacity(0.3) : Color.clear, lineWidth: 1)
+                )
+        }
+        .buttonStyle(PlainButtonStyle())
+        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isFavorite)
+        .accessibilityLabel(isFavorite ? "즐겨찾기에서 제거" : "즐겨찾기에 추가")
+        .accessibilityHint(isFavorite ? "탭하여 즐겨찾기에서 제거하세요" : "탭하여 즐겨찾기에 추가하세요")
     }
 } 

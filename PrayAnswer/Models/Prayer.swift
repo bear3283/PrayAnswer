@@ -17,6 +17,17 @@ enum PrayerStorage: String, CaseIterable, Codable {
             return "No"
         }
     }
+    
+    var iconName: String {
+        switch self {
+        case .wait:
+            return "clock"
+        case .yes:
+            return "checkmark.circle"
+        case .no:
+            return "xmark.circle"
+        }
+    }
 }
 
 // 기도 카테고리 타입
@@ -63,14 +74,16 @@ final class Prayer {
     var storage: PrayerStorage
     var category: PrayerCategory
     var target: String // 기도 대상자
+    var isFavorite: Bool // 즐겨찾기 여부
     
-    init(title: String, content: String, category: PrayerCategory = .personal, target: String = "", storage: PrayerStorage = .wait) {
+    init(title: String, content: String, category: PrayerCategory = .personal, target: String = "", storage: PrayerStorage = .wait, isFavorite: Bool = false) {
         self.title = title
         self.content = content
         self.category = category
         self.target = target
         self.createdDate = Date()
         self.storage = storage
+        self.isFavorite = isFavorite
     }
     
     func updateContent(title: String, content: String, category: PrayerCategory, target: String) {
@@ -85,6 +98,11 @@ final class Prayer {
         self.storage = newStorage
         self.movedDate = Date()
     }
+    
+    func toggleFavorite() {
+        self.isFavorite.toggle()
+        self.modifiedDate = Date()
+    }
 }
 
 // MARK: - Prayer Extensions
@@ -94,7 +112,8 @@ extension Prayer {
     // MARK: - Accessibility
     
     var accessibilityLabel: String {
-        return "\(title), \(category.displayName) 카테고리, \(storage.displayName) 보관소"
+        let favoriteText = isFavorite ? ", 즐겨찾기" : ""
+        return "\(title), \(category.displayName) 카테고리, \(storage.displayName) 보관소\(favoriteText)"
     }
     
     var accessibilityHint: String {
@@ -193,5 +212,17 @@ extension Array where Element == Prayer {
     var mostUsedCategory: PrayerCategory? {
         let categoryGroups = byCategory
         return categoryGroups.max { $0.value.count < $1.value.count }?.key
+    }
+    
+    var favoritePrayers: [Prayer] {
+        return filter { $0.isFavorite }
+    }
+    
+    var favoritesByStorage: [PrayerStorage: [Prayer]] {
+        return Dictionary(grouping: favoritePrayers) { $0.storage }
+    }
+    
+    var totalFavoritePrayers: Int {
+        return favoritePrayers.count
     }
 } 

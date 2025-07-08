@@ -320,7 +320,7 @@ struct StatusIndicator: View {
     }
     
     var body: some View {
-        Image(systemName: storage.icon)
+        Image(systemName: storage.iconName)
             .font(.system(size: size.iconSize, weight: .semibold))
             .foregroundColor(.white)
             .padding(size.padding)

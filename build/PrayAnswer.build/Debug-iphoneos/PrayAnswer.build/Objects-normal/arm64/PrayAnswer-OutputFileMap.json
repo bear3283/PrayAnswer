@@ -1,0 +1,118 @@
+{
+  "" : {
+    "diagnostics" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/PrayAnswer-master.dia",
+    "emit-module-dependencies" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/PrayAnswer-master-emit-module.d",
+    "emit-module-diagnostics" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/PrayAnswer-master-emit-module.dia",
+    "swift-dependencies" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/PrayAnswer-master.swiftdeps"
+  },
+  "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/PrayAnswer/ContentView.swift" : {
+    "const-values" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/ContentView.swiftconstvalues",
+    "dependencies" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/ContentView.d",
+    "diagnostics" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/ContentView.dia",
+    "index-unit-output-path" : "/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/ContentView.o",
+    "llvm-bc" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/ContentView.bc",
+    "object" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/ContentView.o",
+    "swift-dependencies" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/ContentView.swiftdeps",
+    "swiftmodule" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/ContentView~partial.swiftmodule"
+  },
+  "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/PrayAnswer/DesignSystem.swift" : {
+    "const-values" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/DesignSystem.swiftconstvalues",
+    "dependencies" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/DesignSystem.d",
+    "diagnostics" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/DesignSystem.dia",
+    "index-unit-output-path" : "/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/DesignSystem.o",
+    "llvm-bc" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/DesignSystem.bc",
+    "object" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/DesignSystem.o",
+    "swift-dependencies" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/DesignSystem.swiftdeps",
+    "swiftmodule" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/DesignSystem~partial.swiftmodule"
+  },
+  "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/PrayAnswer/Models/Prayer.swift" : {
+    "const-values" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/Prayer.swiftconstvalues",
+    "dependencies" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/Prayer.d",
+    "diagnostics" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/Prayer.dia",
+    "index-unit-output-path" : "/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/Prayer.o",
+    "llvm-bc" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/Prayer.bc",
+    "object" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/Prayer.o",
+    "swift-dependencies" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/Prayer.swiftdeps",
+    "swiftmodule" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/Prayer~partial.swiftmodule"
+  },
+  "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/PrayAnswer/PrayAnswerApp.swift" : {
+    "const-values" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/PrayAnswerApp.swiftconstvalues",
+    "dependencies" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/PrayAnswerApp.d",
+    "diagnostics" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/PrayAnswerApp.dia",
+    "index-unit-output-path" : "/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/PrayAnswerApp.o",
+    "llvm-bc" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/PrayAnswerApp.bc",
+    "object" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/PrayAnswerApp.o",
+    "swift-dependencies" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/PrayAnswerApp.swiftdeps",
+    "swiftmodule" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/PrayAnswerApp~partial.swiftmodule"
+  },
+  "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/PrayAnswer/Utils/Logger.swift" : {
+    "const-values" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/Logger.swiftconstvalues",
+    "dependencies" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/Logger.d",
+    "diagnostics" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/Logger.dia",
+    "index-unit-output-path" : "/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/Logger.o",
+    "llvm-bc" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/Logger.bc",
+    "object" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/Logger.o",
+    "swift-dependencies" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/Logger.swiftdeps",
+    "swiftmodule" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/Logger~partial.swiftmodule"
+  },
+  "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/PrayAnswer/Utils/WidgetDataManager.swift" : {
+    "const-values" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/WidgetDataManager.swiftconstvalues",
+    "dependencies" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/WidgetDataManager.d",
+    "diagnostics" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/WidgetDataManager.dia",
+    "index-unit-output-path" : "/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/WidgetDataManager.o",
+    "llvm-bc" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/WidgetDataManager.bc",
+    "object" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/WidgetDataManager.o",
+    "swift-dependencies" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/WidgetDataManager.swiftdeps",
+    "swiftmodule" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/WidgetDataManager~partial.swiftmodule"
+  },
+  "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/PrayAnswer/ViewModels/PrayerViewModel.swift" : {
+    "const-values" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/PrayerViewModel.swiftconstvalues",
+    "dependencies" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/PrayerViewModel.d",
+    "diagnostics" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/PrayerViewModel.dia",
+    "index-unit-output-path" : "/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/PrayerViewModel.o",
+    "llvm-bc" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/PrayerViewModel.bc",
+    "object" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/PrayerViewModel.o",
+    "swift-dependencies" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/PrayerViewModel.swiftdeps",
+    "swiftmodule" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/PrayerViewModel~partial.swiftmodule"
+  },
+  "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/PrayAnswer/Views/AddPrayerView.swift" : {
+    "const-values" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/AddPrayerView.swiftconstvalues",
+    "dependencies" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/AddPrayerView.d",
+    "diagnostics" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/AddPrayerView.dia",
+    "index-unit-output-path" : "/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/AddPrayerView.o",
+    "llvm-bc" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/AddPrayerView.bc",
+    "object" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/AddPrayerView.o",
+    "swift-dependencies" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/AddPrayerView.swiftdeps",
+    "swiftmodule" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/AddPrayerView~partial.swiftmodule"
+  },
+  "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/PrayAnswer/Views/PrayerDetailView.swift" : {
+    "const-values" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/PrayerDetailView.swiftconstvalues",
+    "dependencies" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/PrayerDetailView.d",
+    "diagnostics" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/PrayerDetailView.dia",
+    "index-unit-output-path" : "/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/PrayerDetailView.o",
+    "llvm-bc" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/PrayerDetailView.bc",
+    "object" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/PrayerDetailView.o",
+    "swift-dependencies" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/PrayerDetailView.swiftdeps",
+    "swiftmodule" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/PrayerDetailView~partial.swiftmodule"
+  },
+  "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/PrayAnswer/Views/UIComponents.swift" : {
+    "const-values" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/UIComponents.swiftconstvalues",
+    "dependencies" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/UIComponents.d",
+    "diagnostics" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/UIComponents.dia",
+    "index-unit-output-path" : "/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/UIComponents.o",
+    "llvm-bc" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/UIComponents.bc",
+    "object" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/UIComponents.o",
+    "swift-dependencies" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/UIComponents.swiftdeps",
+    "swiftmodule" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/UIComponents~partial.swiftmodule"
+  },
+  "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/DerivedSources/GeneratedAssetSymbols.swift" : {
+    "const-values" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/GeneratedAssetSymbols.swiftconstvalues",
+    "dependencies" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/GeneratedAssetSymbols.d",
+    "diagnostics" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/GeneratedAssetSymbols.dia",
+    "index-unit-output-path" : "/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/GeneratedAssetSymbols.o",
+    "llvm-bc" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/GeneratedAssetSymbols.bc",
+    "object" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/GeneratedAssetSymbols.o",
+    "swift-dependencies" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/GeneratedAssetSymbols.swiftdeps",
+    "swiftmodule" : "/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/build/PrayAnswer.build/Debug-iphoneos/PrayAnswer.build/Objects-normal/arm64/GeneratedAssetSymbols~partial.swiftmodule"
+  }
+}

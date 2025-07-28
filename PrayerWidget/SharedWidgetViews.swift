@@ -214,8 +214,10 @@ struct WidgetEmptyState: View {
                 .font(size.titleFont)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
+            
+            Spacer()
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .frame(maxWidth: .infinity, alignment: .top)
     }
 }
 
@@ -229,6 +231,7 @@ struct SmallPrayerWidget: View {
     private let maxItems = 4
     
     var body: some View {
+        Spacer()
         VStack(alignment: .leading, spacing: 4) {
             // 헤더
             WidgetHeader(
@@ -256,13 +259,12 @@ struct SmallPrayerWidget: View {
                             Text("외 \(prayers.count - maxItems)개")
                                 .font(.caption2)
                                 .foregroundColor(.secondary)
-                            Spacer()
+//                            Spacer()
                         }
-//                        .padding(.top, 2)
                     }
                 }
                 
-//                Spacer()
+                Spacer()
             }
         }
         .padding(2)
@@ -280,6 +282,7 @@ struct MediumPrayerWidget: View {
     private let totalDisplayItems = 5  // 실제 표시되는 기도 개수
     
     var body: some View {
+        Spacer()
         VStack(alignment: .leading, spacing: 10) {
             // 헤더
             WidgetHeader(
@@ -321,14 +324,14 @@ struct MediumPrayerWidget: View {
                                 Text("외 \(prayers.count - totalDisplayItems)개의 기도")
                                     .font(.caption)
                                     .foregroundColor(.secondary)
-                                Spacer()
+//                                Spacer()
                             }
                             .padding(.top, 4)
                         }
                     }
                 }
                 
-//                Spacer()
+                Spacer()
             }
         }
         .padding(4)
@@ -344,6 +347,7 @@ struct LargePrayerWidget: View {
     private let maxItems = 5
     
     var body: some View {
+        Spacer()
         VStack(alignment: .leading, spacing: 8) {
             // 헤더
             WidgetHeader(
@@ -371,13 +375,13 @@ struct LargePrayerWidget: View {
                             Text("외 \(prayers.count - maxItems)개의 기도")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
-                            Spacer()
+//                            Spacer()
                         }
                         .padding(.top, 2)
                     }
                 }
                 
-//                Spacer()
+                Spacer()
             }
         }
         .padding(6)

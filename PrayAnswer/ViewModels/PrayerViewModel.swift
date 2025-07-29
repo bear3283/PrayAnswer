@@ -175,6 +175,96 @@ final class PrayerViewModel {
         }
     }
     
+    // MARK: - Target-related Methods
+    
+    // 특정 기도대상자의 기도 목록 반환
+    func prayersByTarget(_ target: String) -> [Prayer] {
+        let descriptor = FetchDescriptor<Prayer>(
+            predicate: #Predicate { prayer in
+                prayer.target == target
+            },
+            sortBy: [SortDescriptor(\Prayer.createdDate, order: .reverse)]
+        )
+        
+        do {
+            return try modelContext.fetch(descriptor)
+        } catch {
+            PrayerLogger.shared.dataOperationFailed("대상자별 기도 목록 조회", error: error)
+            return []
+        }
+    }
+    
+    // 모든 기도대상자 목록 반환 (중복 제거)
+    func allTargets() -> [String] {
+        let descriptor = FetchDescriptor<Prayer>(
+            predicate: #Predicate { prayer in
+                !prayer.target.isEmpty
+            }
+        )
+        
+        do {
+            let prayers = try modelContext.fetch(descriptor)
+            let targets = prayers.map { $0.target }
+            return Array(Set(targets)).sorted() // 중복 제거 후 정렬
+        } catch {
+            PrayerLogger.shared.dataOperationFailed("기도대상자 목록 조회", error: error)
+            return []
+        }
+    }
+    
+    // 기도대상자별 기도 개수 반환
+    func prayerCountByTarget(_ target: String) -> Int {
+        let descriptor = FetchDescriptor<Prayer>(
+            predicate: #Predicate { prayer in
+                prayer.target == target
+            }
+        )
+        
+        do {
+            let prayers = try modelContext.fetch(descriptor)
+            return prayers.count
+        } catch {
+            PrayerLogger.shared.dataOperationFailed("대상자별 기도 개수 조회", error: error)
+            return 0
+        }
+    }
+    
+    // 기도대상자별 기도 상태별 개수 반환
+    func prayerCountByTargetAndStorage(_ target: String, storage: PrayerStorage) -> Int {
+        let descriptor = FetchDescriptor<Prayer>(
+            predicate: #Predicate { prayer in
+                prayer.target == target && prayer.storage == storage
+            }
+        )
+        
+        do {
+            let prayers = try modelContext.fetch(descriptor)
+            return prayers.count
+        } catch {
+            PrayerLogger.shared.dataOperationFailed("대상자별 상태별 기도 개수 조회", error: error)
+            return 0
+        }
+    }
+    
+    // 기도대상자별 최근 기도 날짜 반환
+    func latestPrayerDateByTarget(_ target: String) -> Date? {
+        var descriptor = FetchDescriptor<Prayer>(
+            predicate: #Predicate { prayer in
+                prayer.target == target
+            },
+            sortBy: [SortDescriptor(\Prayer.createdDate, order: .reverse)]
+        )
+        descriptor.fetchLimit = 1
+        
+        do {
+            let prayers = try modelContext.fetch(descriptor)
+            return prayers.first?.createdDate
+        } catch {
+            PrayerLogger.shared.dataOperationFailed("대상자별 최근 기도 날짜 조회", error: error)
+            return nil
+        }
+    }
+    
     // MARK: - Widget Data Update
     
     // 위젯 데이터 업데이트

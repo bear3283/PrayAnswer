@@ -196,6 +196,24 @@ extension Array where Element == Prayer {
         return Dictionary(grouping: self) { $0.category }
     }
     
+    // 기도대상자별 그룹화
+    var byTarget: [String: [Prayer]] {
+        return Dictionary(grouping: self) { $0.target }
+            .filter { !$0.key.isEmpty } // 빈 대상자 제외
+    }
+    
+    // 기도대상자별 기도 개수
+    var targetCounts: [String: Int] {
+        return byTarget.mapValues { $0.count }
+    }
+    
+    // 기도대상자별 최근 기도 날짜
+    var targetLatestDates: [String: Date] {
+        return byTarget.mapValues { prayers in
+            prayers.max { $0.createdDate < $1.createdDate }?.createdDate ?? Date()
+        }
+    }
+    
     var totalAnsweredPrayers: Int {
         return filter { $0.storage == .yes }.count
     }

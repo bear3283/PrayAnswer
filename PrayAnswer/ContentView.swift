@@ -15,14 +15,13 @@ struct ContentView: View {
     
     var body: some View {
         TabView(selection: $selectedTab) {
-            // 기도 목록 탭 (첫 번째 화면으로 변경)
+            // 기도 목록 탭 (첫 번째 화면)
             PrayerListView()
                 .tabItem {
                     Image(systemName: "list.bullet.rectangle.portrait")
                     Text("기도 목록")
                 }
                 .tag(0)
-            
             // 기도 추가 탭 (두 번째로 이동)
             AddPrayerView(selectedTab: $selectedTab)
                 .tabItem {
@@ -30,6 +29,16 @@ struct ContentView: View {
                     Text("기도 추가")
                 }
                 .tag(1)
+            
+            // 기도대상자 탭 (세 번째 화면)
+            PeopleListView()
+                .tabItem {
+                    Image(systemName: "person.2")
+                    Text("기도대상자")
+                }
+                .tag(2)
+            
+           
         }
         .tint(DesignSystem.Colors.primary) // 새로운 색상 시스템 적용
         .onAppear {
@@ -223,16 +232,6 @@ struct ModernStorageSelector: View {
             .padding(.horizontal, DesignSystem.Spacing.lg)
         }
         .padding(.bottom, DesignSystem.Spacing.md)
-        .background(
-            LinearGradient(
-                colors: [
-                    DesignSystem.Colors.secondaryBackground,
-                    DesignSystem.Colors.background
-                ],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-        )
     }
 }
 

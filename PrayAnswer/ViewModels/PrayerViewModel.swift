@@ -4,15 +4,30 @@ import SwiftData
 import WidgetKit
 
 @Observable
-final class PrayerViewModel {
+final class PrayerViewModel: ObservableObject {
     private var modelContext: ModelContext
+    private var isDeinitialized = false
     
     init(modelContext: ModelContext) {
         self.modelContext = modelContext
     }
     
+    deinit {
+        isDeinitialized = true
+        PrayerLogger.shared.viewModelDeallocated("PrayerViewModel")
+    }
+    
+    private func checkIfValid() -> Bool {
+        guard !isDeinitialized else {
+            PrayerLogger.shared.viewModelOperationAfterDealloc("PrayerViewModel")
+            return false
+        }
+        return true
+    }
+    
     // 기도 추가 - 에러를 외부로 전파
     func addPrayer(title: String, content: String, category: PrayerCategory = .personal, target: String = "") throws {
+        guard checkIfValid() else { return }
         let newPrayer = Prayer(title: title, content: content, category: category, target: target)
         modelContext.insert(newPrayer)
         
@@ -267,13 +282,20 @@ final class PrayerViewModel {
     
     // MARK: - Widget Data Update
     
-    // 위젯 데이터 업데이트
+    // 위젯 데이터 업데이트 (백그라운드 큐에서 실행하여 성능 최적화)
     private func updateWidgetData() {
-        // 모든 즐겨찾기 기도들을 가져와서 보관소별로 분류
-        let allFavorites = favoritePrayers()
-        let favoritesByStorage = Dictionary(grouping: allFavorites) { $0.storage }
-        
-        // 위젯 데이터 매니저를 통해 데이터 공유
-        WidgetDataManager.shared.shareFavoritePrayersByStorage(favoritesByStorage)
+        DispatchQueue.global(qos: .utility).async { [weak self] in
+            guard let self = self, self.checkIfValid() else { return }
+            
+            // 모든 즐겨찾기 기도들을 가져와서 보관소별로 분류
+            let allFavorites = self.favoritePrayers()
+            let favoritesByStorage = Dictionary(grouping: allFavorites) { $0.storage }
+            
+            // 메인 큐로 돌아와서 UI 업데이트
+            DispatchQueue.main.async {
+                // 위젯 데이터 매니저를 통해 데이터 공유
+                WidgetDataManager.shared.shareFavoritePrayersByStorage(favoritesByStorage)
+            }
+        }
     }
 }

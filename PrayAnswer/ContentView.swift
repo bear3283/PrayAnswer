@@ -80,9 +80,9 @@ struct PrayerListView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var allPrayers: [Prayer]
     @State private var selectedStorage: PrayerStorage = .wait
-    @State private var prayerViewModel: PrayerViewModel?
     @State private var showingErrorAlert = false
     @State private var errorMessage = ""
+    @State private var prayerViewModel: PrayerViewModel?
     
     // 선택된 보관소에 따른 기도 목록 필터링
     private var filteredPrayers: [Prayer] {
@@ -147,6 +147,13 @@ struct PrayerListView: View {
                 
                 // 앱 실행 시 위젯 데이터 업데이트
                 updateWidgetDataOnAppear()
+                
+                // 메모리 사용량 로깅
+                PrayerLogger.shared.logMemoryUsage()
+            }
+            .onDisappear {
+                // 뷰가 사라질 때 정리 작업
+                PrayerLogger.shared.viewDidAppear("PrayerListView - onDisappear")
             }
             .alert("오류", isPresented: $showingErrorAlert) {
                 Button("확인") { }
@@ -205,11 +212,12 @@ struct ModernStorageSelector: View {
     @Binding var selectedStorage: PrayerStorage
     let allPrayers: [Prayer]
     
-    // 각 보관소별 기도 개수 계산
+    // 각 보관소별 기도 개수 계산 (성능 최적화: Dictionary grouping 사용)
     private var storageCounts: [PrayerStorage: Int] {
+        let grouped = Dictionary(grouping: allPrayers) { $0.storage }
         var counts: [PrayerStorage: Int] = [:]
         for storage in PrayerStorage.allCases {
-            counts[storage] = allPrayers.filter { $0.storage == storage }.count
+            counts[storage] = grouped[storage]?.count ?? 0
         }
         return counts
     }

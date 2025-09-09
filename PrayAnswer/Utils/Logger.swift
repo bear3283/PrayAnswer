@@ -143,8 +143,17 @@ extension PrayerLogger {
 
 extension PrayerLogger {
     
+    private static var lastMemoryLogTime: TimeInterval = 0
+    private static let memoryLogThrottleInterval: TimeInterval = 5.0
+    
     func logMemoryUsage() {
         #if DEBUG
+        let currentTime = CFAbsoluteTimeGetCurrent()
+        guard currentTime - Self.lastMemoryLogTime >= Self.memoryLogThrottleInterval else {
+            return
+        }
+        Self.lastMemoryLogTime = currentTime
+        
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
             
@@ -163,8 +172,21 @@ extension PrayerLogger {
             if kerr == KERN_SUCCESS {
                 let usedMB = Float(info.resident_size) / 1024.0 / 1024.0
                 self.logDebug("메모리 사용량: \(String(format: "%.2f", usedMB)) MB", category: .general)
+                
+                if usedMB > 150.0 {
+                    self.logWarning("높은 메모리 사용량 감지: \(String(format: "%.2f", usedMB)) MB", category: .general)
+                }
             }
         }
         #endif
+    }
+    
+    // ViewModel 생명주기 로깅
+    func viewModelDeallocated(_ viewModelName: String) {
+        logDebug("ViewModel 해제: \(viewModelName)", category: .ui)
+    }
+    
+    func viewModelOperationAfterDealloc(_ viewModelName: String) {
+        logWarning("해제된 ViewModel에서 작업 시도: \(viewModelName)", category: .ui)
     }
 } 

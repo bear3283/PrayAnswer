@@ -109,6 +109,12 @@ struct AddPrayerView: View {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
                     isTitleFieldFocused = true
                 }
+                
+                PrayerLogger.shared.viewDidAppear("AddPrayerView")
+                PrayerLogger.shared.logMemoryUsage()
+            }
+            .onDisappear {
+                PrayerLogger.shared.viewDidAppear("AddPrayerView - onDisappear")
             }
             .alert("알림", isPresented: $showingAlert) {
                 Button("확인") { }

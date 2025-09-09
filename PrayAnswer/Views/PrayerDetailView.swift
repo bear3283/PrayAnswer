@@ -155,8 +155,8 @@ struct PrayerDetailView: View {
                                 title: "보관소 이동",
                                 style: .primary,
                                 size: .large
-                            ) {
-                                showingStoragePicker = true
+                            ) { [weak self] in
+                                self?.showingStoragePicker = true
                             }
                             
                             HStack(spacing: DesignSystem.Spacing.md) {
@@ -164,16 +164,16 @@ struct PrayerDetailView: View {
                                     title: "편집",
                                     style: .secondary,
                                     size: .medium
-                                ) {
-                                    startEditing()
+                                ) { [weak self] in
+                                    self?.startEditing()
                                 }
                                 
                                 ModernButton(
                                     title: "삭제",
                                     style: .destructive,
                                     size: .medium
-                                ) {
-                                    showingDeleteAlert = true
+                                ) { [weak self] in
+                                    self?.showingDeleteAlert = true
                                 }
                             }
                         }
@@ -190,45 +190,49 @@ struct PrayerDetailView: View {
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 if isEditing {
-                    Button("완료") {
-                        saveChanges()
+                    Button("완료") { [weak self] in
+                        self?.saveChanges()
                     }
                     .disabled(editedTitle.isEmpty || editedContent.isEmpty)
                     .foregroundColor(DesignSystem.Colors.primary)
                     .fontWeight(.semibold)
                 } else {
-                    FavoriteButton(isFavorite: prayer.isFavorite) {
-                        toggleFavorite()
+                    FavoriteButton(isFavorite: prayer.isFavorite) { [weak self] in
+                        self?.toggleFavorite()
                     }
                 }
             }
             
             if isEditing {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("취소") {
-                        cancelEditing()
+                    Button("취소") { [weak self] in
+                        self?.cancelEditing()
                     }
                     .foregroundColor(DesignSystem.Colors.secondaryText)
                 }
             }
         }
-        .onAppear {
-            if prayerViewModel == nil {
-                prayerViewModel = PrayerViewModel(modelContext: modelContext)
+        .onAppear { [weak self] in
+            guard let self = self else { return }
+            if self.prayerViewModel == nil {
+                self.prayerViewModel = PrayerViewModel(modelContext: self.modelContext)
             }
         }
-        .sheet(isPresented: $showingStoragePicker) {
-            ModernStoragePickerView(
-                currentStorage: prayer.storage,
-                onStorageSelected: { newStorage in
-                    movePrayerToStorage(newStorage)
-                    showingStoragePicker = false
-                }
+        .sheet(isPresented: $showingStoragePicker) { [weak self] in
+            guard let self = self else { return AnyView(EmptyView()) }
+            return AnyView(
+                ModernStoragePickerView(
+                    currentStorage: self.prayer.storage,
+                    onStorageSelected: { [weak self] newStorage in
+                        self?.movePrayerToStorage(newStorage)
+                        self?.showingStoragePicker = false
+                    }
+                )
             )
         }
         .alert("기도 삭제", isPresented: $showingDeleteAlert) {
-            Button("삭제", role: .destructive) {
-                deletePrayer()
+            Button("삭제", role: .destructive) { [weak self] in
+                self?.deletePrayer()
             }
             Button("취소", role: .cancel) { }
         } message: {

@@ -1,6 +1,9 @@
 import Foundation
 import SwiftData
 
+// Import localization extensions
+// LocalizationKeys.swift에 정의된 PrayerStorage, PrayerCategory extensions 사용
+
 // 기도 보관소 타입
 enum PrayerStorage: String, CaseIterable, Codable {
     case wait = "wait"
@@ -8,14 +11,7 @@ enum PrayerStorage: String, CaseIterable, Codable {
     case no = "no"
     
     var displayName: String {
-        switch self {
-        case .wait:
-            return "Wait"
-        case .yes:
-            return "Yes"
-        case .no:
-            return "No"
-        }
+        return localizedDisplayName
     }
     
     var iconName: String {
@@ -42,24 +38,7 @@ enum PrayerCategory: String, CaseIterable, Codable {
     case other = "other"
     
     var displayName: String {
-        switch self {
-        case .personal:
-            return "개인"
-        case .family:
-            return "가족"
-        case .health:
-            return "건강"
-        case .work:
-            return "일/학업"
-        case .relationship:
-            return "인간관계"
-        case .thanksgiving:
-            return "감사"
-        case .vision:
-            return "비전"
-        case .other:
-            return "기타"
-        }
+        return localizedDisplayName
     }
 }
 
@@ -112,19 +91,12 @@ extension Prayer {
     // MARK: - Accessibility
     
     var accessibilityLabel: String {
-        let favoriteText = isFavorite ? ", 즐겨찾기" : ""
-        return "\(title), \(category.displayName) 카테고리, \(storage.displayName) 보관소\(favoriteText)"
+        let favoriteText = isFavorite ? ", \(L.Accessibility.favorite)" : ""
+        return L.Accessibility.prayerFormat(title, category.displayName, storage.displayName, favoriteText)
     }
-    
+
     var accessibilityHint: String {
-        switch storage {
-        case .wait:
-            return "응답을 기다리는 기도입니다. 탭하여 상세 보기"
-        case .yes:
-            return "응답받은 기도입니다. 탭하여 상세 보기"
-        case .no:
-            return "아직 응답받지 못한 기도입니다. 탭하여 상세 보기"
-        }
+        return "\(storage.localizedDescription) \(L.Accessibility.tapDetail)"
     }
     
     // MARK: - Display Helpers
@@ -163,23 +135,23 @@ extension Prayer {
     
     var validationErrors: [String] {
         var errors: [String] = []
-        
+
         if title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            errors.append("제목이 필요합니다")
+            errors.append(L.Validation.titleRequired)
         }
-        
+
         if content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            errors.append("기도 내용이 필요합니다")
+            errors.append(L.Validation.contentRequired)
         }
-        
+
         if title.count > 100 {
-            errors.append("제목은 100자를 초과할 수 없습니다")
+            errors.append(L.Error.titleTooLong)
         }
-        
+
         if content.count > 2000 {
-            errors.append("기도 내용은 2000자를 초과할 수 없습니다")
+            errors.append(L.Error.contentTooLong)
         }
-        
+
         return errors
     }
 }
@@ -194,6 +166,24 @@ extension Array where Element == Prayer {
     
     var byCategory: [PrayerCategory: [Prayer]] {
         return Dictionary(grouping: self) { $0.category }
+    }
+    
+    // 기도대상자별 그룹화
+    var byTarget: [String: [Prayer]] {
+        return Dictionary(grouping: self) { $0.target }
+            .filter { !$0.key.isEmpty } // 빈 대상자 제외
+    }
+    
+    // 기도대상자별 기도 개수
+    var targetCounts: [String: Int] {
+        return byTarget.mapValues { $0.count }
+    }
+    
+    // 기도대상자별 최근 기도 날짜
+    var targetLatestDates: [String: Date] {
+        return byTarget.mapValues { prayers in
+            prayers.max { $0.createdDate < $1.createdDate }?.createdDate ?? Date()
+        }
     }
     
     var totalAnsweredPrayers: Int {

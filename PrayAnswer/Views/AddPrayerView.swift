@@ -25,33 +25,33 @@ struct AddPrayerView: View {
                         ModernCard {
                             VStack(spacing: DesignSystem.Spacing.md) {
                                 ModernTextField(
-                                    title: "제목",
+                                    title: L.Label.title,
                                     text: $title,
-                                    placeholder: "기도 제목을 입력하세요",
+                                    placeholder: L.Placeholder.title,
                                     focusedField: $isTitleFieldFocused
                                 )
-                                
+
                                 ModernTextEditor(
-                                    title: "기도 내용",
+                                    title: L.Label.prayerContent,
                                     text: $content,
-                                    placeholder: "마음을 담아 기도 내용을 작성하세요"
+                                    placeholder: L.Placeholder.content
                                 )
                             }
                             .padding(DesignSystem.Spacing.lg)
                         }
-                        
+
                         // 분류 섹션
-                        ModernFormSection(title: "분류") {
+                        ModernFormSection(title: L.Label.classification) {
                             VStack(spacing: DesignSystem.Spacing.md) {
                                 ModernCategoryPicker(
-                                    title: "카테고리",
+                                    title: L.Label.category,
                                     selection: $category
                                 )
-                                
+
                                 ModernTextField(
-                                    title: "기도 대상자",
+                                    title: L.Label.prayerTarget,
                                     text: $target,
-                                    placeholder: "기도 대상자 (선택사항)"
+                                    placeholder: L.Placeholder.target
                                 )
                             }
                         }
@@ -66,24 +66,24 @@ struct AddPrayerView: View {
                                 StatusIndicator(storage: .wait, size: .medium)
                                 
                                 VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
-                                    Text("저장 안내")
+                                    Text(L.Info.saveNotice)
                                         .font(DesignSystem.Typography.caption)
                                         .fontWeight(.semibold)
                                         .foregroundColor(DesignSystem.Colors.primaryText)
-                                    
-                                    Text("기도는 '대기중' 보관소에 저장됩니다")
+
+                                    Text(L.Info.saveDescription)
                                         .font(DesignSystem.Typography.caption2)
                                         .foregroundColor(DesignSystem.Colors.secondaryText)
                                 }
-                                
+
                                 Spacer()
                             }
                             .padding(DesignSystem.Spacing.md)
                         }
-                        
+
                         // 저장 버튼
                         ModernButton(
-                            title: "기도 저장하기",
+                            title: L.Button.savePrayer,
                             style: .primary,
                             size: .large
                         ) {
@@ -98,7 +98,7 @@ struct AddPrayerView: View {
                     .padding(.bottom, DesignSystem.Spacing.xxxl)
                 }
             }
-            .navigationTitle("새로운 기도")
+            .navigationTitle(L.Nav.newPrayer)
             .navigationBarTitleDisplayMode(.large)
             .background(DesignSystem.Colors.background)
             .onAppear {
@@ -109,20 +109,26 @@ struct AddPrayerView: View {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
                     isTitleFieldFocused = true
                 }
+                
+                PrayerLogger.shared.viewDidAppear("AddPrayerView")
+                PrayerLogger.shared.logMemoryUsage()
             }
-            .alert("알림", isPresented: $showingAlert) {
-                Button("확인") { }
+            .onDisappear {
+                PrayerLogger.shared.viewDidAppear("AddPrayerView - onDisappear")
+            }
+            .alert(L.Alert.notification, isPresented: $showingAlert) {
+                Button(L.Button.confirm) { }
             } message: {
                 Text(alertMessage)
             }
-            .alert("저장 완료", isPresented: $showingSuccessAlert) {
-                Button("확인") { 
+            .alert(L.Alert.saveComplete, isPresented: $showingSuccessAlert) {
+                Button(L.Button.confirm) {
                     withAnimation(.easeInOut(duration: 0.3)) {
                         selectedTab = 0
                     }
                 }
             } message: {
-                Text("기도가 성공적으로 저장되었습니다.\n기도 목록으로 이동합니다.")
+                Text(L.Success.saveMessage)
             }
         }
     }
@@ -131,27 +137,27 @@ struct AddPrayerView: View {
         // 입력 검증
         guard !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
               !content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-            alertMessage = "제목과 내용을 모두 입력해주세요."
+            alertMessage = L.Error.emptyFields
             showingAlert = true
             return
         }
-        
+
         // 길이 검증
         if title.count > 100 {
-            alertMessage = "제목은 100자를 초과할 수 없습니다."
+            alertMessage = L.Error.titleTooLong
             showingAlert = true
             return
         }
-        
+
         if content.count > 2000 {
-            alertMessage = "기도 내용은 2000자를 초과할 수 없습니다."
+            alertMessage = L.Error.contentTooLong
             showingAlert = true
             return
         }
-        
+
         // PrayerViewModel을 사용하여 기도 저장
         guard let viewModel = prayerViewModel else {
-            alertMessage = "저장 중 오류가 발생했습니다. 다시 시도해주세요."
+            alertMessage = L.Error.generic
             showingAlert = true
             return
         }
@@ -175,9 +181,9 @@ struct AddPrayerView: View {
             
             // 성공 메시지 표시
             showingSuccessAlert = true
-            
+
         } catch {
-            alertMessage = "기도를 저장하는 중 오류가 발생했습니다.\n다시 시도해주세요."
+            alertMessage = L.Error.saveFailed
             showingAlert = true
             PrayerLogger.shared.prayerOperationFailed("저장", error: error)
         }

@@ -95,12 +95,12 @@ struct EmptyStateView: View {
                 )
             
             VStack(spacing: DesignSystem.Spacing.md) {
-                Text("보관소가 비어있습니다")
+                Text(L.Empty.storageTitle)
                     .font(DesignSystem.Typography.title2)
                     .fontWeight(.semibold)
                     .foregroundColor(DesignSystem.Colors.primaryText)
-                
-                Text(storage.description)
+
+                Text(storage.localizedDescription)
                     .font(DesignSystem.Typography.callout)
                     .foregroundColor(DesignSystem.Colors.secondaryText)
                     .multilineTextAlignment(.center)
@@ -160,8 +160,8 @@ struct ModernStorageCard: View {
         }
         .buttonStyle(PlainButtonStyle())
         .animation(DesignSystem.Animation.quick, value: isSelected)
-        .accessibilityLabel("\(storage.displayName) 보관소, \(count)개의 기도")
-        .accessibilityHint("선택하여 \(storage.displayName) 보관소의 기도들을 확인하세요")
+        .accessibilityLabel(L.Accessibility.storageFormat(storage.displayName, count))
+        .accessibilityHint(L.Accessibility.selectStorage(storage.displayName))
         .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
     }
 }
@@ -338,31 +338,31 @@ struct ModernPrayerInfoCard: View {
     var body: some View {
         ModernCard {
             VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
-                Text("기도 정보")
+                Text(L.Info.prayerInfo)
                     .font(DesignSystem.Typography.headline)
                     .foregroundColor(DesignSystem.Colors.primaryText)
                 
                 VStack(spacing: DesignSystem.Spacing.md) {
                     ModernDateInfoRow(
                         icon: "calendar",
-                        title: "생성일",
+                        title: L.Info.createdDate,
                         date: prayer.createdDate,
                         color: DesignSystem.Colors.primary
                     )
-                    
+
                     if let modifiedDate = prayer.modifiedDate {
                         ModernDateInfoRow(
                             icon: "pencil",
-                            title: "수정일",
+                            title: L.Info.modifiedDate,
                             date: modifiedDate,
                             color: DesignSystem.Colors.secondary
                         )
                     }
-                    
+
                     if let movedDate = prayer.movedDate {
                         ModernDateInfoRow(
                             icon: "arrow.right.circle",
-                            title: "이동일",
+                            title: L.Info.movedDate,
                             date: movedDate,
                             color: DesignSystem.Colors.answered
                         )
@@ -425,11 +425,11 @@ struct ModernStoragePickerView: View {
                         .font(.system(size: 50))
                         .foregroundColor(DesignSystem.Colors.primary)
                     
-                    Text("보관소 이동")
+                    Text(L.StoragePicker.title)
                         .font(DesignSystem.Typography.title2)
                         .foregroundColor(DesignSystem.Colors.primaryText)
-                    
-                    Text("이동할 보관소를 선택하세요")
+
+                    Text(L.StoragePicker.description)
                         .font(DesignSystem.Typography.callout)
                         .foregroundColor(DesignSystem.Colors.secondaryText)
                         .multilineTextAlignment(.center)
@@ -453,12 +453,12 @@ struct ModernStoragePickerView: View {
                 
                 Spacer()
             }
-            .navigationTitle("보관소 이동")
+            .navigationTitle(L.StoragePicker.title)
             .navigationBarTitleDisplayMode(.inline)
             .background(DesignSystem.Colors.background)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("취소") {
+                    Button(L.Button.cancel) {
                         presentationMode.wrappedValue.dismiss()
                     }
                     .foregroundColor(DesignSystem.Colors.secondaryText)
@@ -483,8 +483,8 @@ struct ModernStorageOptionCard: View {
                         Text(storage.displayName)
                             .font(DesignSystem.Typography.headline)
                             .foregroundColor(DesignSystem.Colors.primaryText)
-                        
-                        Text(storage.description)
+
+                        Text(storage.storageDescription)
                             .font(DesignSystem.Typography.callout)
                             .foregroundColor(DesignSystem.Colors.secondaryText)
                     }
@@ -526,7 +526,7 @@ struct FavoriteButton: View {
         }
         .buttonStyle(PlainButtonStyle())
         .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isFavorite)
-        .accessibilityLabel(isFavorite ? "즐겨찾기에서 제거" : "즐겨찾기에 추가")
-        .accessibilityHint(isFavorite ? "탭하여 즐겨찾기에서 제거하세요" : "탭하여 즐겨찾기에 추가하세요")
+        .accessibilityLabel(isFavorite ? L.Accessibility.favoriteRemove : L.Accessibility.favoriteAdd)
+        .accessibilityHint(isFavorite ? L.Accessibility.favoriteRemoveHint : L.Accessibility.favoriteAddHint)
     }
 } 

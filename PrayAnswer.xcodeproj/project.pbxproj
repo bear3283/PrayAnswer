@@ -54,6 +54,7 @@
 			membershipExceptions = (
 				DesignSystem.swift,
 				Models/Prayer.swift,
+				Utils/LocalizationKeys.swift,
 				Utils/Logger.swift,
 				Utils/WidgetDataManager.swift,
 				ViewModels/PrayerViewModel.swift,
@@ -192,6 +193,8 @@
 			knownRegions = (
 				en,
 				Base,
+				ko,
+				es,
 			);
 			mainGroup = 090099132E10474300690554;
 			minimizedProjectReferenceProxies = 1;

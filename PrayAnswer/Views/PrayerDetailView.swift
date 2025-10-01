@@ -26,24 +26,24 @@ struct PrayerDetailView: View {
                         VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
                             if isEditing {
                                 ModernTextField(
-                                    title: "제목",
+                                    title: L.Label.title,
                                     text: $editedTitle,
-                                    placeholder: "제목을 입력하세요"
+                                    placeholder: L.Placeholder.title
                                 )
-                                
+
                                 ModernCategoryPicker(
-                                    title: "카테고리",
+                                    title: L.Label.category,
                                     selection: $editedCategory
                                 )
                             } else {
                                 VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
                                     HStack(alignment: .top, spacing: DesignSystem.Spacing.md) {
                                         VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-                                            Text("제목")
+                                            Text(L.Label.title)
                                                 .font(DesignSystem.Typography.callout)
                                                 .foregroundColor(DesignSystem.Colors.primaryText)
                                                 .fontWeight(.medium)
-                                            
+
                                             Text(prayer.title)
                                                 .font(DesignSystem.Typography.body)
                                                 .foregroundColor(DesignSystem.Colors.primaryText)
@@ -53,9 +53,9 @@ struct PrayerDetailView: View {
                                                 .background(DesignSystem.Colors.secondaryBackground)
                                                 .cornerRadius(DesignSystem.CornerRadius.medium)
                                         }
-                                        
+
                                         VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-                                            Text("카테고리")
+                                            Text(L.Label.category)
                                                 .font(DesignSystem.Typography.callout)
                                                 .foregroundColor(DesignSystem.Colors.primaryText)
                                                 .fontWeight(.medium)
@@ -75,13 +75,13 @@ struct PrayerDetailView: View {
                         VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
                             if isEditing {
                                 ModernTextEditor(
-                                    title: "기도 내용",
+                                    title: L.Label.prayerContent,
                                     text: $editedContent,
-                                    placeholder: "기도 내용을 작성하세요"
+                                    placeholder: L.Placeholder.content
                                 )
                             } else {
                                 VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-                                    Text("기도 내용")
+                                    Text(L.Label.prayerContent)
                                         .font(DesignSystem.Typography.callout)
                                         .foregroundColor(DesignSystem.Colors.primaryText)
                                         .fontWeight(.medium)
@@ -109,14 +109,14 @@ struct PrayerDetailView: View {
                             VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
                                 if isEditing {
                                     ModernTextField(
-                                        title: "기도 대상자",
+                                        title: L.Label.prayerTarget,
                                         text: $editedTarget,
-                                        placeholder: "기도 대상자 (선택사항)"
+                                        placeholder: L.Placeholder.target
                                     )
                                 } else {
                                     if !prayer.target.isEmpty {
                                         VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-                                            Text("기도 대상자")
+                                            Text(L.Label.prayerTarget)
                                                 .font(DesignSystem.Typography.callout)
                                                 .foregroundColor(DesignSystem.Colors.primaryText)
                                                 .fontWeight(.medium)
@@ -152,28 +152,28 @@ struct PrayerDetailView: View {
                     if !isEditing {
                         VStack(spacing: DesignSystem.Spacing.md) {
                             ModernButton(
-                                title: "보관소 이동",
+                                title: L.Button.moveStorage,
                                 style: .primary,
                                 size: .large
-                            ) { [weak self] in
-                                self?.showingStoragePicker = true
+                            ) {
+                                showingStoragePicker = true
                             }
-                            
+
                             HStack(spacing: DesignSystem.Spacing.md) {
                                 ModernButton(
-                                    title: "편집",
+                                    title: L.Button.edit,
                                     style: .secondary,
                                     size: .medium
-                                ) { [weak self] in
-                                    self?.startEditing()
+                                ) {
+                                    startEditing()
                                 }
-                                
+
                                 ModernButton(
-                                    title: "삭제",
+                                    title: L.Button.delete,
                                     style: .destructive,
                                     size: .medium
-                                ) { [weak self] in
-                                    self?.showingDeleteAlert = true
+                                ) {
+                                    showingDeleteAlert = true
                                 }
                             }
                         }
@@ -183,63 +183,59 @@ struct PrayerDetailView: View {
                 .padding(.bottom, DesignSystem.Spacing.xxxl)
             }
         }
-        .navigationTitle(isEditing ? "기도 편집" : "기도 상세")
+        .navigationTitle(isEditing ? L.Nav.prayerEdit : L.Nav.prayerDetail)
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(isEditing)
         .background(DesignSystem.Colors.background)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 if isEditing {
-                    Button("완료") { [weak self] in
-                        self?.saveChanges()
+                    Button(L.Button.done) {
+                        saveChanges()
                     }
                     .disabled(editedTitle.isEmpty || editedContent.isEmpty)
                     .foregroundColor(DesignSystem.Colors.primary)
                     .fontWeight(.semibold)
                 } else {
-                    FavoriteButton(isFavorite: prayer.isFavorite) { [weak self] in
-                        self?.toggleFavorite()
+                    FavoriteButton(isFavorite: prayer.isFavorite) {
+                        toggleFavorite()
                     }
                 }
             }
-            
+
             if isEditing {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("취소") { [weak self] in
-                        self?.cancelEditing()
+                    Button(L.Button.cancel) {
+                        cancelEditing()
                     }
                     .foregroundColor(DesignSystem.Colors.secondaryText)
                 }
             }
         }
-        .onAppear { [weak self] in
-            guard let self = self else { return }
-            if self.prayerViewModel == nil {
-                self.prayerViewModel = PrayerViewModel(modelContext: self.modelContext)
+        .onAppear {
+            if prayerViewModel == nil {
+                prayerViewModel = PrayerViewModel(modelContext: modelContext)
             }
         }
-        .sheet(isPresented: $showingStoragePicker) { [weak self] in
-            guard let self = self else { return AnyView(EmptyView()) }
-            return AnyView(
-                ModernStoragePickerView(
-                    currentStorage: self.prayer.storage,
-                    onStorageSelected: { [weak self] newStorage in
-                        self?.movePrayerToStorage(newStorage)
-                        self?.showingStoragePicker = false
-                    }
-                )
+        .sheet(isPresented: $showingStoragePicker) {
+            ModernStoragePickerView(
+                currentStorage: prayer.storage,
+                onStorageSelected: { newStorage in
+                    movePrayerToStorage(newStorage)
+                    showingStoragePicker = false
+                }
             )
         }
-        .alert("기도 삭제", isPresented: $showingDeleteAlert) {
-            Button("삭제", role: .destructive) { [weak self] in
-                self?.deletePrayer()
+        .alert(L.Alert.deletePrayer, isPresented: $showingDeleteAlert) {
+            Button(L.Button.delete, role: .destructive) {
+                deletePrayer()
             }
-            Button("취소", role: .cancel) { }
+            Button(L.Button.cancel, role: .cancel) { }
         } message: {
-            Text("이 기도를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.")
+            Text(L.Confirm.deletePrayer)
         }
-        .alert("오류", isPresented: $showingErrorAlert) {
-            Button("확인") { }
+        .alert(L.Alert.error, isPresented: $showingErrorAlert) {
+            Button(L.Button.confirm) { }
         } message: {
             Text(errorMessage)
         }
@@ -267,25 +263,25 @@ struct PrayerDetailView: View {
     
     private func saveChanges() {
         guard let viewModel = prayerViewModel else {
-            showError("수정 중 오류가 발생했습니다.")
+            showError(L.Error.updateFailed)
             return
         }
-        
+
         // 입력 검증
         guard !editedTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
               !editedContent.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-            showError("제목과 내용을 모두 입력해주세요.")
+            showError(L.Error.emptyFields)
             return
         }
-        
+
         // 길이 검증
         if editedTitle.count > 100 {
-            showError("제목은 100자를 초과할 수 없습니다.")
+            showError(L.Error.titleTooLong)
             return
         }
-        
+
         if editedContent.count > 2000 {
-            showError("기도 내용은 2000자를 초과할 수 없습니다.")
+            showError(L.Error.contentTooLong)
             return
         }
         
@@ -303,52 +299,52 @@ struct PrayerDetailView: View {
                 isEditing = false
             }
         } catch {
-            showError("기도를 수정하는 중 오류가 발생했습니다.")
+            showError(L.Error.updatePrayerFailed)
             PrayerLogger.shared.prayerOperationFailed("수정", error: error)
         }
     }
-    
+
     private func deletePrayer() {
         guard let viewModel = prayerViewModel else {
-            showError("삭제 중 오류가 발생했습니다.")
+            showError(L.Error.deleteFailed)
             return
         }
-        
+
         do {
             try viewModel.deletePrayer(prayer)
             PrayerLogger.shared.userAction("기도 삭제")
             presentationMode.wrappedValue.dismiss()
         } catch {
-            showError("기도를 삭제하는 중 오류가 발생했습니다.")
+            showError(L.Error.deletePrayerFailed)
             PrayerLogger.shared.prayerOperationFailed("삭제", error: error)
         }
     }
-    
+
     private func movePrayerToStorage(_ newStorage: PrayerStorage) {
         guard let viewModel = prayerViewModel else {
-            showError("보관소 이동 중 오류가 발생했습니다.")
+            showError(L.Error.moveFailed)
             return
         }
-        
+
         do {
             try viewModel.movePrayer(prayer, to: newStorage)
             PrayerLogger.shared.userAction("기도 보관소 이동")
         } catch {
-            showError("기도를 이동하는 중 오류가 발생했습니다.")
+            showError(L.Error.movePrayerFailed)
             PrayerLogger.shared.prayerOperationFailed("이동", error: error)
         }
     }
-    
+
     private func toggleFavorite() {
         guard let viewModel = prayerViewModel else {
-            showError("즐겨찾기 변경 중 오류가 발생했습니다.")
+            showError(L.Error.favoriteFailed)
             return
         }
-        
+
         do {
             try viewModel.toggleFavorite(prayer)
         } catch {
-            showError("즐겨찾기를 변경하는 중 오류가 발생했습니다.")
+            showError(L.Error.favoriteToggleFailed)
             PrayerLogger.shared.prayerOperationFailed("즐겨찾기 토글", error: error)
         }
     }

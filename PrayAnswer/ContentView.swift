@@ -19,22 +19,22 @@ struct ContentView: View {
             PrayerListView()
                 .tabItem {
                     Image(systemName: "list.bullet.rectangle.portrait")
-                    Text("기도 목록")
+                    Text(L.Tab.prayerList)
                 }
                 .tag(0)
             // 기도 추가 탭 (두 번째로 이동)
             AddPrayerView(selectedTab: $selectedTab)
                 .tabItem {
                     Image(systemName: "hands.clap")
-                    Text("기도 추가")
+                    Text(L.Tab.addPrayer)
                 }
                 .tag(1)
-            
+
             // 기도대상자 탭 (세 번째 화면)
             PeopleListView()
                 .tabItem {
                     Image(systemName: "person.2")
-                    Text("기도대상자")
+                    Text(L.Tab.people)
                 }
                 .tag(2)
             
@@ -92,18 +92,25 @@ struct PrayerListView: View {
     
     var body: some View {
         NavigationView {
-            VStack(spacing: 0) {
-                // 새로운 보관소 선택 섹션
-                ModernStorageSelector(selectedStorage: $selectedStorage, allPrayers: allPrayers)
-                
-                // 기도 목록
-                List {
-                    if filteredPrayers.isEmpty {
+            Group {
+                if filteredPrayers.isEmpty {
+                    VStack(spacing: 0) {
+                        // 보관소 선택 섹션
+                        ModernStorageSelector(selectedStorage: $selectedStorage, allPrayers: allPrayers)
+
                         EmptyStateView(storage: selectedStorage)
-                            .listRowBackground(Color.clear)
-                            .listRowSeparator(.hidden)
-                            .listRowInsets(EdgeInsets())
-                    } else {
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    }
+                } else {
+                    List {
+                        // 보관소 선택 섹션을 List 내부로 이동
+                        Section {
+                            ModernStorageSelector(selectedStorage: $selectedStorage, allPrayers: allPrayers)
+                        }
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
+                        .listRowInsets(EdgeInsets())
+
                         ForEach(filteredPrayers) { prayer in
                             ZStack {
                                 // 투명한 NavigationLink로 네비게이션 기능만 유지
@@ -111,7 +118,7 @@ struct PrayerListView: View {
                                     EmptyView()
                                 }
                                 .opacity(0)
-                                
+
                                 // 실제 보이는 UI
                                 ModernPrayerRow(prayer: prayer) {
                                     toggleFavorite(prayer)
@@ -133,11 +140,11 @@ struct PrayerListView: View {
                             }
                         }
                     }
+                    .listStyle(PlainListStyle())
+                    .scrollContentBackground(.hidden)
                 }
-                .listStyle(PlainListStyle())
-                .scrollContentBackground(.hidden)
             }
-            .navigationTitle("기도 목록")
+            .navigationTitle(L.Nav.prayerList)
             .navigationBarTitleDisplayMode(.large)
             .background(DesignSystem.Colors.background)
             .onAppear {
@@ -155,8 +162,8 @@ struct PrayerListView: View {
                 // 뷰가 사라질 때 정리 작업
                 PrayerLogger.shared.viewDidAppear("PrayerListView - onDisappear")
             }
-            .alert("오류", isPresented: $showingErrorAlert) {
-                Button("확인") { }
+            .alert(L.Alert.error, isPresented: $showingErrorAlert) {
+                Button(L.Button.confirm) { }
             } message: {
                 Text(errorMessage)
             }
@@ -165,29 +172,29 @@ struct PrayerListView: View {
     
     private func deletePrayer(_ prayer: Prayer) {
         guard let viewModel = prayerViewModel else {
-            showError("삭제 중 오류가 발생했습니다.")
+            showError(L.Error.deleteFailed)
             return
         }
-        
+
         do {
             try viewModel.deletePrayer(prayer)
             PrayerLogger.shared.userAction("목록에서 기도 삭제")
         } catch {
-            showError("기도를 삭제하는 중 오류가 발생했습니다.")
+            showError(L.Error.deletePrayerFailed)
             PrayerLogger.shared.prayerOperationFailed("삭제", error: error)
         }
     }
-    
+
     private func toggleFavorite(_ prayer: Prayer) {
         guard let viewModel = prayerViewModel else {
-            showError("즐겨찾기 변경 중 오류가 발생했습니다.")
+            showError(L.Error.favoriteFailed)
             return
         }
-        
+
         do {
             try viewModel.toggleFavorite(prayer)
         } catch {
-            showError("즐겨찾기를 변경하는 중 오류가 발생했습니다.")
+            showError(L.Error.favoriteToggleFailed)
             PrayerLogger.shared.prayerOperationFailed("즐겨찾기 토글", error: error)
         }
     }

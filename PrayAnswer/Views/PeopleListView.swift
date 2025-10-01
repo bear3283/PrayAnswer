@@ -39,17 +39,25 @@ struct PeopleListView: View {
     
     var body: some View {
         NavigationView {
-            VStack(spacing: 0) {
+            Group {
                 if sortedTargets.isEmpty {
                     EmptyPeopleStateView()
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
-                    // 검색바
-                    SearchBar(text: $searchText, placeholder: "기도대상자 검색")
-                        .padding(.horizontal, DesignSystem.Spacing.lg)
-                        .padding(.vertical, DesignSystem.Spacing.sm)
-                    
                     List {
+                        // 검색바를 List 내부로 이동
+                        Section {
+                            SearchBar(text: $searchText, placeholder: L.Placeholder.searchPeople)
+                        }
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
+                        .listRowInsets(EdgeInsets(
+                            top: DesignSystem.Spacing.sm,
+                            leading: DesignSystem.Spacing.lg,
+                            bottom: DesignSystem.Spacing.sm,
+                            trailing: DesignSystem.Spacing.lg
+                        ))
+
                         ForEach(filteredTargets, id: \.self) { target in
                             ZStack {
                                 // 투명한 NavigationLink로 네비게이션 기능만 유지
@@ -57,7 +65,7 @@ struct PeopleListView: View {
                                     EmptyView()
                                 }
                                 .opacity(0)
-                                
+
                                 // 실제 보이는 UI
                                 PersonRowView(
                                     target: target,
@@ -78,7 +86,7 @@ struct PeopleListView: View {
                     .scrollContentBackground(.hidden)
                 }
             }
-            .navigationTitle("기도대상자")
+            .navigationTitle(L.Nav.peopleList)
             .navigationBarTitleDisplayMode(.large)
             .background(DesignSystem.Colors.background)
             .onAppear {
@@ -86,8 +94,8 @@ struct PeopleListView: View {
                     prayerViewModel = PrayerViewModel(modelContext: modelContext)
                 }
             }
-            .alert("오류", isPresented: $showingErrorAlert) {
-                Button("확인") { }
+            .alert(L.Alert.error, isPresented: $showingErrorAlert) {
+                Button(L.Button.confirm) { }
             } message: {
                 Text(errorMessage)
             }
@@ -137,7 +145,7 @@ struct PersonRowView: View {
                         .foregroundColor(.primary)
                     
                     if let latestDate = latestDate {
-                        Text("최근 기도: \(DateFormatter.compact.string(from: latestDate))")
+                        Text(L.Date.recentPrayerFormat(DateFormatter.compact.string(from: latestDate)))
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
@@ -151,8 +159,8 @@ struct PersonRowView: View {
                         .font(.title2)
                         .fontWeight(.bold)
                         .foregroundColor(DesignSystem.Colors.primary)
-                    
-                    Text("개")
+
+                    Text(L.Counter.count)
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
@@ -217,12 +225,12 @@ struct EmptyPeopleStateView: View {
                 .foregroundColor(.secondary)
             
             VStack(spacing: DesignSystem.Spacing.sm) {
-                Text("기도대상자가 없습니다")
+                Text(L.Empty.peopleTitle)
                     .font(.headline)
                     .fontWeight(.semibold)
                     .foregroundColor(.primary)
-                
-                Text("기도를 추가할 때 기도대상자를 입력하면\n여기서 확인할 수 있습니다")
+
+                Text(L.Empty.peopleDescription)
                     .font(.subheadline)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)

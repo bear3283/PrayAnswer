@@ -97,13 +97,23 @@ class WidgetDataManager {
 
 // MARK: - Widget Data Model
 struct PrayerWidgetData: Codable, Identifiable {
-    let id = UUID()
+    let id: UUID
     let title: String
     let content: String
     let category: String
     let target: String
     let storage: String
     let createdDate: Date
+
+    init(id: UUID = UUID(), title: String, content: String, category: String, target: String, storage: String, createdDate: Date) {
+        self.id = id
+        self.title = title
+        self.content = content
+        self.category = category
+        self.target = target
+        self.storage = storage
+        self.createdDate = createdDate
+    }
     
     // 편의 속성들
     var prayerCategory: PrayerCategory {

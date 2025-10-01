@@ -1,0 +1,125 @@
+/*
+  Localizable.strings (English)
+  PrayAnswer
+*/
+
+// MARK: - Tab Bar
+"tab.prayer_list" = "Prayer List";
+"tab.add_prayer" = "Add Prayer";
+"tab.people" = "People";
+
+// MARK: - Navigation Titles
+"nav.prayer_list" = "Prayer List";
+"nav.new_prayer" = "New Prayer";
+"nav.prayer_detail" = "Prayer Detail";
+"nav.prayer_edit" = "Edit Prayer";
+"nav.people_list" = "People";
+"nav.storage_move" = "Move Storage";
+
+// MARK: - Common Buttons
+"button.save" = "Save";
+"button.edit" = "Edit";
+"button.delete" = "Delete";
+"button.done" = "Done";
+"button.cancel" = "Cancel";
+"button.confirm" = "OK";
+"button.save_prayer" = "Save Prayer";
+"button.move_storage" = "Move Storage";
+
+// MARK: - Form Labels
+"label.title" = "Title";
+"label.prayer_content" = "Prayer Content";
+"label.category" = "Category";
+"label.prayer_target" = "Prayer Target";
+"label.classification" = "Classification";
+
+// MARK: - Placeholders
+"placeholder.title" = "Enter prayer title";
+"placeholder.content" = "Write your prayer with heart";
+"placeholder.target" = "Prayer Target (Optional)";
+"placeholder.search_people" = "Search People";
+
+// MARK: - Prayer Storage
+"storage.wait" = "Wait";
+"storage.yes" = "Yes";
+"storage.no" = "No";
+"storage.wait.description" = "Prayers waiting for an answer.";
+"storage.yes.description" = "Prayers that have been answered.";
+"storage.no.description" = "Prayers not yet answered.";
+
+// MARK: - Prayer Categories
+"category.personal" = "Personal";
+"category.family" = "Family";
+"category.health" = "Health";
+"category.work" = "Work/Study";
+"category.relationship" = "Relationship";
+"category.thanksgiving" = "Thanksgiving";
+"category.vision" = "Vision";
+"category.other" = "Other";
+
+// MARK: - Info Labels
+"info.prayer_info" = "Prayer Info";
+"info.created_date" = "Created";
+"info.modified_date" = "Modified";
+"info.moved_date" = "Moved";
+"info.recent_prayer" = "Recent Prayer";
+"info.save_notice" = "Save Notice";
+"info.save_description" = "Prayer will be saved in 'Wait' storage";
+
+// MARK: - Empty States
+"empty.storage_title" = "Storage is Empty";
+"empty.people_title" = "No People";
+"empty.people_description" = "When you add a prayer target,\nthey will appear here";
+
+// MARK: - Alert Messages
+"alert.error" = "Error";
+"alert.notification" = "Notice";
+"alert.save_complete" = "Save Complete";
+"alert.delete_prayer" = "Delete Prayer";
+
+// MARK: - Success Messages
+"success.save_message" = "Prayer saved successfully.\nMoving to prayer list.";
+
+// MARK: - Error Messages
+"error.empty_fields" = "Please enter both title and content.";
+"error.title_too_long" = "Title cannot exceed 100 characters.";
+"error.content_too_long" = "Prayer content cannot exceed 2000 characters.";
+"error.save_failed" = "An error occurred while saving the prayer.\nPlease try again.";
+"error.delete_failed" = "An error occurred during deletion.";
+"error.delete_prayer_failed" = "An error occurred while deleting the prayer.";
+"error.update_failed" = "An error occurred during update.";
+"error.update_prayer_failed" = "An error occurred while updating the prayer.";
+"error.move_failed" = "An error occurred while moving storage.";
+"error.move_prayer_failed" = "An error occurred while moving the prayer.";
+"error.favorite_failed" = "An error occurred while changing favorite.";
+"error.favorite_toggle_failed" = "An error occurred while toggling favorite.";
+"error.generic" = "An error occurred while saving. Please try again.";
+
+// MARK: - Confirmation Messages
+"confirm.delete_prayer" = "Are you sure you want to delete this prayer? This action cannot be undone.";
+
+// MARK: - Accessibility
+"accessibility.favorite" = "Favorite";
+"accessibility.favorite_add" = "Add to Favorites";
+"accessibility.favorite_remove" = "Remove from Favorites";
+"accessibility.favorite_add_hint" = "Tap to add to favorites";
+"accessibility.favorite_remove_hint" = "Tap to remove from favorites";
+"accessibility.tap_detail" = "Tap to view details";
+"accessibility.storage_format" = "%@ storage, %d prayers";
+"accessibility.select_storage" = "Select to view prayers in %@ storage";
+"accessibility.prayer_format" = "%@, %@ category, %@ storage%@";
+
+// MARK: - Date Formats
+"date.recent_prayer_format" = "Recent prayer: %@";
+
+// MARK: - Counter Formats
+"counter.count" = "";
+"counter.total_format" = "%d";
+
+// MARK: - Storage Picker
+"storage_picker.title" = "Move Storage";
+"storage_picker.description" = "Select storage to move to";
+
+// MARK: - Validation
+"validation.title_required" = "Title is required";
+"validation.content_required" = "Prayer content is required";

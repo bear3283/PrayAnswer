@@ -1,0 +1,125 @@
+/*
+  Localizable.strings (Korean)
+  PrayAnswer
+*/
+
+// MARK: - Tab Bar
+"tab.prayer_list" = "기도 목록";
+"tab.add_prayer" = "기도 추가";
+"tab.people" = "기도대상자";
+
+// MARK: - Navigation Titles
+"nav.prayer_list" = "기도 목록";
+"nav.new_prayer" = "새로운 기도";
+"nav.prayer_detail" = "기도 상세";
+"nav.prayer_edit" = "기도 편집";
+"nav.people_list" = "기도대상자";
+"nav.storage_move" = "보관소 이동";
+
+// MARK: - Common Buttons
+"button.save" = "저장";
+"button.edit" = "편집";
+"button.delete" = "삭제";
+"button.done" = "완료";
+"button.cancel" = "취소";
+"button.confirm" = "확인";
+"button.save_prayer" = "기도 저장하기";
+"button.move_storage" = "보관소 이동";
+
+// MARK: - Form Labels
+"label.title" = "제목";
+"label.prayer_content" = "기도 내용";
+"label.category" = "카테고리";
+"label.prayer_target" = "기도 대상자";
+"label.classification" = "분류";
+
+// MARK: - Placeholders
+"placeholder.title" = "기도 제목을 입력하세요";
+"placeholder.content" = "마음을 담아 기도 내용을 작성하세요";
+"placeholder.target" = "기도 대상자 (선택사항)";
+"placeholder.search_people" = "기도대상자 검색";
+
+// MARK: - Prayer Storage
+"storage.wait" = "Wait";
+"storage.yes" = "Yes";
+"storage.no" = "No";
+"storage.wait.description" = "응답을 기다리는 기도입니다.";
+"storage.yes.description" = "응답받은 기도입니다.";
+"storage.no.description" = "아직 응답받지 못한 기도입니다.";
+
+// MARK: - Prayer Categories
+"category.personal" = "개인";
+"category.family" = "가족";
+"category.health" = "건강";
+"category.work" = "일/학업";
+"category.relationship" = "인간관계";
+"category.thanksgiving" = "감사";
+"category.vision" = "비전";
+"category.other" = "기타";
+
+// MARK: - Info Labels
+"info.prayer_info" = "기도 정보";
+"info.created_date" = "생성일";
+"info.modified_date" = "수정일";
+"info.moved_date" = "이동일";
+"info.recent_prayer" = "최근 기도";
+"info.save_notice" = "저장 안내";
+"info.save_description" = "기도는 '대기중' 보관소에 저장됩니다";
+
+// MARK: - Empty States
+"empty.storage_title" = "보관소가 비어있습니다";
+"empty.people_title" = "기도대상자가 없습니다";
+"empty.people_description" = "기도를 추가할 때 기도대상자를 입력하면\n여기서 확인할 수 있습니다";
+
+// MARK: - Alert Messages
+"alert.error" = "오류";
+"alert.notification" = "알림";
+"alert.save_complete" = "저장 완료";
+"alert.delete_prayer" = "기도 삭제";
+
+// MARK: - Success Messages
+"success.save_message" = "기도가 성공적으로 저장되었습니다.\n기도 목록으로 이동합니다.";
+
+// MARK: - Error Messages
+"error.empty_fields" = "제목과 내용을 모두 입력해주세요.";
+"error.title_too_long" = "제목은 100자를 초과할 수 없습니다.";
+"error.content_too_long" = "기도 내용은 2000자를 초과할 수 없습니다.";
+"error.save_failed" = "기도를 저장하는 중 오류가 발생했습니다.\n다시 시도해주세요.";
+"error.delete_failed" = "삭제 중 오류가 발생했습니다.";
+"error.delete_prayer_failed" = "기도를 삭제하는 중 오류가 발생했습니다.";
+"error.update_failed" = "수정 중 오류가 발생했습니다.";
+"error.update_prayer_failed" = "기도를 수정하는 중 오류가 발생했습니다.";
+"error.move_failed" = "보관소 이동 중 오류가 발생했습니다.";
+"error.move_prayer_failed" = "기도를 이동하는 중 오류가 발생했습니다.";
+"error.favorite_failed" = "즐겨찾기 변경 중 오류가 발생했습니다.";
+"error.favorite_toggle_failed" = "즐겨찾기를 변경하는 중 오류가 발생했습니다.";
+"error.generic" = "저장 중 오류가 발생했습니다. 다시 시도해주세요.";
+
+// MARK: - Confirmation Messages
+"confirm.delete_prayer" = "이 기도를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.";
+
+// MARK: - Accessibility
+"accessibility.favorite" = "즐겨찾기";
+"accessibility.favorite_add" = "즐겨찾기에 추가";
+"accessibility.favorite_remove" = "즐겨찾기에서 제거";
+"accessibility.favorite_add_hint" = "탭하여 즐겨찾기에 추가하세요";
+"accessibility.favorite_remove_hint" = "탭하여 즐겨찾기에서 제거하세요";
+"accessibility.tap_detail" = "탭하여 상세 보기";
+"accessibility.storage_format" = "%@ 보관소, %d개의 기도";
+"accessibility.select_storage" = "선택하여 %@ 보관소의 기도들을 확인하세요";
+"accessibility.prayer_format" = "%@, %@ 카테고리, %@ 보관소%@";
+
+// MARK: - Date Formats
+"date.recent_prayer_format" = "최근 기도: %@";
+
+// MARK: - Counter Formats
+"counter.count" = "개";
+"counter.total_format" = "%d개";
+
+// MARK: - Storage Picker
+"storage_picker.title" = "보관소 이동";
+"storage_picker.description" = "이동할 보관소를 선택하세요";
+
+// MARK: - Validation
+"validation.title_required" = "제목이 필요합니다";
+"validation.content_required" = "기도 내용이 필요합니다";

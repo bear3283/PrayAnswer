@@ -1,0 +1,125 @@
+/*
+  Localizable.strings (Spanish)
+  PrayAnswer
+*/
+
+// MARK: - Tab Bar
+"tab.prayer_list" = "Lista de Oraciones";
+"tab.add_prayer" = "Agregar Oración";
+"tab.people" = "Personas";
+
+// MARK: - Navigation Titles
+"nav.prayer_list" = "Lista de Oraciones";
+"nav.new_prayer" = "Nueva Oración";
+"nav.prayer_detail" = "Detalle de Oración";
+"nav.prayer_edit" = "Editar Oración";
+"nav.people_list" = "Personas";
+"nav.storage_move" = "Mover Almacén";
+
+// MARK: - Common Buttons
+"button.save" = "Guardar";
+"button.edit" = "Editar";
+"button.delete" = "Eliminar";
+"button.done" = "Listo";
+"button.cancel" = "Cancelar";
+"button.confirm" = "OK";
+"button.save_prayer" = "Guardar Oración";
+"button.move_storage" = "Mover Almacén";
+
+// MARK: - Form Labels
+"label.title" = "Título";
+"label.prayer_content" = "Contenido de la Oración";
+"label.category" = "Categoría";
+"label.prayer_target" = "Destinatario de la Oración";
+"label.classification" = "Clasificación";
+
+// MARK: - Placeholders
+"placeholder.title" = "Ingrese el título de la oración";
+"placeholder.content" = "Escriba su oración con el corazón";
+"placeholder.target" = "Destinatario de la Oración (Opcional)";
+"placeholder.search_people" = "Buscar Personas";
+
+// MARK: - Prayer Storage
+"storage.wait" = "Wait";
+"storage.yes" = "Yes";
+"storage.no" = "No";
+"storage.wait.description" = "Oraciones esperando respuesta.";
+"storage.yes.description" = "Oraciones respondidas.";
+"storage.no.description" = "Oraciones aún sin respuesta.";
+
+// MARK: - Prayer Categories
+"category.personal" = "Personal";
+"category.family" = "Familia";
+"category.health" = "Salud";
+"category.work" = "Trabajo/Estudios";
+"category.relationship" = "Relaciones";
+"category.thanksgiving" = "Acción de Gracias";
+"category.vision" = "Visión";
+"category.other" = "Otro";
+
+// MARK: - Info Labels
+"info.prayer_info" = "Información de Oración";
+"info.created_date" = "Creado";
+"info.modified_date" = "Modificado";
+"info.moved_date" = "Movido";
+"info.recent_prayer" = "Oración Reciente";
+"info.save_notice" = "Aviso de Guardado";
+"info.save_description" = "La oración se guardará en el almacén 'Espera'";
+
+// MARK: - Empty States
+"empty.storage_title" = "El Almacén Está Vacío";
+"empty.people_title" = "No Hay Personas";
+"empty.people_description" = "Cuando agregue un destinatario de oración,\naparecerán aquí";
+
+// MARK: - Alert Messages
+"alert.error" = "Error";
+"alert.notification" = "Aviso";
+"alert.save_complete" = "Guardado Completo";
+"alert.delete_prayer" = "Eliminar Oración";
+
+// MARK: - Success Messages
+"success.save_message" = "Oración guardada exitosamente.\nMoviendo a la lista de oraciones.";
+
+// MARK: - Error Messages
+"error.empty_fields" = "Por favor ingrese título y contenido.";
+"error.title_too_long" = "El título no puede exceder 100 caracteres.";
+"error.content_too_long" = "El contenido de la oración no puede exceder 2000 caracteres.";
+"error.save_failed" = "Ocurrió un error al guardar la oración.\nPor favor intente de nuevo.";
+"error.delete_failed" = "Ocurrió un error durante la eliminación.";
+"error.delete_prayer_failed" = "Ocurrió un error al eliminar la oración.";
+"error.update_failed" = "Ocurrió un error durante la actualización.";
+"error.update_prayer_failed" = "Ocurrió un error al actualizar la oración.";
+"error.move_failed" = "Ocurrió un error al mover el almacén.";
+"error.move_prayer_failed" = "Ocurrió un error al mover la oración.";
+"error.favorite_failed" = "Ocurrió un error al cambiar favorito.";
+"error.favorite_toggle_failed" = "Ocurrió un error al alternar favorito.";
+"error.generic" = "Ocurrió un error al guardar. Por favor intente de nuevo.";
+
+// MARK: - Confirmation Messages
+"confirm.delete_prayer" = "¿Está seguro de que desea eliminar esta oración? Esta acción no se puede deshacer.";
+
+// MARK: - Accessibility
+"accessibility.favorite" = "Favorito";
+"accessibility.favorite_add" = "Agregar a Favoritos";
+"accessibility.favorite_remove" = "Quitar de Favoritos";
+"accessibility.favorite_add_hint" = "Toque para agregar a favoritos";
+"accessibility.favorite_remove_hint" = "Toque para quitar de favoritos";
+"accessibility.tap_detail" = "Toque para ver detalles";
+"accessibility.storage_format" = "almacén %@, %d oraciones";
+"accessibility.select_storage" = "Seleccione para ver oraciones en almacén %@";
+"accessibility.prayer_format" = "%@, categoría %@, almacén %@%@";
+
+// MARK: - Date Formats
+"date.recent_prayer_format" = "Oración reciente: %@";
+
+// MARK: - Counter Formats
+"counter.count" = "";
+"counter.total_format" = "%d";
+
+// MARK: - Storage Picker
+"storage_picker.title" = "Mover Almacén";
+"storage_picker.description" = "Seleccione el almacén al que mover";
+
+// MARK: - Validation
+"validation.title_required" = "Se requiere título";
+"validation.content_required" = "Se requiere contenido de oración";

@@ -5,9 +5,8 @@ struct PrayerDetailView: View {
     let prayer: Prayer
     @Environment(\.modelContext) private var modelContext
     @Environment(\.presentationMode) var presentationMode
-    
+
     @State private var isEditing = false
-    @State private var editedTitle = ""
     @State private var editedContent = ""
     @State private var editedCategory: PrayerCategory = .personal
     @State private var editedTarget = ""
@@ -16,167 +15,27 @@ struct PrayerDetailView: View {
     @State private var prayerViewModel: PrayerViewModel?
     @State private var showingErrorAlert = false
     @State private var errorMessage = ""
-    
+
+    // 기존 기도대상자 목록
+    private var existingTargets: [String] {
+        prayerViewModel?.allTargets() ?? []
+    }
+
+    // 편집 시 자동 생성될 제목
+    private var editedGeneratedTitle: String {
+        Prayer.generateTitle(from: editedTarget, category: editedCategory)
+    }
+
     var body: some View {
         ScrollView {
             VStack(spacing: DesignSystem.Spacing.xl) {
                 VStack(spacing: DesignSystem.Spacing.lg) {
-                    // 제목과 카테고리 섹션
-                    ModernCard {
-                        VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
-                            if isEditing {
-                                ModernTextField(
-                                    title: L.Label.title,
-                                    text: $editedTitle,
-                                    placeholder: L.Placeholder.title
-                                )
-
-                                ModernCategoryPicker(
-                                    title: L.Label.category,
-                                    selection: $editedCategory
-                                )
-                            } else {
-                                VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-                                    HStack(alignment: .top, spacing: DesignSystem.Spacing.md) {
-                                        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-                                            Text(L.Label.title)
-                                                .font(DesignSystem.Typography.callout)
-                                                .foregroundColor(DesignSystem.Colors.primaryText)
-                                                .fontWeight(.medium)
-
-                                            Text(prayer.title)
-                                                .font(DesignSystem.Typography.body)
-                                                .foregroundColor(DesignSystem.Colors.primaryText)
-                                                .padding(DesignSystem.Spacing.md)
-                                                .frame(maxWidth: .infinity, alignment: .leading)
-                                                .frame(minHeight: 48)
-                                                .background(DesignSystem.Colors.secondaryBackground)
-                                                .cornerRadius(DesignSystem.CornerRadius.medium)
-                                        }
-
-                                        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-                                            Text(L.Label.category)
-                                                .font(DesignSystem.Typography.callout)
-                                                .foregroundColor(DesignSystem.Colors.primaryText)
-                                                .fontWeight(.medium)
-                                            
-                                            CategoryTag(category: prayer.category, size: .medium)
-                                                .padding(.top, DesignSystem.Spacing.sm)
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        .padding(DesignSystem.Spacing.lg)
-                    }
-                    
-                    // 내용 섹션
-                    ModernCard {
-                        VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
-                            if isEditing {
-                                ModernTextEditor(
-                                    title: L.Label.prayerContent,
-                                    text: $editedContent,
-                                    placeholder: L.Placeholder.content
-                                )
-                            } else {
-                                VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-                                    Text(L.Label.prayerContent)
-                                        .font(DesignSystem.Typography.callout)
-                                        .foregroundColor(DesignSystem.Colors.primaryText)
-                                        .fontWeight(.medium)
-                                    
-                                    ScrollView {
-                                        Text(prayer.content)
-                                            .font(DesignSystem.Typography.body)
-                                            .foregroundColor(DesignSystem.Colors.primaryText)
-                                            .lineSpacing(4)
-                                            .frame(maxWidth: .infinity, alignment: .topLeading)
-                                            .padding(DesignSystem.Spacing.md)
-                                    }
-                                    .frame(height: 200)
-                                    .background(DesignSystem.Colors.secondaryBackground)
-                                    .cornerRadius(DesignSystem.CornerRadius.medium)
-                                }
-                            }
-                        }
-                        .padding(DesignSystem.Spacing.lg)
-                    }
-                    
-                    // 기도 대상자 섹션
-                    if !prayer.target.isEmpty || isEditing {
-                        ModernCard {
-                            VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
-                                if isEditing {
-                                    ModernTextField(
-                                        title: L.Label.prayerTarget,
-                                        text: $editedTarget,
-                                        placeholder: L.Placeholder.target
-                                    )
-                                } else {
-                                    if !prayer.target.isEmpty {
-                                        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-                                            Text(L.Label.prayerTarget)
-                                                .font(DesignSystem.Typography.callout)
-                                                .foregroundColor(DesignSystem.Colors.primaryText)
-                                                .fontWeight(.medium)
-                                            
-                                            HStack(spacing: DesignSystem.Spacing.md) {
-                                                Image(systemName: "person.fill")
-                                                    .font(.title3)
-                                                    .foregroundColor(DesignSystem.Colors.secondary)
-                                                
-                                                Text(prayer.target)
-                                                    .font(DesignSystem.Typography.body)
-                                                    .foregroundColor(DesignSystem.Colors.primaryText)
-                                                    .padding(DesignSystem.Spacing.md)
-                                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                                    .frame(minHeight: 48)
-                                                    .background(DesignSystem.Colors.secondaryBackground)
-                                                    .cornerRadius(DesignSystem.CornerRadius.medium)
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            .padding(DesignSystem.Spacing.lg)
-                        }
-                    }
-                    
-                    // 기도 정보 카드
-                    if !isEditing {
-                        ModernPrayerInfoCard(prayer: prayer)
-                    }
-                    
-                    // 액션 버튼들
-                    if !isEditing {
-                        VStack(spacing: DesignSystem.Spacing.md) {
-                            ModernButton(
-                                title: L.Button.moveStorage,
-                                style: .primary,
-                                size: .large
-                            ) {
-                                showingStoragePicker = true
-                            }
-
-                            HStack(spacing: DesignSystem.Spacing.md) {
-                                ModernButton(
-                                    title: L.Button.edit,
-                                    style: .secondary,
-                                    size: .medium
-                                ) {
-                                    startEditing()
-                                }
-
-                                ModernButton(
-                                    title: L.Button.delete,
-                                    style: .destructive,
-                                    size: .medium
-                                ) {
-                                    showingDeleteAlert = true
-                                }
-                            }
-                        }
+                    if isEditing {
+                        // 편집 모드 UI
+                        editingView
+                    } else {
+                        // 보기 모드 UI
+                        viewingView
                     }
                 }
                 .padding(.horizontal, DesignSystem.Spacing.xl)
@@ -193,7 +52,7 @@ struct PrayerDetailView: View {
                     Button(L.Button.done) {
                         saveChanges()
                     }
-                    .disabled(editedTitle.isEmpty || editedContent.isEmpty)
+                    .disabled(editedContent.isEmpty)
                     .foregroundColor(DesignSystem.Colors.primary)
                     .fontWeight(.semibold)
                 } else {
@@ -240,9 +99,199 @@ struct PrayerDetailView: View {
             Text(errorMessage)
         }
     }
-    
+
+    // MARK: - Viewing Mode View
+
+    @ViewBuilder
+    private var viewingView: some View {
+        // 제목과 카테고리 섹션
+        ModernCard {
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
+                VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+                    HStack(alignment: .top, spacing: DesignSystem.Spacing.md) {
+                        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+                            Text(L.Label.title)
+                                .font(DesignSystem.Typography.callout)
+                                .foregroundColor(DesignSystem.Colors.primaryText)
+                                .fontWeight(.medium)
+
+                            Text(prayer.title)
+                                .font(DesignSystem.Typography.body)
+                                .foregroundColor(DesignSystem.Colors.primaryText)
+                                .padding(DesignSystem.Spacing.md)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .frame(minHeight: 48)
+                                .background(DesignSystem.Colors.secondaryBackground)
+                                .cornerRadius(DesignSystem.CornerRadius.medium)
+                        }
+
+                        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+                            Text(L.Label.category)
+                                .font(DesignSystem.Typography.callout)
+                                .foregroundColor(DesignSystem.Colors.primaryText)
+                                .fontWeight(.medium)
+
+                            CategoryTag(category: prayer.category, size: .medium)
+                                .padding(.top, DesignSystem.Spacing.sm)
+                        }
+                    }
+                }
+            }
+            .padding(DesignSystem.Spacing.lg)
+        }
+
+        // 내용 섹션
+        ModernCard {
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
+                VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+                    Text(L.Label.prayerContent)
+                        .font(DesignSystem.Typography.callout)
+                        .foregroundColor(DesignSystem.Colors.primaryText)
+                        .fontWeight(.medium)
+
+                    ScrollView {
+                        Text(prayer.content)
+                            .font(DesignSystem.Typography.body)
+                            .foregroundColor(DesignSystem.Colors.primaryText)
+                            .lineSpacing(4)
+                            .frame(maxWidth: .infinity, alignment: .topLeading)
+                            .padding(DesignSystem.Spacing.md)
+                    }
+                    .frame(height: 200)
+                    .background(DesignSystem.Colors.secondaryBackground)
+                    .cornerRadius(DesignSystem.CornerRadius.medium)
+                }
+            }
+            .padding(DesignSystem.Spacing.lg)
+        }
+
+        // 기도 대상자 섹션
+        if !prayer.target.isEmpty {
+            ModernCard {
+                VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
+                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+                        Text(L.Label.prayerTarget)
+                            .font(DesignSystem.Typography.callout)
+                            .foregroundColor(DesignSystem.Colors.primaryText)
+                            .fontWeight(.medium)
+
+                        HStack(spacing: DesignSystem.Spacing.md) {
+                            Image(systemName: "person.fill")
+                                .font(.title3)
+                                .foregroundColor(DesignSystem.Colors.secondary)
+
+                            Text(prayer.target)
+                                .font(DesignSystem.Typography.body)
+                                .foregroundColor(DesignSystem.Colors.primaryText)
+                                .padding(DesignSystem.Spacing.md)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .frame(minHeight: 48)
+                                .background(DesignSystem.Colors.secondaryBackground)
+                                .cornerRadius(DesignSystem.CornerRadius.medium)
+                        }
+                    }
+                }
+                .padding(DesignSystem.Spacing.lg)
+            }
+        }
+
+        // 기도 정보 카드
+        ModernPrayerInfoCard(prayer: prayer)
+
+        // 액션 버튼들
+        VStack(spacing: DesignSystem.Spacing.md) {
+            ModernButton(
+                title: L.Button.moveStorage,
+                style: .primary,
+                size: .large
+            ) {
+                showingStoragePicker = true
+            }
+
+            HStack(spacing: DesignSystem.Spacing.md) {
+                ModernButton(
+                    title: L.Button.edit,
+                    style: .secondary,
+                    size: .medium
+                ) {
+                    startEditing()
+                }
+
+                ModernButton(
+                    title: L.Button.delete,
+                    style: .destructive,
+                    size: .medium
+                ) {
+                    showingDeleteAlert = true
+                }
+            }
+        }
+    }
+
+    // MARK: - Editing Mode View
+
+    @ViewBuilder
+    private var editingView: some View {
+        // 기도대상자 선택
+        ModernCard {
+            TargetPicker(
+                selectedTarget: $editedTarget,
+                existingTargets: existingTargets
+            )
+            .padding(DesignSystem.Spacing.lg)
+        }
+
+        // 내용 편집
+        ModernCard {
+            VStack(spacing: DesignSystem.Spacing.md) {
+                ModernTextEditor(
+                    title: L.Label.prayerContent,
+                    text: $editedContent,
+                    placeholder: L.Placeholder.content
+                )
+            }
+            .padding(DesignSystem.Spacing.lg)
+        }
+
+        // 카테고리 선택
+        ModernFormSection(title: L.Label.classification) {
+            VStack(spacing: DesignSystem.Spacing.md) {
+                ModernCategoryPicker(
+                    title: L.Label.category,
+                    selection: $editedCategory
+                )
+            }
+        }
+
+        // 생성될 제목 미리보기
+        ModernCard(
+            backgroundColor: DesignSystem.Colors.primary.opacity(0.05),
+            cornerRadius: DesignSystem.CornerRadius.medium,
+            shadowStyle: DesignSystem.Shadow.small
+        ) {
+            HStack(spacing: DesignSystem.Spacing.md) {
+                Image(systemName: "text.quote")
+                    .font(.title3)
+                    .foregroundColor(DesignSystem.Colors.primary)
+
+                VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
+                    Text(L.Label.title)
+                        .font(DesignSystem.Typography.caption)
+                        .foregroundColor(DesignSystem.Colors.secondaryText)
+
+                    Text(editedGeneratedTitle)
+                        .font(DesignSystem.Typography.callout)
+                        .fontWeight(.medium)
+                        .foregroundColor(DesignSystem.Colors.primaryText)
+                }
+
+                Spacer()
+            }
+            .padding(DesignSystem.Spacing.md)
+        }
+    }
+
     private func startEditing() {
-        editedTitle = prayer.title
         editedContent = prayer.content
         editedCategory = prayer.category
         editedTarget = prayer.target
@@ -250,17 +299,16 @@ struct PrayerDetailView: View {
             isEditing = true
         }
     }
-    
+
     private func cancelEditing() {
         withAnimation(.easeInOut(duration: 0.3)) {
             isEditing = false
         }
-        editedTitle = ""
         editedContent = ""
         editedCategory = .personal
         editedTarget = ""
     }
-    
+
     private func saveChanges() {
         guard let viewModel = prayerViewModel else {
             showError(L.Error.updateFailed)
@@ -268,32 +316,27 @@ struct PrayerDetailView: View {
         }
 
         // 입력 검증
-        guard !editedTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
-              !editedContent.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-            showError(L.Error.emptyFields)
+        guard !editedContent.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            showError(L.Validation.contentRequired)
             return
         }
 
         // 길이 검증
-        if editedTitle.count > 100 {
-            showError(L.Error.titleTooLong)
-            return
-        }
-
         if editedContent.count > 2000 {
             showError(L.Error.contentTooLong)
             return
         }
-        
+
         do {
+            // 제목을 자동 생성하여 업데이트
             try viewModel.updatePrayer(
                 prayer,
-                title: editedTitle.trimmingCharacters(in: .whitespacesAndNewlines),
+                title: editedGeneratedTitle,
                 content: editedContent.trimmingCharacters(in: .whitespacesAndNewlines),
                 category: editedCategory,
                 target: editedTarget.trimmingCharacters(in: .whitespacesAndNewlines)
             )
-            
+
             PrayerLogger.shared.userAction("기도 수정")
             withAnimation(DesignSystem.Animation.standard) {
                 isEditing = false
@@ -348,9 +391,9 @@ struct PrayerDetailView: View {
             PrayerLogger.shared.prayerOperationFailed("즐겨찾기 토글", error: error)
         }
     }
-    
+
     private func showError(_ message: String) {
         errorMessage = message
         showingErrorAlert = true
     }
-} 
+}

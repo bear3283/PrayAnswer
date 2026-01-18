@@ -123,3 +123,11 @@
 // MARK: - Validation
 "validation.title_required" = "제목이 필요합니다";
 "validation.content_required" = "기도 내용이 필요합니다";
+
+// MARK: - Target (기도대상자)
+"target.myself" = "본인";
+"target.select_target" = "기도대상자 선택";
+"target.add_new" = "새 대상자 추가";
+"target.new_placeholder" = "새 대상자 이름 입력";
+"target.title_format" = "%@을 위한 %@ 기도";
+"target.prayer_for_format" = "%@을 위한 기도";

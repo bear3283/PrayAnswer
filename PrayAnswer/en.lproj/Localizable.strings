@@ -123,3 +123,11 @@
 // MARK: - Validation
 "validation.title_required" = "Title is required";
 "validation.content_required" = "Prayer content is required";
+
+// MARK: - Target (Prayer Target)
+"target.myself" = "Myself";
+"target.select_target" = "Select Prayer Target";
+"target.add_new" = "Add New Target";
+"target.new_placeholder" = "Enter new target name";
+"target.title_format" = "%@ - %@ Prayer";
+"target.prayer_for_format" = "Prayer for %@";

@@ -123,3 +123,11 @@
 // MARK: - Validation
 "validation.title_required" = "Se requiere título";
 "validation.content_required" = "Se requiere contenido de oración";
+
+// MARK: - Target (Destinatario)
+"target.myself" = "Yo mismo";
+"target.select_target" = "Seleccionar Destinatario";
+"target.add_new" = "Agregar Nuevo Destinatario";
+"target.new_placeholder" = "Ingrese nombre del destinatario";
+"target.title_format" = "%@ - Oración de %@";
+"target.prayer_for_format" = "Oración para %@";

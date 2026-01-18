@@ -132,6 +132,14 @@ extension Prayer {
         return !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
                !content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
+
+    // MARK: - Title Generation
+
+    /// 기도대상자와 카테고리로부터 제목 자동 생성
+    static func generateTitle(from target: String, category: PrayerCategory) -> String {
+        let targetName = target.isEmpty ? L.Target.myself : target
+        return L.Target.titleFormat(targetName, category.displayName)
+    }
     
     var validationErrors: [String] {
         var errors: [String] = []

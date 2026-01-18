@@ -184,6 +184,22 @@ enum L {
         static let titleRequired = NSLocalizedString("validation.title_required", comment: "Title required validation")
         static let contentRequired = NSLocalizedString("validation.content_required", comment: "Content required validation")
     }
+
+    // MARK: - Target (기도대상자)
+    enum Target {
+        static let myself = NSLocalizedString("target.myself", comment: "Myself (self) as prayer target")
+        static let selectTarget = NSLocalizedString("target.select_target", comment: "Select prayer target")
+        static let addNewTarget = NSLocalizedString("target.add_new", comment: "Add new target")
+        static let newTargetPlaceholder = NSLocalizedString("target.new_placeholder", comment: "New target name placeholder")
+
+        static func titleFormat(_ target: String, _ category: String) -> String {
+            String(format: NSLocalizedString("target.title_format", comment: "Auto-generated title format"), target, category)
+        }
+
+        static func prayerForFormat(_ target: String) -> String {
+            String(format: NSLocalizedString("target.prayer_for_format", comment: "Prayer for someone format"), target)
+        }
+    }
 }
 
 // MARK: - Prayer Storage Extension for Localization

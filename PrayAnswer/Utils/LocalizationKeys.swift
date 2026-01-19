@@ -200,6 +200,45 @@ enum L {
             String(format: NSLocalizedString("target.prayer_for_format", comment: "Prayer for someone format"), target)
         }
     }
+
+    // MARK: - D-Day
+    enum DDay {
+        static let title = NSLocalizedString("dday.title", comment: "D-Day section title")
+        static let setTargetDate = NSLocalizedString("dday.set_target_date", comment: "Set target date")
+        static let targetDate = NSLocalizedString("dday.target_date", comment: "Target date label")
+        static let enableNotification = NSLocalizedString("dday.enable_notification", comment: "Enable notification toggle")
+        static let notificationDescription = NSLocalizedString("dday.notification_description", comment: "Notification setting description")
+        static let clearDate = NSLocalizedString("dday.clear_date", comment: "Clear date button")
+
+        // D-Day 표시
+        static let today = NSLocalizedString("dday.today", comment: "D-Day (today)")
+        static let approaching = NSLocalizedString("dday.approaching", comment: "D-Day approaching")
+        static let passed = NSLocalizedString("dday.passed", comment: "D-Day passed")
+
+        // 알림 메시지
+        static let notificationTitle = NSLocalizedString("dday.notification_title", comment: "D-Day notification title")
+        static let notificationDDayTitle = NSLocalizedString("dday.notification_dday_title", comment: "D-Day notification title for D-Day")
+
+        static func notificationWeekBefore(_ target: String) -> String {
+            String(format: NSLocalizedString("dday.notification_week_before", comment: "Notification 7 days before"), target)
+        }
+
+        static func notification3DaysBefore(_ target: String) -> String {
+            String(format: NSLocalizedString("dday.notification_3days_before", comment: "Notification 3 days before"), target)
+        }
+
+        static func notification1DayBefore(_ target: String) -> String {
+            String(format: NSLocalizedString("dday.notification_1day_before", comment: "Notification 1 day before"), target)
+        }
+
+        static func notificationDDay(_ target: String) -> String {
+            String(format: NSLocalizedString("dday.notification_dday", comment: "Notification on D-Day"), target)
+        }
+
+        static func notificationGeneric(_ target: String, _ days: Int) -> String {
+            String(format: NSLocalizedString("dday.notification_generic", comment: "Generic notification"), target, days)
+        }
+    }
 }
 
 // MARK: - Prayer Storage Extension for Localization

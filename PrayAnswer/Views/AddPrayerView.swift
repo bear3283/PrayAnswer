@@ -7,6 +7,8 @@ struct AddPrayerView: View {
     @State private var content = ""
     @State private var category: PrayerCategory = .personal
     @State private var target = ""
+    @State private var targetDate: Date? = nil
+    @State private var notificationEnabled: Bool = false
     @State private var showingAlert = false
     @State private var showingSuccessAlert = false
     @State private var alertMessage = ""
@@ -54,6 +56,15 @@ struct AddPrayerView: View {
                                     selection: $category
                                 )
                             }
+                        }
+
+                        // D-Day 섹션
+                        ModernCard {
+                            DDayFormSection(
+                                targetDate: $targetDate,
+                                notificationEnabled: $notificationEnabled
+                            )
+                            .padding(DesignSystem.Spacing.lg)
                         }
 
                         // 생성될 기도 제목 미리보기
@@ -187,12 +198,19 @@ struct AddPrayerView: View {
 
         do {
             // 기도 저장 (제목은 자동 생성)
-            try viewModel.addPrayer(
+            let prayer = try viewModel.addPrayer(
                 title: generatedTitle,
                 content: content.trimmingCharacters(in: .whitespacesAndNewlines),
                 category: category,
-                target: target.trimmingCharacters(in: .whitespacesAndNewlines)
+                target: target.trimmingCharacters(in: .whitespacesAndNewlines),
+                targetDate: targetDate,
+                notificationEnabled: notificationEnabled
             )
+
+            // D-Day 알림 스케줄링
+            if notificationEnabled, let date = targetDate {
+                NotificationManager.shared.scheduleNotifications(for: prayer, targetDate: date)
+            }
 
             PrayerLogger.shared.userAction("기도 저장")
 
@@ -216,6 +234,13 @@ struct AddPrayerView: View {
         content = ""
         category = .personal
         target = ""
+        targetDate = nil
+        notificationEnabled = false
+
+        // 폼 초기화 후 내용 필드에 다시 포커스
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            isContentFieldFocused = true
+        }
     }
 
     private func updateWidgetData() {

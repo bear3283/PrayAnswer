@@ -129,5 +129,23 @@
 "target.select_target" = "기도대상자 선택";
 "target.add_new" = "새 대상자 추가";
 "target.new_placeholder" = "새 대상자 이름 입력";
-"target.title_format" = "%@을 위한 %@ 기도";
-"target.prayer_for_format" = "%@을 위한 기도";
+"target.title_format" = "%@을(를) 위한 %@ 기도";
+"target.prayer_for_format" = "%@을(를) 위한 기도";
+
+// MARK: - D-Day
+"dday.title" = "D-Day";
+"dday.set_target_date" = "목표 날짜 설정";
+"dday.target_date" = "목표 날짜";
+"dday.enable_notification" = "알림 받기";
+"dday.notification_description" = "D-7, D-3, D-1, D-Day에 알림을 받습니다";
+"dday.clear_date" = "날짜 삭제";
+"dday.today" = "오늘이 D-Day입니다";
+"dday.approaching" = "D-Day가 다가오고 있습니다";
+"dday.passed" = "D-Day가 지났습니다";
+"dday.notification_title" = "기도 알림";
+"dday.notification_dday_title" = "오늘이 D-Day입니다!";
+"dday.notification_week_before" = "%@을(를) 위한 기도 D-Day까지 일주일 남았습니다";
+"dday.notification_3days_before" = "%@을(를) 위한 기도 D-Day까지 3일 남았습니다";
+"dday.notification_1day_before" = "%@을(를) 위한 기도 D-Day가 내일입니다";
+"dday.notification_dday" = "%@을(를) 위한 기도 D-Day입니다. 기도로 응원해주세요!";
+"dday.notification_generic" = "%@을(를) 위한 기도 D-Day까지 %d일 남았습니다";

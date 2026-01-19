@@ -123,3 +123,29 @@
 // MARK: - Validation
 "validation.title_required" = "Title is required";
 "validation.content_required" = "Prayer content is required";
+
+// MARK: - Target (Prayer Target)
+"target.myself" = "Myself";
+"target.select_target" = "Select Prayer Target";
+"target.add_new" = "Add New Target";
+"target.new_placeholder" = "Enter new target name";
+"target.title_format" = "%@ Prayer for %@";
+"target.prayer_for_format" = "Prayer for %@";
+
+// MARK: - D-Day
+"dday.title" = "D-Day";
+"dday.set_target_date" = "Set Target Date";
+"dday.target_date" = "Target Date";
+"dday.enable_notification" = "Enable Notifications";
+"dday.notification_description" = "Receive notifications on D-7, D-3, D-1, and D-Day";
+"dday.clear_date" = "Clear Date";
+"dday.today" = "Today is D-Day";
+"dday.approaching" = "D-Day is approaching";
+"dday.passed" = "D-Day has passed";
+"dday.notification_title" = "Prayer Reminder";
+"dday.notification_dday_title" = "Today is D-Day!";
+"dday.notification_week_before" = "One week until D-Day for prayer for %@";
+"dday.notification_3days_before" = "3 days until D-Day for prayer for %@";
+"dday.notification_1day_before" = "Tomorrow is D-Day for prayer for %@";
+"dday.notification_dday" = "Today is D-Day for prayer for %@. Send your prayers!";
+"dday.notification_generic" = "%d days until D-Day for prayer for %@";

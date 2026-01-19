@@ -50,16 +50,21 @@ struct ModernPrayerRow: View {
                             Image(systemName: "person.fill")
                                 .font(.caption2)
                                 .foregroundColor(DesignSystem.Colors.secondary)
-                            
+
                             Text(prayer.target)
                                 .font(DesignSystem.Typography.caption2)
                                 .foregroundColor(DesignSystem.Colors.secondaryText)
                                 .lineLimit(1)
                         }
                     }
-                    
+
+                    // D-Day 배지 표시
+                    if prayer.hasTargetDate {
+                        DDayBadge(prayer: prayer, size: .small)
+                    }
+
                     Spacer()
-                    
+
                     Text(prayer.formattedCreatedDate)
                         .font(DesignSystem.Typography.caption2)
                         .foregroundColor(DesignSystem.Colors.tertiaryText)
@@ -508,7 +513,7 @@ struct ModernStorageOptionCard: View {
 struct FavoriteButton: View {
     let isFavorite: Bool
     let onTap: () -> Void
-    
+
     var body: some View {
         Button(action: onTap) {
             Image(systemName: isFavorite ? "heart.fill" : "heart")
@@ -528,5 +533,333 @@ struct FavoriteButton: View {
         .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isFavorite)
         .accessibilityLabel(isFavorite ? L.Accessibility.favoriteRemove : L.Accessibility.favoriteAdd)
         .accessibilityHint(isFavorite ? L.Accessibility.favoriteRemoveHint : L.Accessibility.favoriteAddHint)
+    }
+}
+
+// MARK: - D-Day Components
+
+/// D-Day 표시 배지 컴포넌트
+struct DDayBadge: View {
+    let prayer: Prayer
+
+    enum Size {
+        case small
+        case medium
+        case large
+
+        var font: Font {
+            switch self {
+            case .small: return DesignSystem.Typography.caption2
+            case .medium: return DesignSystem.Typography.caption
+            case .large: return DesignSystem.Typography.callout
+            }
+        }
+
+        var padding: CGFloat {
+            switch self {
+            case .small: return DesignSystem.Spacing.xs
+            case .medium: return DesignSystem.Spacing.sm
+            case .large: return DesignSystem.Spacing.md
+            }
+        }
+
+        var iconSize: CGFloat {
+            switch self {
+            case .small: return 10
+            case .medium: return 12
+            case .large: return 14
+            }
+        }
+    }
+
+    var size: Size = .medium
+
+    var body: some View {
+        if let dDayText = prayer.dDayDisplayText {
+            HStack(spacing: DesignSystem.Spacing.xs) {
+                Image(systemName: statusIcon)
+                    .font(.system(size: size.iconSize, weight: .semibold))
+
+                Text(dDayText)
+                    .font(size.font)
+                    .fontWeight(.bold)
+            }
+            .foregroundColor(statusColor)
+            .padding(.horizontal, size.padding + 2)
+            .padding(.vertical, size.padding)
+            .background(statusColor.opacity(0.15))
+            .cornerRadius(DesignSystem.CornerRadius.small)
+            .overlay(
+                RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.small)
+                    .stroke(statusColor.opacity(0.3), lineWidth: 1)
+            )
+        }
+    }
+
+    private var statusIcon: String {
+        if prayer.isDDay {
+            return "star.fill"
+        } else if prayer.isDDayPassed {
+            return "clock.badge.exclamationmark"
+        } else if prayer.isDDayApproaching {
+            return "bell.fill"
+        } else {
+            return "calendar"
+        }
+    }
+
+    private var statusColor: Color {
+        if prayer.isDDay {
+            return DesignSystem.Colors.answered // 오늘 D-Day - 강조 색상
+        } else if prayer.isDDayPassed {
+            return DesignSystem.Colors.unanswered // D-Day 지남 - 회색/빨간색
+        } else if prayer.isDDayApproaching {
+            return Color.orange // D-Day 임박 - 주황색
+        } else {
+            return DesignSystem.Colors.primary // 일반 - 기본 색상
+        }
+    }
+}
+
+/// D-Day 설정 섹션 (폼에서 사용)
+struct DDayFormSection: View {
+    @Binding var targetDate: Date?
+    @Binding var notificationEnabled: Bool
+    @State private var showDatePicker = false
+    @State private var tempDate = Date()
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
+            // 섹션 타이틀
+            Text(L.DDay.title)
+                .font(DesignSystem.Typography.callout)
+                .foregroundColor(DesignSystem.Colors.primaryText)
+                .fontWeight(.medium)
+
+            // 날짜 선택 버튼
+            Button(action: {
+                if targetDate == nil {
+                    tempDate = Calendar.current.date(byAdding: .day, value: 7, to: Date()) ?? Date()
+                } else {
+                    tempDate = targetDate!
+                }
+                showDatePicker = true
+            }) {
+                HStack {
+                    Image(systemName: targetDate == nil ? "calendar.badge.plus" : "calendar")
+                        .font(.title3)
+                        .foregroundColor(DesignSystem.Colors.primary)
+
+                    if let date = targetDate {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(DateFormatter.compact.string(from: date))
+                                .font(DesignSystem.Typography.body)
+                                .foregroundColor(DesignSystem.Colors.primaryText)
+
+                            if let daysRemaining = daysUntilDate(date) {
+                                Text(dDayText(days: daysRemaining))
+                                    .font(DesignSystem.Typography.caption2)
+                                    .foregroundColor(dDayColor(days: daysRemaining))
+                            }
+                        }
+                    } else {
+                        Text(L.DDay.setTargetDate)
+                            .font(DesignSystem.Typography.body)
+                            .foregroundColor(DesignSystem.Colors.secondaryText)
+                    }
+
+                    Spacer()
+
+                    if targetDate != nil {
+                        Button(action: {
+                            withAnimation {
+                                targetDate = nil
+                                notificationEnabled = false
+                            }
+                        }) {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.title3)
+                                .foregroundColor(DesignSystem.Colors.tertiaryText)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    } else {
+                        Image(systemName: "chevron.right")
+                            .font(.caption)
+                            .foregroundColor(DesignSystem.Colors.secondaryText)
+                    }
+                }
+                .padding(DesignSystem.Spacing.md)
+                .background(DesignSystem.Colors.secondaryBackground)
+                .cornerRadius(DesignSystem.CornerRadius.medium)
+            }
+            .buttonStyle(PlainButtonStyle())
+
+            // 알림 토글 (날짜가 설정된 경우에만 표시)
+            if targetDate != nil {
+                VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+                    Toggle(isOn: $notificationEnabled) {
+                        HStack(spacing: DesignSystem.Spacing.sm) {
+                            Image(systemName: notificationEnabled ? "bell.fill" : "bell")
+                                .foregroundColor(notificationEnabled ? DesignSystem.Colors.primary : DesignSystem.Colors.secondaryText)
+
+                            Text(L.DDay.enableNotification)
+                                .font(DesignSystem.Typography.body)
+                                .foregroundColor(DesignSystem.Colors.primaryText)
+                        }
+                    }
+                    .tint(DesignSystem.Colors.primary)
+                    .padding(DesignSystem.Spacing.md)
+                    .background(DesignSystem.Colors.secondaryBackground)
+                    .cornerRadius(DesignSystem.CornerRadius.medium)
+
+                    if notificationEnabled {
+                        Text(L.DDay.notificationDescription)
+                            .font(DesignSystem.Typography.caption2)
+                            .foregroundColor(DesignSystem.Colors.tertiaryText)
+                            .padding(.horizontal, DesignSystem.Spacing.sm)
+                    }
+                }
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
+        .animation(DesignSystem.Animation.quick, value: targetDate != nil)
+        .sheet(isPresented: $showDatePicker) {
+            DDayDatePickerSheet(
+                selectedDate: $tempDate,
+                onSave: {
+                    targetDate = tempDate
+                },
+                onCancel: {}
+            )
+        }
+    }
+
+    private func daysUntilDate(_ date: Date) -> Int? {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        let target = calendar.startOfDay(for: date)
+        return calendar.dateComponents([.day], from: today, to: target).day
+    }
+
+    private func dDayText(days: Int) -> String {
+        if days == 0 {
+            return "D-Day"
+        } else if days > 0 {
+            return "D-\(days)"
+        } else {
+            return "D+\(abs(days))"
+        }
+    }
+
+    private func dDayColor(days: Int) -> Color {
+        if days == 0 {
+            return DesignSystem.Colors.answered
+        } else if days < 0 {
+            return DesignSystem.Colors.unanswered
+        } else if days <= 7 {
+            return Color.orange
+        } else {
+            return DesignSystem.Colors.primary
+        }
+    }
+}
+
+/// D-Day 날짜 선택 시트
+struct DDayDatePickerSheet: View {
+    @Binding var selectedDate: Date
+    let onSave: () -> Void
+    let onCancel: () -> Void
+    @Environment(\.presentationMode) var presentationMode
+
+    var body: some View {
+        NavigationView {
+            VStack(spacing: DesignSystem.Spacing.xl) {
+                // 헤더
+                VStack(spacing: DesignSystem.Spacing.sm) {
+                    Image(systemName: "calendar.badge.clock")
+                        .font(.system(size: 50))
+                        .foregroundColor(DesignSystem.Colors.primary)
+
+                    Text(L.DDay.targetDate)
+                        .font(DesignSystem.Typography.title2)
+                        .foregroundColor(DesignSystem.Colors.primaryText)
+                }
+                .padding(.top, DesignSystem.Spacing.xl)
+
+                // D-Day 미리보기
+                if let days = daysUntilDate(selectedDate) {
+                    HStack(spacing: DesignSystem.Spacing.sm) {
+                        Text(dDayText(days: days))
+                            .font(DesignSystem.Typography.title)
+                            .fontWeight(.bold)
+                            .foregroundColor(dDayColor(days: days))
+                    }
+                    .padding(DesignSystem.Spacing.md)
+                    .background(dDayColor(days: days).opacity(0.1))
+                    .cornerRadius(DesignSystem.CornerRadius.medium)
+                }
+
+                // 날짜 피커
+                DatePicker(
+                    "",
+                    selection: $selectedDate,
+                    displayedComponents: .date
+                )
+                .datePickerStyle(GraphicalDatePickerStyle())
+                .padding(.horizontal, DesignSystem.Spacing.lg)
+
+                Spacer()
+            }
+            .background(DesignSystem.Colors.background)
+            .navigationTitle(L.DDay.setTargetDate)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(L.Button.cancel) {
+                        onCancel()
+                        presentationMode.wrappedValue.dismiss()
+                    }
+                    .foregroundColor(DesignSystem.Colors.secondaryText)
+                }
+
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(L.Button.done) {
+                        onSave()
+                        presentationMode.wrappedValue.dismiss()
+                    }
+                    .fontWeight(.semibold)
+                    .foregroundColor(DesignSystem.Colors.primary)
+                }
+            }
+        }
+    }
+
+    private func daysUntilDate(_ date: Date) -> Int? {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        let target = calendar.startOfDay(for: date)
+        return calendar.dateComponents([.day], from: today, to: target).day
+    }
+
+    private func dDayText(days: Int) -> String {
+        if days == 0 {
+            return "D-Day"
+        } else if days > 0 {
+            return "D-\(days)"
+        } else {
+            return "D+\(abs(days))"
+        }
+    }
+
+    private func dDayColor(days: Int) -> Color {
+        if days == 0 {
+            return DesignSystem.Colors.answered
+        } else if days < 0 {
+            return DesignSystem.Colors.unanswered
+        } else if days <= 7 {
+            return Color.orange
+        } else {
+            return DesignSystem.Colors.primary
+        }
     }
 } 

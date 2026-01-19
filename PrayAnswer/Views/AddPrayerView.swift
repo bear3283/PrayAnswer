@@ -8,6 +8,8 @@ struct AddPrayerView: View {
     @State private var content = ""
     @State private var category: PrayerCategory = .personal
     @State private var target = ""
+    @State private var targetDate: Date? = nil
+    @State private var notificationEnabled: Bool = false
     @State private var showingAlert = false
     @State private var showingSuccessAlert = false
     @State private var alertMessage = ""
@@ -55,7 +57,16 @@ struct AddPrayerView: View {
                                 )
                             }
                         }
-                        
+
+                        // D-Day 섹션
+                        ModernCard {
+                            DDayFormSection(
+                                targetDate: $targetDate,
+                                notificationEnabled: $notificationEnabled
+                            )
+                            .padding(DesignSystem.Spacing.lg)
+                        }
+
                         // 저장 안내
                         ModernCard(
                             backgroundColor: DesignSystem.Colors.wait.opacity(0.1),
@@ -164,21 +175,28 @@ struct AddPrayerView: View {
         
         do {
             // 기도 저장
-            try viewModel.addPrayer(
+            let prayer = try viewModel.addPrayer(
                 title: title.trimmingCharacters(in: .whitespacesAndNewlines),
                 content: content.trimmingCharacters(in: .whitespacesAndNewlines),
                 category: category,
-                target: target.trimmingCharacters(in: .whitespacesAndNewlines)
+                target: target.trimmingCharacters(in: .whitespacesAndNewlines),
+                targetDate: targetDate,
+                notificationEnabled: notificationEnabled
             )
-            
+
+            // D-Day 알림 스케줄링
+            if notificationEnabled, let date = targetDate {
+                NotificationManager.shared.scheduleNotifications(for: prayer, targetDate: date)
+            }
+
             PrayerLogger.shared.userAction("기도 저장")
-            
+
             // 위젯 데이터 업데이트
             updateWidgetData()
-            
+
             // 폼 초기화
             resetForm()
-            
+
             // 성공 메시지 표시
             showingSuccessAlert = true
 
@@ -194,7 +212,9 @@ struct AddPrayerView: View {
         content = ""
         category = .personal
         target = ""
-        
+        targetDate = nil
+        notificationEnabled = false
+
         // 폼 초기화 후 기도제목 필드에 다시 포커스
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
             isTitleFieldFocused = true

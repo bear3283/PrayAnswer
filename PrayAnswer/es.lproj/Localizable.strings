@@ -123,3 +123,29 @@
 // MARK: - Validation
 "validation.title_required" = "Se requiere título";
 "validation.content_required" = "Se requiere contenido de oración";
+
+// MARK: - Target (Prayer Target)
+"target.myself" = "Yo mismo";
+"target.select_target" = "Seleccionar Destinatario";
+"target.add_new" = "Agregar Nuevo Destinatario";
+"target.new_placeholder" = "Ingrese nombre del destinatario";
+"target.title_format" = "Oración de %@ para %@";
+"target.prayer_for_format" = "Oración para %@";
+
+// MARK: - D-Day
+"dday.title" = "Día D";
+"dday.set_target_date" = "Establecer Fecha Objetivo";
+"dday.target_date" = "Fecha Objetivo";
+"dday.enable_notification" = "Activar Notificaciones";
+"dday.notification_description" = "Recibir notificaciones en D-7, D-3, D-1 y Día D";
+"dday.clear_date" = "Borrar Fecha";
+"dday.today" = "Hoy es el Día D";
+"dday.approaching" = "El Día D se acerca";
+"dday.passed" = "El Día D ha pasado";
+"dday.notification_title" = "Recordatorio de Oración";
+"dday.notification_dday_title" = "¡Hoy es el Día D!";
+"dday.notification_week_before" = "Una semana hasta el Día D para la oración por %@";
+"dday.notification_3days_before" = "3 días hasta el Día D para la oración por %@";
+"dday.notification_1day_before" = "Mañana es el Día D para la oración por %@";
+"dday.notification_dday" = "Hoy es el Día D para la oración por %@. ¡Envía tus oraciones!";
+"dday.notification_generic" = "%d días hasta el Día D para la oración por %@";

@@ -5,12 +5,14 @@ struct PrayerDetailView: View {
     let prayer: Prayer
     @Environment(\.modelContext) private var modelContext
     @Environment(\.presentationMode) var presentationMode
-    
+
     @State private var isEditing = false
     @State private var editedTitle = ""
     @State private var editedContent = ""
     @State private var editedCategory: PrayerCategory = .personal
     @State private var editedTarget = ""
+    @State private var editedTargetDate: Date? = nil
+    @State private var editedNotificationEnabled: Bool = false
     @State private var showingStoragePicker = false
     @State private var showingDeleteAlert = false
     @State private var prayerViewModel: PrayerViewModel?
@@ -120,12 +122,12 @@ struct PrayerDetailView: View {
                                                 .font(DesignSystem.Typography.callout)
                                                 .foregroundColor(DesignSystem.Colors.primaryText)
                                                 .fontWeight(.medium)
-                                            
+
                                             HStack(spacing: DesignSystem.Spacing.md) {
                                                 Image(systemName: "person.fill")
                                                     .font(.title3)
                                                     .foregroundColor(DesignSystem.Colors.secondary)
-                                                
+
                                                 Text(prayer.target)
                                                     .font(DesignSystem.Typography.body)
                                                     .foregroundColor(DesignSystem.Colors.primaryText)
@@ -142,7 +144,68 @@ struct PrayerDetailView: View {
                             .padding(DesignSystem.Spacing.lg)
                         }
                     }
-                    
+
+                    // D-Day 섹션
+                    if isEditing {
+                        // 편집 모드: D-Day 설정 폼
+                        ModernCard {
+                            DDayFormSection(
+                                targetDate: $editedTargetDate,
+                                notificationEnabled: $editedNotificationEnabled
+                            )
+                            .padding(DesignSystem.Spacing.lg)
+                        }
+                    } else if prayer.hasTargetDate {
+                        // 보기 모드: D-Day 정보 표시
+                        ModernCard {
+                            VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
+                                Text(L.DDay.title)
+                                    .font(DesignSystem.Typography.callout)
+                                    .foregroundColor(DesignSystem.Colors.primaryText)
+                                    .fontWeight(.medium)
+
+                                HStack(spacing: DesignSystem.Spacing.md) {
+                                    // D-Day 배지
+                                    DDayBadge(prayer: prayer, size: .large)
+
+                                    Spacer()
+
+                                    // 목표 날짜
+                                    if let targetDate = prayer.targetDate {
+                                        VStack(alignment: .trailing, spacing: DesignSystem.Spacing.xs) {
+                                            Text(L.DDay.targetDate)
+                                                .font(DesignSystem.Typography.caption2)
+                                                .foregroundColor(DesignSystem.Colors.tertiaryText)
+
+                                            Text(DateFormatter.compact.string(from: targetDate))
+                                                .font(DesignSystem.Typography.callout)
+                                                .fontWeight(.medium)
+                                                .foregroundColor(DesignSystem.Colors.primaryText)
+                                        }
+                                    }
+                                }
+                                .padding(DesignSystem.Spacing.md)
+                                .background(DesignSystem.Colors.secondaryBackground)
+                                .cornerRadius(DesignSystem.CornerRadius.medium)
+
+                                // 알림 상태
+                                if prayer.notificationEnabled {
+                                    HStack(spacing: DesignSystem.Spacing.sm) {
+                                        Image(systemName: "bell.fill")
+                                            .font(.caption)
+                                            .foregroundColor(DesignSystem.Colors.primary)
+
+                                        Text(L.DDay.notificationDescription)
+                                            .font(DesignSystem.Typography.caption2)
+                                            .foregroundColor(DesignSystem.Colors.secondaryText)
+                                    }
+                                    .padding(.horizontal, DesignSystem.Spacing.sm)
+                                }
+                            }
+                            .padding(DesignSystem.Spacing.lg)
+                        }
+                    }
+
                     // 기도 정보 카드
                     if !isEditing {
                         ModernPrayerInfoCard(prayer: prayer)
@@ -246,11 +309,13 @@ struct PrayerDetailView: View {
         editedContent = prayer.content
         editedCategory = prayer.category
         editedTarget = prayer.target
+        editedTargetDate = prayer.targetDate
+        editedNotificationEnabled = prayer.notificationEnabled
         withAnimation(.easeInOut(duration: 0.3)) {
             isEditing = true
         }
     }
-    
+
     private func cancelEditing() {
         withAnimation(.easeInOut(duration: 0.3)) {
             isEditing = false
@@ -259,6 +324,8 @@ struct PrayerDetailView: View {
         editedContent = ""
         editedCategory = .personal
         editedTarget = ""
+        editedTargetDate = nil
+        editedNotificationEnabled = false
     }
     
     private func saveChanges() {
@@ -291,9 +358,11 @@ struct PrayerDetailView: View {
                 title: editedTitle.trimmingCharacters(in: .whitespacesAndNewlines),
                 content: editedContent.trimmingCharacters(in: .whitespacesAndNewlines),
                 category: editedCategory,
-                target: editedTarget.trimmingCharacters(in: .whitespacesAndNewlines)
+                target: editedTarget.trimmingCharacters(in: .whitespacesAndNewlines),
+                targetDate: editedTargetDate,
+                notificationEnabled: editedNotificationEnabled
             )
-            
+
             PrayerLogger.shared.userAction("기도 수정")
             withAnimation(DesignSystem.Animation.standard) {
                 isEditing = false

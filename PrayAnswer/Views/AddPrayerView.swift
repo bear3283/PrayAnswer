@@ -15,6 +15,11 @@ struct AddPrayerView: View {
     @State private var prayerViewModel: PrayerViewModel?
     @FocusState private var isContentFieldFocused: Bool
 
+    // Voice Recording
+    @State private var showVoiceRecordingOverlay = false
+    @State private var showVoicePermissionAlert = false
+    private var speechManager = SpeechRecognitionManager.shared
+
     // 기존 기도대상자 목록
     private var existingTargets: [String] {
         prayerViewModel?.allTargets() ?? []
@@ -36,14 +41,51 @@ struct AddPrayerView: View {
                             .padding(DesignSystem.Spacing.lg)
                         }
 
-                        // 기도 내용 입력
+                        // 기도 내용 입력 (음성 녹음 버튼 포함)
                         ModernCard {
                             VStack(spacing: DesignSystem.Spacing.md) {
-                                ModernTextEditor(
-                                    title: L.Label.prayerContent,
-                                    text: $content,
-                                    placeholder: L.Placeholder.content
-                                )
+                                VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+                                    HStack {
+                                        Text(L.Label.prayerContent)
+                                            .font(DesignSystem.Typography.callout)
+                                            .foregroundColor(DesignSystem.Colors.primaryText)
+                                            .fontWeight(.medium)
+
+                                        Spacer()
+
+                                        // 음성 녹음 버튼
+                                        VoiceRecordingButton(isRecording: speechManager.isRecording) {
+                                            startVoiceRecording()
+                                        }
+                                    }
+
+                                    ZStack(alignment: .topLeading) {
+                                        TextEditor(text: $content)
+                                            .font(DesignSystem.Typography.body)
+                                            .padding(DesignSystem.Spacing.md)
+                                            .scrollContentBackground(.hidden)
+                                            .background(DesignSystem.Colors.secondaryBackground)
+                                            .frame(height: 200)
+                                            .cornerRadius(DesignSystem.CornerRadius.medium)
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.medium)
+                                                    .stroke(
+                                                        content.isEmpty ? Color.clear : DesignSystem.Colors.primary.opacity(0.3),
+                                                        lineWidth: 1
+                                                    )
+                                            )
+
+                                        if content.isEmpty {
+                                            Text(L.Placeholder.content)
+                                                .font(DesignSystem.Typography.body)
+                                                .foregroundColor(DesignSystem.Colors.tertiaryText)
+                                                .padding(.horizontal, DesignSystem.Spacing.md + 4)
+                                                .padding(.vertical, DesignSystem.Spacing.md + 8)
+                                                .allowsHitTesting(false)
+                                        }
+                                    }
+                                    .animation(DesignSystem.Animation.quick, value: content.isEmpty)
+                                }
                             }
                             .padding(DesignSystem.Spacing.lg)
                         }
@@ -165,6 +207,62 @@ struct AddPrayerView: View {
                 }
             } message: {
                 Text(L.Success.saveMessage)
+            }
+            .fullScreenCover(isPresented: $showVoiceRecordingOverlay) {
+                VoiceRecordingOverlay(
+                    speechManager: speechManager,
+                    onUseText: { text in
+                        // 인식된 텍스트를 기도 내용에 추가
+                        if content.isEmpty {
+                            content = text
+                        } else {
+                            content += "\n" + text
+                        }
+                        showVoiceRecordingOverlay = false
+                    },
+                    onCancel: {
+                        showVoiceRecordingOverlay = false
+                    }
+                )
+                .background(ClearBackgroundView())
+            }
+            .sheet(isPresented: $showVoicePermissionAlert) {
+                VStack {
+                    Spacer()
+                    VoicePermissionAlert(
+                        onOpenSettings: {
+                            if let settingsUrl = URL(string: UIApplication.openSettingsURLString) {
+                                UIApplication.shared.open(settingsUrl)
+                            }
+                            showVoicePermissionAlert = false
+                        },
+                        onCancel: {
+                            showVoicePermissionAlert = false
+                        }
+                    )
+                    Spacer()
+                }
+                .presentationDetents([.medium])
+                .presentationDragIndicator(.visible)
+            }
+        }
+    }
+
+    // MARK: - Voice Recording
+
+    private func startVoiceRecording() {
+        // 권한 확인
+        if speechManager.checkPermissions() {
+            // 권한이 있으면 바로 녹음 시작
+            showVoiceRecordingOverlay = true
+        } else {
+            // 권한 요청
+            speechManager.requestAllPermissions { granted in
+                if granted {
+                    showVoiceRecordingOverlay = true
+                } else {
+                    showVoicePermissionAlert = true
+                }
             }
         }
     }

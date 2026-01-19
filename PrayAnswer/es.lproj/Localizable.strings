@@ -149,3 +149,35 @@
 "dday.notification_1day_before" = "Mañana es el Día D para la oración por %@";
 "dday.notification_dday" = "Hoy es el Día D para la oración por %@. ¡Envía tus oraciones!";
 "dday.notification_generic" = "%d días hasta el Día D para la oración por %@";
+
+// MARK: - Voice Recording
+// Status
+"voice.recording" = "Grabando...";
+"voice.listening" = "Escuchando...";
+"voice.tap_to_start" = "Toque para iniciar entrada de voz";
+"voice.tap_to_stop" = "Toque para detener la grabación";
+
+// Buttons
+"voice.start_recording" = "Iniciar Grabación";
+"voice.stop_recording" = "Detener Grabación";
+"voice.use_text" = "Usar Texto";
+"voice.cancel" = "Cancelar";
+"voice.retry" = "Reintentar";
+
+// Permissions
+"voice.permission_required" = "Permiso Requerido";
+"voice.microphone_permission" = "Se requiere acceso al micrófono para entrada de voz.";
+"voice.speech_permission" = "Se requiere permiso de reconocimiento de voz para convertir voz a texto.";
+"voice.open_settings" = "Abrir Configuración";
+
+// Errors
+"voice.error_recording_failed" = "No se puede iniciar la grabación.";
+"voice.error_recognizer_unavailable" = "El reconocimiento de voz no está disponible.";
+"voice.error_request_failed" = "La solicitud de reconocimiento de voz falló.";
+"voice.error_permission_denied" = "Permiso de micrófono o reconocimiento de voz denegado.";
+"voice.error_audio_session" = "No se puede iniciar la sesión de audio.";
+"voice.error_no_text" = "No se reconoció ningún texto.";
+
+// Accessibility
+"voice.accessibility_microphone" = "Ingrese contenido de oración por voz";
+"voice.accessibility_recording_hint" = "Toque para iniciar o detener la grabación de voz";

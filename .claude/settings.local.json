@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__context7__resolve-library-id",
+      "Bash(grep:*)",
+      "WebSearch",
+      "mcp__sequential-thinking__sequentialthinking",
+      "Bash(git checkout -b feature/prayer-target)",
+      "Bash(git add PrayAnswer/Models/Prayer.swift PrayAnswer/Utils/LocalizationKeys.swift PrayAnswer/Views/AddPrayerView.swift PrayAnswer/Views/PeopleListView.swift PrayAnswer/Views/PrayerDetailView.swift PrayAnswer/Views/Components/TargetPicker.swift PrayAnswer/ko.lproj/Localizable.strings PrayAnswer/en.lproj/Localizable.strings PrayAnswer/es.lproj/Localizable.strings)",
+      "Bash(git checkout:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git merge:*)"
+    ]
+  }
+}

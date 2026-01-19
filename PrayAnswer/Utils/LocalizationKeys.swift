@@ -239,6 +239,40 @@ enum L {
             String(format: NSLocalizedString("dday.notification_generic", comment: "Generic notification"), target, days)
         }
     }
+
+    // MARK: - Voice Recording
+    enum Voice {
+        // Status
+        static let recording = NSLocalizedString("voice.recording", comment: "Recording status")
+        static let listening = NSLocalizedString("voice.listening", comment: "Listening status")
+        static let tapToStart = NSLocalizedString("voice.tap_to_start", comment: "Tap to start recording hint")
+        static let tapToStop = NSLocalizedString("voice.tap_to_stop", comment: "Tap to stop recording hint")
+
+        // Buttons
+        static let startRecording = NSLocalizedString("voice.start_recording", comment: "Start recording button")
+        static let stopRecording = NSLocalizedString("voice.stop_recording", comment: "Stop recording button")
+        static let useText = NSLocalizedString("voice.use_text", comment: "Use recognized text button")
+        static let cancel = NSLocalizedString("voice.cancel", comment: "Cancel recording button")
+        static let retry = NSLocalizedString("voice.retry", comment: "Retry recording button")
+
+        // Permissions
+        static let permissionRequired = NSLocalizedString("voice.permission_required", comment: "Permission required title")
+        static let microphonePermission = NSLocalizedString("voice.microphone_permission", comment: "Microphone permission message")
+        static let speechPermission = NSLocalizedString("voice.speech_permission", comment: "Speech recognition permission message")
+        static let openSettings = NSLocalizedString("voice.open_settings", comment: "Open settings button")
+
+        // Errors
+        static let errorRecordingFailed = NSLocalizedString("voice.error_recording_failed", comment: "Recording failed error")
+        static let errorRecognizerUnavailable = NSLocalizedString("voice.error_recognizer_unavailable", comment: "Recognizer unavailable error")
+        static let errorRequestFailed = NSLocalizedString("voice.error_request_failed", comment: "Request failed error")
+        static let errorPermissionDenied = NSLocalizedString("voice.error_permission_denied", comment: "Permission denied error")
+        static let errorAudioSession = NSLocalizedString("voice.error_audio_session", comment: "Audio session error")
+        static let errorNoText = NSLocalizedString("voice.error_no_text", comment: "No text recognized error")
+
+        // Accessibility
+        static let microphoneButton = NSLocalizedString("voice.accessibility_microphone", comment: "Microphone button accessibility")
+        static let recordingHint = NSLocalizedString("voice.accessibility_recording_hint", comment: "Recording hint accessibility")
+    }
 }
 
 // MARK: - Prayer Storage Extension for Localization

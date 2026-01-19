@@ -123,3 +123,35 @@
 // MARK: - Validation
 "validation.title_required" = "제목이 필요합니다";
 "validation.content_required" = "기도 내용이 필요합니다";
+
+// MARK: - Voice Recording
+// Status
+"voice.recording" = "녹음 중...";
+"voice.listening" = "듣고 있습니다...";
+"voice.tap_to_start" = "탭하여 음성 입력 시작";
+"voice.tap_to_stop" = "탭하여 녹음 중지";
+
+// Buttons
+"voice.start_recording" = "녹음 시작";
+"voice.stop_recording" = "녹음 중지";
+"voice.use_text" = "텍스트 사용";
+"voice.cancel" = "취소";
+"voice.retry" = "다시 시도";
+
+// Permissions
+"voice.permission_required" = "권한 필요";
+"voice.microphone_permission" = "음성 입력을 위해 마이크 접근 권한이 필요합니다.";
+"voice.speech_permission" = "음성을 텍스트로 변환하기 위해 음성 인식 권한이 필요합니다.";
+"voice.open_settings" = "설정 열기";
+
+// Errors
+"voice.error_recording_failed" = "녹음을 시작할 수 없습니다.";
+"voice.error_recognizer_unavailable" = "음성 인식을 사용할 수 없습니다.";
+"voice.error_request_failed" = "음성 인식 요청에 실패했습니다.";
+"voice.error_permission_denied" = "마이크 또는 음성 인식 권한이 거부되었습니다.";
+"voice.error_audio_session" = "오디오 세션을 시작할 수 없습니다.";
+"voice.error_no_text" = "인식된 텍스트가 없습니다.";
+
+// Accessibility
+"voice.accessibility_microphone" = "음성으로 기도 내용 입력";
+"voice.accessibility_recording_hint" = "탭하여 음성 녹음을 시작하거나 중지합니다";

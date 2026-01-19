@@ -529,4 +529,268 @@ struct FavoriteButton: View {
         .accessibilityLabel(isFavorite ? L.Accessibility.favoriteRemove : L.Accessibility.favoriteAdd)
         .accessibilityHint(isFavorite ? L.Accessibility.favoriteRemoveHint : L.Accessibility.favoriteAddHint)
     }
+}
+
+// MARK: - Voice Recording Components
+
+/// 음성 녹음 버튼 - 기도 내용 입력 폼에서 사용
+struct VoiceRecordingButton: View {
+    let isRecording: Bool
+    let onTap: () -> Void
+
+    var body: some View {
+        Button(action: onTap) {
+            HStack(spacing: DesignSystem.Spacing.sm) {
+                Image(systemName: isRecording ? "mic.fill" : "mic")
+                    .font(.system(size: 18, weight: .medium))
+                    .foregroundColor(isRecording ? .white : DesignSystem.Colors.primary)
+
+                if isRecording {
+                    Text(L.Voice.recording)
+                        .font(DesignSystem.Typography.caption)
+                        .foregroundColor(.white)
+                }
+            }
+            .padding(.horizontal, DesignSystem.Spacing.md)
+            .padding(.vertical, DesignSystem.Spacing.sm)
+            .background(
+                isRecording ?
+                    DesignSystem.Colors.primary :
+                    DesignSystem.Colors.primary.opacity(0.1)
+            )
+            .cornerRadius(DesignSystem.CornerRadius.large)
+            .overlay(
+                RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.large)
+                    .stroke(
+                        DesignSystem.Colors.primary.opacity(isRecording ? 0.5 : 0.3),
+                        lineWidth: 1
+                    )
+            )
+        }
+        .buttonStyle(PlainButtonStyle())
+        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isRecording)
+        .accessibilityLabel(L.Voice.microphoneButton)
+        .accessibilityHint(isRecording ? L.Voice.tapToStop : L.Voice.tapToStart)
+    }
+}
+
+/// 음성 녹음 오버레이 - 녹음 중 전체 화면 표시
+struct VoiceRecordingOverlay: View {
+    @Bindable var speechManager: SpeechRecognitionManager
+    let onUseText: (String) -> Void
+    let onCancel: () -> Void
+
+    @State private var pulseAnimation = false
+
+    var body: some View {
+        ZStack {
+            // 배경 블러
+            Color.black.opacity(0.6)
+                .ignoresSafeArea()
+                .onTapGesture {
+                    // 배경 탭으로 취소
+                    if !speechManager.isRecording {
+                        onCancel()
+                    }
+                }
+
+            VStack(spacing: DesignSystem.Spacing.xxl) {
+                Spacer()
+
+                // 녹음 상태 인디케이터
+                ZStack {
+                    // 펄스 애니메이션 원
+                    if speechManager.isRecording {
+                        Circle()
+                            .fill(DesignSystem.Colors.primary.opacity(0.3))
+                            .frame(width: 160, height: 160)
+                            .scaleEffect(pulseAnimation ? 1.2 : 1.0)
+                            .opacity(pulseAnimation ? 0 : 0.5)
+                            .animation(
+                                .easeInOut(duration: 1.0).repeatForever(autoreverses: false),
+                                value: pulseAnimation
+                            )
+
+                        Circle()
+                            .fill(DesignSystem.Colors.primary.opacity(0.2))
+                            .frame(width: 140, height: 140)
+                            .scaleEffect(pulseAnimation ? 1.3 : 1.0)
+                            .opacity(pulseAnimation ? 0 : 0.3)
+                            .animation(
+                                .easeInOut(duration: 1.0).repeatForever(autoreverses: false).delay(0.3),
+                                value: pulseAnimation
+                            )
+                    }
+
+                    // 마이크 버튼
+                    Button(action: {
+                        speechManager.toggleRecording()
+                    }) {
+                        Circle()
+                            .fill(speechManager.isRecording ? Color.red : DesignSystem.Colors.primary)
+                            .frame(width: 120, height: 120)
+                            .shadow(
+                                color: (speechManager.isRecording ? Color.red : DesignSystem.Colors.primary).opacity(0.4),
+                                radius: 20,
+                                x: 0,
+                                y: 10
+                            )
+                            .overlay(
+                                Image(systemName: speechManager.isRecording ? "stop.fill" : "mic.fill")
+                                    .font(.system(size: 50, weight: .medium))
+                                    .foregroundColor(.white)
+                            )
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
+                .onAppear {
+                    pulseAnimation = true
+                }
+
+                // 상태 텍스트
+                VStack(spacing: DesignSystem.Spacing.md) {
+                    Text(speechManager.isRecording ? L.Voice.listening : L.Voice.tapToStart)
+                        .font(DesignSystem.Typography.headline)
+                        .foregroundColor(.white)
+
+                    if let errorMessage = speechManager.errorMessage {
+                        Text(errorMessage)
+                            .font(DesignSystem.Typography.caption)
+                            .foregroundColor(Color.red.opacity(0.9))
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, DesignSystem.Spacing.xl)
+                    }
+                }
+
+                // 인식된 텍스트 표시
+                if !speechManager.recognizedText.isEmpty {
+                    VStack(spacing: DesignSystem.Spacing.md) {
+                        ScrollView {
+                            Text(speechManager.recognizedText)
+                                .font(DesignSystem.Typography.body)
+                                .foregroundColor(.white)
+                                .multilineTextAlignment(.center)
+                                .padding(DesignSystem.Spacing.lg)
+                        }
+                        .frame(maxHeight: 200)
+                        .background(Color.white.opacity(0.1))
+                        .cornerRadius(DesignSystem.CornerRadius.medium)
+                        .padding(.horizontal, DesignSystem.Spacing.xl)
+                    }
+                }
+
+                Spacer()
+
+                // 하단 버튼
+                HStack(spacing: DesignSystem.Spacing.xl) {
+                    // 취소 버튼
+                    Button(action: {
+                        speechManager.stopRecording()
+                        speechManager.clearText()
+                        onCancel()
+                    }) {
+                        HStack(spacing: DesignSystem.Spacing.sm) {
+                            Image(systemName: "xmark")
+                            Text(L.Voice.cancel)
+                        }
+                        .font(DesignSystem.Typography.headline)
+                        .foregroundColor(.white.opacity(0.8))
+                        .padding(.horizontal, DesignSystem.Spacing.xl)
+                        .padding(.vertical, DesignSystem.Spacing.md)
+                        .background(Color.white.opacity(0.2))
+                        .cornerRadius(DesignSystem.CornerRadius.large)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+
+                    // 텍스트 사용 버튼 (텍스트가 있을 때만)
+                    if !speechManager.recognizedText.isEmpty && !speechManager.isRecording {
+                        Button(action: {
+                            onUseText(speechManager.recognizedText)
+                            speechManager.clearText()
+                        }) {
+                            HStack(spacing: DesignSystem.Spacing.sm) {
+                                Image(systemName: "checkmark")
+                                Text(L.Voice.useText)
+                            }
+                            .font(DesignSystem.Typography.headline)
+                            .foregroundColor(.white)
+                            .padding(.horizontal, DesignSystem.Spacing.xl)
+                            .padding(.vertical, DesignSystem.Spacing.md)
+                            .background(DesignSystem.Colors.primary)
+                            .cornerRadius(DesignSystem.CornerRadius.large)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
+                }
+                .padding(.bottom, DesignSystem.Spacing.xxxl)
+            }
+        }
+        .animation(DesignSystem.Animation.standard, value: speechManager.isRecording)
+        .animation(DesignSystem.Animation.standard, value: speechManager.recognizedText)
+    }
+}
+
+/// 투명 배경 뷰 (fullScreenCover용)
+struct ClearBackgroundView: UIViewRepresentable {
+    func makeUIView(context: Context) -> UIView {
+        let view = UIView()
+        DispatchQueue.main.async {
+            view.superview?.superview?.backgroundColor = .clear
+        }
+        return view
+    }
+
+    func updateUIView(_ uiView: UIView, context: Context) {}
+}
+
+/// 권한 요청 알림 뷰
+struct VoicePermissionAlert: View {
+    let onOpenSettings: () -> Void
+    let onCancel: () -> Void
+
+    var body: some View {
+        VStack(spacing: DesignSystem.Spacing.xl) {
+            Image(systemName: "mic.slash.fill")
+                .font(.system(size: 50))
+                .foregroundColor(DesignSystem.Colors.unanswered)
+
+            VStack(spacing: DesignSystem.Spacing.md) {
+                Text(L.Voice.permissionRequired)
+                    .font(DesignSystem.Typography.title3)
+                    .foregroundColor(DesignSystem.Colors.primaryText)
+
+                Text(L.Voice.microphonePermission)
+                    .font(DesignSystem.Typography.body)
+                    .foregroundColor(DesignSystem.Colors.secondaryText)
+                    .multilineTextAlignment(.center)
+            }
+
+            HStack(spacing: DesignSystem.Spacing.lg) {
+                Button(action: onCancel) {
+                    Text(L.Button.cancel)
+                        .font(DesignSystem.Typography.headline)
+                        .foregroundColor(DesignSystem.Colors.secondaryText)
+                        .padding(.horizontal, DesignSystem.Spacing.xl)
+                        .padding(.vertical, DesignSystem.Spacing.md)
+                        .background(DesignSystem.Colors.secondaryBackground)
+                        .cornerRadius(DesignSystem.CornerRadius.medium)
+                }
+
+                Button(action: onOpenSettings) {
+                    Text(L.Voice.openSettings)
+                        .font(DesignSystem.Typography.headline)
+                        .foregroundColor(.white)
+                        .padding(.horizontal, DesignSystem.Spacing.xl)
+                        .padding(.vertical, DesignSystem.Spacing.md)
+                        .background(DesignSystem.Colors.primary)
+                        .cornerRadius(DesignSystem.CornerRadius.medium)
+                }
+            }
+        }
+        .padding(DesignSystem.Spacing.xxl)
+        .background(DesignSystem.Colors.cardBackground)
+        .cornerRadius(DesignSystem.CornerRadius.large)
+        .shadow(color: DesignSystem.Shadow.large.color, radius: DesignSystem.Shadow.large.radius, x: 0, y: 4)
+        .padding(.horizontal, DesignSystem.Spacing.xl)
+    }
 } 

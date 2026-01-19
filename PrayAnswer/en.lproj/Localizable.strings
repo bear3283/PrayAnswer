@@ -123,3 +123,35 @@
 // MARK: - Validation
 "validation.title_required" = "Title is required";
 "validation.content_required" = "Prayer content is required";
+
+// MARK: - Voice Recording
+// Status
+"voice.recording" = "Recording...";
+"voice.listening" = "Listening...";
+"voice.tap_to_start" = "Tap to start voice input";
+"voice.tap_to_stop" = "Tap to stop recording";
+
+// Buttons
+"voice.start_recording" = "Start Recording";
+"voice.stop_recording" = "Stop Recording";
+"voice.use_text" = "Use Text";
+"voice.cancel" = "Cancel";
+"voice.retry" = "Retry";
+
+// Permissions
+"voice.permission_required" = "Permission Required";
+"voice.microphone_permission" = "Microphone access is required for voice input.";
+"voice.speech_permission" = "Speech recognition permission is required to convert voice to text.";
+"voice.open_settings" = "Open Settings";
+
+// Errors
+"voice.error_recording_failed" = "Unable to start recording.";
+"voice.error_recognizer_unavailable" = "Speech recognition is unavailable.";
+"voice.error_request_failed" = "Speech recognition request failed.";
+"voice.error_permission_denied" = "Microphone or speech recognition permission denied.";
+"voice.error_audio_session" = "Unable to start audio session.";
+"voice.error_no_text" = "No text recognized.";
+
+// Accessibility
+"voice.accessibility_microphone" = "Enter prayer content by voice";
+"voice.accessibility_recording_hint" = "Tap to start or stop voice recording";

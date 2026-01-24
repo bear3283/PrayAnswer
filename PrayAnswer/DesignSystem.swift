@@ -298,33 +298,32 @@ struct CategoryTag: View {
 struct StatusIndicator: View {
     let storage: PrayerStorage
     let size: IndicatorSize
-    
+
     enum IndicatorSize {
         case small, medium, large
-        
+
         var iconSize: CGFloat {
             switch self {
-            case .small: return 16
-            case .medium: return 20
-            case .large: return 24
-            }
-        }
-        
-        var padding: CGFloat {
-            switch self {
-            case .small: return DesignSystem.Spacing.xs
-            case .medium: return DesignSystem.Spacing.sm
-            case .large: return DesignSystem.Spacing.md
+            case .small: return 24
+            case .medium: return 32
+            case .large: return 40
             }
         }
     }
-    
+
+    // filled 버전 아이콘 이름
+    private var filledIconName: String {
+        switch storage {
+        case .wait: return "clock.fill"
+        case .yes: return "checkmark.circle.fill"
+        case .no: return "xmark.circle.fill"
+        }
+    }
+
     var body: some View {
-        Image(systemName: storage.iconName)
-            .font(.system(size: size.iconSize, weight: .semibold))
-            .foregroundColor(.white)
-            .padding(size.padding)
-            .background(storage.color)
-            .clipShape(Circle())
+        Image(systemName: filledIconName)
+            .font(.system(size: size.iconSize, weight: .medium))
+            .foregroundColor(storage.color)
+            .symbolRenderingMode(.hierarchical)
     }
 } 

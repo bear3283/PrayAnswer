@@ -120,8 +120,7 @@ struct ModernPrayerRow: View {
                     // 대상자 표시 (있는 경우)
                     if prayer.hasTarget {
                         Text(prayer.target)
-                            .font(DesignSystem.Typography.callout)
-                            .fontWeight(.medium)
+                            .font(DesignSystem.Typography.headline)
                             .foregroundColor(DesignSystem.Colors.primaryText)
                             .lineLimit(1)
                     }

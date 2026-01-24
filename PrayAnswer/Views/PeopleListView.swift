@@ -74,16 +74,26 @@ struct PeopleListView: View {
     
     var body: some View {
         NavigationView {
-            VStack(spacing: 0) {
-                // 인라인 헤더
-                InlineHeader(title: L.Nav.peopleList)
-
+            ZStack(alignment: .top) {
+                // 메인 컨텐츠
                 ZStack(alignment: .bottom) {
                     if !hasAnyPrayers {
-                        EmptyPeopleStateView()
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        VStack {
+                            // 헤더 공간 확보
+                            Color.clear.frame(height: 68)
+                            EmptyPeopleStateView()
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        }
                     } else {
                         List {
+                            // 헤더 공간 확보를 위한 상단 여백
+                            Section {
+                                Color.clear.frame(height: 24)
+                            }
+                            .listRowBackground(Color.clear)
+                            .listRowSeparator(.hidden)
+                            .listRowInsets(EdgeInsets())
+
                             ForEach(filteredTargets, id: \.self) { target in
                                 ZStack {
                                     // 투명한 NavigationLink로 네비게이션 기능만 유지
@@ -132,19 +142,26 @@ struct PeopleListView: View {
                         )
                     }
                 }
+
+                // 고정 헤더 오버레이 (iOS 전화 앱 스타일)
+                VStack(spacing: 0) {
+                    InlineHeader(title: L.Nav.peopleList, showFadeGradient: true)
+                    Spacer()
+                }
+                .allowsHitTesting(false)
             }
-        }
-        .navigationBarHidden(true)
-        .background(DesignSystem.Colors.background)
-        .onAppear {
-            if prayerViewModel == nil {
-                prayerViewModel = PrayerViewModel(modelContext: modelContext)
+            .navigationBarHidden(true)
+            .background(DesignSystem.Colors.background)
+            .onAppear {
+                if prayerViewModel == nil {
+                    prayerViewModel = PrayerViewModel(modelContext: modelContext)
+                }
             }
-        }
-        .alert(L.Alert.error, isPresented: $showingErrorAlert) {
-            Button(L.Button.confirm) { }
-        } message: {
-            Text(errorMessage)
+            .alert(L.Alert.error, isPresented: $showingErrorAlert) {
+                Button(L.Button.confirm) { }
+            } message: {
+                Text(errorMessage)
+            }
         }
     }
     

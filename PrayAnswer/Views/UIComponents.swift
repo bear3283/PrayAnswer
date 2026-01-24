@@ -2,18 +2,99 @@ import SwiftUI
 
 // MARK: - Inline Header (Apple Style)
 
-/// 애플 기본 앱 스타일의 인라인 헤더 - 가운데 작은 글자
+/// iOS 전화 앱 스타일의 인라인 헤더 - 중앙 제목 + 하단 페이드 효과
 struct InlineHeader: View {
     let title: String
+    var showFadeGradient: Bool = true
 
     var body: some View {
-        Text(title)
-            .font(DesignSystem.Typography.callout)
-            .fontWeight(.semibold)
-            .foregroundColor(DesignSystem.Colors.secondaryText)
-            .frame(maxWidth: .infinity, alignment: .center)
-            .padding(.vertical, DesignSystem.Spacing.sm)
-            .background(DesignSystem.Colors.background)
+        VStack(spacing: 0) {
+            // 헤더 영역
+            Text(title)
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundColor(DesignSystem.Colors.primaryText)
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.vertical, 11)
+                .background(
+                    DesignSystem.Colors.background
+                        .opacity(0.95)
+                )
+                .background(.ultraThinMaterial)
+
+            // 하단 구분선 (미세한 선)
+            Rectangle()
+                .fill(DesignSystem.Colors.tertiaryText.opacity(0.2))
+                .frame(height: 0.5)
+
+            // 페이드 그라데이션 (컨텐츠가 헤더 아래로 스크롤될 때 흐려지는 효과)
+            if showFadeGradient {
+                LinearGradient(
+                    gradient: Gradient(colors: [
+                        DesignSystem.Colors.background.opacity(0.9),
+                        DesignSystem.Colors.background.opacity(0.6),
+                        DesignSystem.Colors.background.opacity(0.0)
+                    ]),
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .frame(height: 20)
+                .allowsHitTesting(false)
+            }
+        }
+    }
+}
+
+/// 스크롤 가능한 리스트용 헤더 컨테이너 - ZStack으로 오버레이
+struct ScrollFadeHeaderContainer<Content: View>: View {
+    let title: String
+    let content: Content
+
+    init(title: String, @ViewBuilder content: () -> Content) {
+        self.title = title
+        self.content = content()
+    }
+
+    var body: some View {
+        ZStack(alignment: .top) {
+            // 스크롤 컨텐츠
+            content
+                .padding(.top, 50) // 헤더 높이만큼 패딩
+
+            // 고정 헤더 + 페이드 오버레이
+            VStack(spacing: 0) {
+                // 헤더 영역
+                Text(title)
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundColor(DesignSystem.Colors.primaryText)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .frame(height: 44)
+                    .background(
+                        DesignSystem.Colors.background
+                            .opacity(0.98)
+                    )
+                    .background(.ultraThinMaterial)
+
+                // 하단 구분선
+                Rectangle()
+                    .fill(DesignSystem.Colors.tertiaryText.opacity(0.15))
+                    .frame(height: 0.5)
+
+                // 페이드 그라데이션
+                LinearGradient(
+                    gradient: Gradient(colors: [
+                        DesignSystem.Colors.background.opacity(0.85),
+                        DesignSystem.Colors.background.opacity(0.4),
+                        DesignSystem.Colors.background.opacity(0.0)
+                    ]),
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .frame(height: 24)
+                .allowsHitTesting(false)
+
+                Spacer()
+            }
+        }
     }
 }
 

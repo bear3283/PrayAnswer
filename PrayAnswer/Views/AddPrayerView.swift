@@ -32,12 +32,12 @@ struct AddPrayerView: View {
 
     var body: some View {
         NavigationView {
-            VStack(spacing: 0) {
-                // 인라인 헤더
-                InlineHeader(title: L.Nav.newPrayer)
-
+            ZStack(alignment: .top) {
+                // 메인 스크롤 컨텐츠
                 ScrollView {
                     VStack(spacing: DesignSystem.Spacing.xl) {
+                        // 헤더 공간 확보
+                        Color.clear.frame(height: 44)
 
                         // 폼 섹션들
                     VStack(spacing: DesignSystem.Spacing.lg) {
@@ -189,6 +189,13 @@ struct AddPrayerView: View {
                     .padding(.bottom, DesignSystem.Spacing.xxxl)
                 }
                 }
+
+                // 고정 헤더 오버레이 (iOS 전화 앱 스타일)
+                VStack(spacing: 0) {
+                    InlineHeader(title: L.Nav.newPrayer, showFadeGradient: true)
+                    Spacer()
+                }
+                .allowsHitTesting(false)
             }
             .navigationBarHidden(true)
             .background(DesignSystem.Colors.background)

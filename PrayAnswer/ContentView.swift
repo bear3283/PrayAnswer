@@ -92,12 +92,13 @@ struct PrayerListView: View {
     
     var body: some View {
         NavigationView {
-            VStack(spacing: 0) {
-                // 인라인 헤더
-                InlineHeader(title: L.Nav.prayerList)
-
+            ZStack(alignment: .top) {
+                // 메인 컨텐츠
                 if filteredPrayers.isEmpty {
                     VStack(spacing: 0) {
+                        // 헤더 공간 확보
+                        Color.clear.frame(height: 68)
+
                         // 보관소 선택 섹션
                         ModernStorageSelector(selectedStorage: $selectedStorage, allPrayers: allPrayers)
 
@@ -106,7 +107,15 @@ struct PrayerListView: View {
                     }
                 } else {
                     List {
-                        // 보관소 선택 섹션을 List 내부로 이동
+                        // 헤더 공간 확보를 위한 상단 여백
+                        Section {
+                            Color.clear.frame(height: 24)
+                        }
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
+                        .listRowInsets(EdgeInsets())
+
+                        // 보관소 선택 섹션
                         Section {
                             ModernStorageSelector(selectedStorage: $selectedStorage, allPrayers: allPrayers)
                         }
@@ -146,6 +155,13 @@ struct PrayerListView: View {
                     .listStyle(PlainListStyle())
                     .scrollContentBackground(.hidden)
                 }
+
+                // 고정 헤더 오버레이 (iOS 전화 앱 스타일)
+                VStack(spacing: 0) {
+                    InlineHeader(title: L.Nav.prayerList, showFadeGradient: true)
+                    Spacer()
+                }
+                .allowsHitTesting(false)
             }
             .navigationBarHidden(true)
             .background(DesignSystem.Colors.background)

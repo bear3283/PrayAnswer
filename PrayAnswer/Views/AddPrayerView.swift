@@ -76,6 +76,7 @@ struct AddPrayerView: View {
                                             .background(DesignSystem.Colors.secondaryBackground)
                                             .frame(height: 200)
                                             .cornerRadius(DesignSystem.CornerRadius.medium)
+                                            .focused($isContentFieldFocused)
                                             .overlay(
                                                 RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.medium)
                                                     .stroke(
@@ -188,6 +189,11 @@ struct AddPrayerView: View {
                     .padding(.top, DesignSystem.Spacing.lg)
                     .padding(.bottom, DesignSystem.Spacing.xxxl)
                 }
+                }
+                .scrollDismissesKeyboard(.interactively)
+                .onTapGesture {
+                    // 빈 공간 탭 시 키보드 dismiss
+                    isContentFieldFocused = false
                 }
 
                 // 고정 헤더 오버레이 (iOS 전화 앱 스타일)

@@ -1,5 +1,14 @@
 import SwiftUI
 
+// MARK: - Keyboard Dismiss Extension
+
+extension View {
+    /// 키보드를 숨기는 함수
+    func hideKeyboard() {
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+    }
+}
+
 // MARK: - Inline Header (Apple Style)
 
 /// iOS 전화 앱 스타일의 인라인 헤더 - 중앙 제목 + 하단 페이드 효과

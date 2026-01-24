@@ -24,29 +24,20 @@ struct InlineHeader: View {
                 .foregroundColor(DesignSystem.Colors.primaryText)
                 .frame(maxWidth: .infinity, alignment: .center)
                 .padding(.vertical, 11)
-                .background(
-                    DesignSystem.Colors.background
-                        .opacity(0.95)
-                )
-                .background(.ultraThinMaterial)
+                .background(DesignSystem.Colors.background)
 
-            // 하단 구분선 (미세한 선)
-            Rectangle()
-                .fill(DesignSystem.Colors.tertiaryText.opacity(0.2))
-                .frame(height: 0.5)
-
-            // 페이드 그라데이션 (컨텐츠가 헤더 아래로 스크롤될 때 흐려지는 효과)
+            // 페이드 그라데이션 (컨텐츠가 헤더 아래로 스크롤될 때 자연스럽게 흐려지는 효과)
             if showFadeGradient {
                 LinearGradient(
                     gradient: Gradient(colors: [
-                        DesignSystem.Colors.background.opacity(0.9),
-                        DesignSystem.Colors.background.opacity(0.6),
+                        DesignSystem.Colors.background,
+                        DesignSystem.Colors.background.opacity(0.8),
                         DesignSystem.Colors.background.opacity(0.0)
                     ]),
                     startPoint: .top,
                     endPoint: .bottom
                 )
-                .frame(height: 20)
+                .frame(height: 16)
                 .allowsHitTesting(false)
             }
         }
@@ -122,9 +113,18 @@ struct ModernPrayerRow: View {
     var body: some View {
         ModernCard {
             VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
-                // 상단: 상태 아이콘 + 카테고리 + 즐겨찾기
+                // 상단: 상태 아이콘 + 대상자 + 카테고리 + 즐겨찾기
                 HStack(alignment: .center, spacing: DesignSystem.Spacing.sm) {
                     StatusIndicator(storage: prayer.storage, size: .medium)
+
+                    // 대상자 표시 (있는 경우)
+                    if prayer.hasTarget {
+                        Text(prayer.target)
+                            .font(DesignSystem.Typography.callout)
+                            .fontWeight(.medium)
+                            .foregroundColor(DesignSystem.Colors.primaryText)
+                            .lineLimit(1)
+                    }
 
                     CategoryTag(category: prayer.category, size: .small)
 
@@ -144,21 +144,8 @@ struct ModernPrayerRow: View {
                     .lineLimit(3)
                     .frame(maxWidth: .infinity, alignment: .leading)
 
-                // 하단: 대상자/D-Day + 날짜
+                // 하단: D-Day + 날짜
                 HStack {
-                    if prayer.hasTarget {
-                        HStack(spacing: DesignSystem.Spacing.xs) {
-                            Image(systemName: "person.fill")
-                                .font(.caption2)
-                                .foregroundColor(DesignSystem.Colors.secondary)
-
-                            Text(prayer.target)
-                                .font(DesignSystem.Typography.caption2)
-                                .foregroundColor(DesignSystem.Colors.secondaryText)
-                                .lineLimit(1)
-                        }
-                    }
-
                     // D-Day 배지 표시
                     if prayer.hasTargetDate {
                         DDayBadge(prayer: prayer, size: .small)

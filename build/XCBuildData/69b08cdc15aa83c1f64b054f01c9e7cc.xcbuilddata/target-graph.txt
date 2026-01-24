@@ -1,4 +1,0 @@
-Target dependency graph (2 targets)
-Target 'PrayAnswer' in project 'PrayAnswer'
-➜ Explicit dependency on target 'PrayerWidgetExtension' in project 'PrayAnswer'
-Target 'PrayerWidgetExtension' in project 'PrayAnswer' (no dependencies)

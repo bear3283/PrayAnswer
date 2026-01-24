@@ -13,6 +13,23 @@ import UserNotifications
 struct PrayAnswerApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
+    // SwiftData ModelContainer
+    let modelContainer: ModelContainer
+
+    init() {
+        do {
+            modelContainer = try ModelContainer(for: Prayer.self)
+
+            #if DEBUG
+            // 개발 모드에서 더미 데이터 삽입
+            let context = modelContainer.mainContext
+            DebugDummyData.insertIfNeeded(into: context)
+            #endif
+        } catch {
+            fatalError("Failed to create ModelContainer: \(error)")
+        }
+    }
+
     var body: some Scene {
         WindowGroup {
             ContentView()
@@ -21,7 +38,7 @@ struct PrayAnswerApp: App {
                     requestNotificationPermission()
                 }
         }
-        .modelContainer(for: Prayer.self)
+        .modelContainer(modelContainer)
     }
 
     private func requestNotificationPermission() {

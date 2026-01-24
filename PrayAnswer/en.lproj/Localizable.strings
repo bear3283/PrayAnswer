@@ -129,6 +129,8 @@
 "target.select_target" = "Select Prayer Target";
 "target.add_new" = "Add New Target";
 "target.new_placeholder" = "Enter new target name";
+"target.search_or_add_placeholder" = "Search or add new target";
+"target.add_as_new" = "Add as new target";
 "target.title_format" = "%@ Prayer for %@";
 "target.prayer_for_format" = "Prayer for %@";
 

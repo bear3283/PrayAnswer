@@ -57,7 +57,6 @@
 				Utils/LocalizationKeys.swift,
 				Utils/Logger.swift,
 				Utils/WidgetDataManager.swift,
-				ViewModels/PrayerViewModel.swift,
 			);
 			target = 09858FB62E177FD30062F295 /* PrayerWidgetExtension */;
 		};
@@ -374,7 +373,7 @@
 				DEVELOPMENT_TEAM = 36CPZWS26C;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = PrayAnswer/Info.plist;
+				INFOPLIST_FILE = "";
 				INFOPLIST_KEY_CFBundleDisplayName = PrayAnswer;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "기도 내용을 음성으로 입력하기 위해 마이크 접근이 필요합니다.";
@@ -413,7 +412,7 @@
 				DEVELOPMENT_TEAM = 36CPZWS26C;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = PrayAnswer/Info.plist;
+				INFOPLIST_FILE = "";
 				INFOPLIST_KEY_CFBundleDisplayName = PrayAnswer;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "기도 내용을 음성으로 입력하기 위해 마이크 접근이 필요합니다.";

@@ -55,7 +55,7 @@ final class Prayer {
     var target: String // 기도 대상자
     var isFavorite: Bool // 즐겨찾기 여부
     var targetDate: Date? // D-Day 목표 날짜
-    var notificationEnabled: Bool // 알림 활성화 여부
+    var notificationEnabled: Bool = false // 알림 활성화 여부 (기본값으로 마이그레이션 지원)
 
     init(title: String, content: String, category: PrayerCategory = .personal, target: String = "", storage: PrayerStorage = .wait, isFavorite: Bool = false, targetDate: Date? = nil, notificationEnabled: Bool = false) {
         self.title = title

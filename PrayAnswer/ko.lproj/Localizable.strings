@@ -129,6 +129,8 @@
 "target.select_target" = "기도대상자 선택";
 "target.add_new" = "새 대상자 추가";
 "target.new_placeholder" = "새 대상자 이름 입력";
+"target.search_or_add_placeholder" = "이름 검색 또는 새 대상자 추가";
+"target.add_as_new" = "새 대상자로 추가";
 "target.title_format" = "%@을(를) 위한 %@ 기도";
 "target.prayer_for_format" = "%@을(를) 위한 기도";
 

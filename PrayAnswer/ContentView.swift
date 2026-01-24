@@ -92,7 +92,10 @@ struct PrayerListView: View {
     
     var body: some View {
         NavigationView {
-            Group {
+            VStack(spacing: 0) {
+                // 인라인 헤더
+                InlineHeader(title: L.Nav.prayerList)
+
                 if filteredPrayers.isEmpty {
                     VStack(spacing: 0) {
                         // 보관소 선택 섹션
@@ -144,8 +147,7 @@ struct PrayerListView: View {
                     .scrollContentBackground(.hidden)
                 }
             }
-            .navigationTitle(L.Nav.prayerList)
-            .navigationBarTitleDisplayMode(.large)
+            .navigationBarHidden(true)
             .background(DesignSystem.Colors.background)
             .onAppear {
                 if prayerViewModel == nil {

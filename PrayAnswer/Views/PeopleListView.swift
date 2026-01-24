@@ -8,7 +8,9 @@ struct PeopleListView: View {
     @State private var showingErrorAlert = false
     @State private var errorMessage = ""
     @State private var searchText = ""
-    
+    @State private var showSearchOverlay = false
+    @FocusState private var isSearchFocused: Bool
+
     // "본인" 기도 (target이 비어있는 기도들)
     private var myselfPrayers: [Prayer] {
         allPrayers.filter { $0.target.isEmpty }
@@ -72,75 +74,77 @@ struct PeopleListView: View {
     
     var body: some View {
         NavigationView {
-            Group {
-                if !hasAnyPrayers {
-                    EmptyPeopleStateView()
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else {
-                    List {
-                        // 검색바를 List 내부로 이동
-                        Section {
-                            SearchBar(text: $searchText, placeholder: L.Placeholder.searchPeople)
-                        }
-                        .listRowBackground(Color.clear)
-                        .listRowSeparator(.hidden)
-                        .listRowInsets(EdgeInsets(
-                            top: DesignSystem.Spacing.sm,
-                            leading: DesignSystem.Spacing.lg,
-                            bottom: DesignSystem.Spacing.sm,
-                            trailing: DesignSystem.Spacing.lg
-                        ))
+            VStack(spacing: 0) {
+                // 인라인 헤더
+                InlineHeader(title: L.Nav.peopleList)
 
-                        ForEach(filteredTargets, id: \.self) { target in
-                            ZStack {
-                                // 투명한 NavigationLink로 네비게이션 기능만 유지
-                                // "본인"(빈 문자열)인 경우 특별 처리
-                                if target.isEmpty {
-                                    NavigationLink(destination: MyselfPrayerListView()) {
-                                        EmptyView()
+                ZStack(alignment: .bottom) {
+                    if !hasAnyPrayers {
+                        EmptyPeopleStateView()
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    } else {
+                        List {
+                            ForEach(filteredTargets, id: \.self) { target in
+                                ZStack {
+                                    // 투명한 NavigationLink로 네비게이션 기능만 유지
+                                    // "본인"(빈 문자열)인 경우 특별 처리
+                                    if target.isEmpty {
+                                        NavigationLink(destination: MyselfPrayerListView()) {
+                                            EmptyView()
+                                        }
+                                        .opacity(0)
+                                    } else {
+                                        NavigationLink(destination: PersonDetailView(target: target)) {
+                                            EmptyView()
+                                        }
+                                        .opacity(0)
                                     }
-                                    .opacity(0)
-                                } else {
-                                    NavigationLink(destination: PersonDetailView(target: target)) {
-                                        EmptyView()
-                                    }
-                                    .opacity(0)
+
+                                    // 실제 보이는 UI
+                                    PersonRowView(
+                                        target: target,
+                                        prayers: prayersForTarget(target),
+                                        isMyself: target.isEmpty
+                                    )
                                 }
-
-                                // 실제 보이는 UI
-                                PersonRowView(
-                                    target: target,
-                                    prayers: prayersForTarget(target),
-                                    isMyself: target.isEmpty
-                                )
+                                .listRowBackground(Color.clear)
+                                .listRowSeparator(.hidden)
+                                .listRowInsets(EdgeInsets(
+                                    top: DesignSystem.Spacing.sm,
+                                    leading: DesignSystem.Spacing.md,
+                                    bottom: DesignSystem.Spacing.sm,
+                                    trailing: DesignSystem.Spacing.md
+                                ))
                             }
-                            .listRowBackground(Color.clear)
-                            .listRowSeparator(.hidden)
-                            .listRowInsets(EdgeInsets(
-                                top: DesignSystem.Spacing.sm,
-                                leading: DesignSystem.Spacing.md,
-                                bottom: DesignSystem.Spacing.sm,
-                                trailing: DesignSystem.Spacing.md
-                            ))
                         }
+                        .listStyle(PlainListStyle())
+                        .scrollContentBackground(.hidden)
+                        .contentMargins(.bottom, showSearchOverlay ? 80 : 0, for: .scrollContent)
                     }
-                    .listStyle(PlainListStyle())
-                    .scrollContentBackground(.hidden)
+
+                    // 하단 검색 오버레이
+                    if hasAnyPrayers {
+                        SearchOverlay(
+                            searchText: $searchText,
+                            isExpanded: $showSearchOverlay,
+                            isSearchFocused: _isSearchFocused,
+                            placeholder: L.Placeholder.searchPeople
+                        )
+                    }
                 }
             }
-            .navigationTitle(L.Nav.peopleList)
-            .navigationBarTitleDisplayMode(.large)
-            .background(DesignSystem.Colors.background)
-            .onAppear {
-                if prayerViewModel == nil {
-                    prayerViewModel = PrayerViewModel(modelContext: modelContext)
-                }
+        }
+        .navigationBarHidden(true)
+        .background(DesignSystem.Colors.background)
+        .onAppear {
+            if prayerViewModel == nil {
+                prayerViewModel = PrayerViewModel(modelContext: modelContext)
             }
-            .alert(L.Alert.error, isPresented: $showingErrorAlert) {
-                Button(L.Button.confirm) { }
-            } message: {
-                Text(errorMessage)
-            }
+        }
+        .alert(L.Alert.error, isPresented: $showingErrorAlert) {
+            Button(L.Button.confirm) { }
+        } message: {
+            Text(errorMessage)
         }
     }
     
@@ -374,43 +378,84 @@ struct EmptyPeopleStateView: View {
     PeopleListView()
 }
 
-// MARK: - Search Bar Component
+// MARK: - Search Overlay Component
 
-struct SearchBar: View {
-    @Binding var text: String
+struct SearchOverlay: View {
+    @Binding var searchText: String
+    @Binding var isExpanded: Bool
+    @FocusState var isSearchFocused: Bool
     let placeholder: String
-    
+
     var body: some View {
-        HStack(spacing: DesignSystem.Spacing.sm) {
-            Image(systemName: "magnifyingglass")
-                .foregroundColor(.secondary)
-                .font(.system(size: 16, weight: .medium))
-            
-            TextField(placeholder, text: $text)
-                .textFieldStyle(PlainTextFieldStyle())
-                .font(DesignSystem.Typography.body)
-                .foregroundColor(DesignSystem.Colors.primaryText)
-            
-            if !text.isEmpty {
-                Button(action: {
-                    text = ""
-                }) {
-                    Image(systemName: "xmark.circle.fill")
+        VStack(spacing: 0) {
+            if isExpanded {
+                // 확장된 검색 바
+                HStack(spacing: DesignSystem.Spacing.sm) {
+                    Image(systemName: "magnifyingglass")
                         .foregroundColor(.secondary)
-                        .font(.system(size: 16))
+                        .font(.system(size: 16, weight: .medium))
+
+                    TextField(placeholder, text: $searchText)
+                        .textFieldStyle(PlainTextFieldStyle())
+                        .font(DesignSystem.Typography.body)
+                        .foregroundColor(DesignSystem.Colors.primaryText)
+                        .focused($isSearchFocused)
+
+                    if !searchText.isEmpty {
+                        Button(action: {
+                            searchText = ""
+                        }) {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundColor(.secondary)
+                                .font(.system(size: 16))
+                        }
+                    }
+
+                    Button(action: {
+                        withAnimation(DesignSystem.Animation.standard) {
+                            isExpanded = false
+                            isSearchFocused = false
+                            searchText = ""
+                        }
+                    }) {
+                        Text(L.Button.cancel)
+                            .font(DesignSystem.Typography.callout)
+                            .foregroundColor(DesignSystem.Colors.primary)
+                    }
                 }
+                .padding(DesignSystem.Spacing.md)
+                .background(DesignSystem.Colors.cardBackground)
+                .cornerRadius(DesignSystem.CornerRadius.medium)
+                .shadow(color: DesignSystem.Shadow.medium.color, radius: DesignSystem.Shadow.medium.radius)
+                .padding(.horizontal, DesignSystem.Spacing.lg)
+                .padding(.bottom, DesignSystem.Spacing.lg)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+            } else {
+                // 검색 버튼
+                Button(action: {
+                    withAnimation(DesignSystem.Animation.standard) {
+                        isExpanded = true
+                        isSearchFocused = true
+                    }
+                }) {
+                    HStack(spacing: DesignSystem.Spacing.sm) {
+                        Image(systemName: "magnifyingglass")
+                            .font(.system(size: 14, weight: .semibold))
+
+                        Text(L.Placeholder.searchPeople)
+                            .font(DesignSystem.Typography.callout)
+                    }
+                    .foregroundColor(.white)
+                    .padding(.horizontal, DesignSystem.Spacing.lg)
+                    .padding(.vertical, DesignSystem.Spacing.md)
+                    .background(DesignSystem.Colors.primary)
+                    .cornerRadius(DesignSystem.CornerRadius.extraLarge)
+                    .shadow(color: DesignSystem.Colors.primary.opacity(0.3), radius: 8, y: 4)
+                }
+                .padding(.bottom, DesignSystem.Spacing.lg)
+                .transition(.scale.combined(with: .opacity))
             }
         }
-        .padding(DesignSystem.Spacing.md)
-        .background(DesignSystem.Colors.secondaryBackground)
-        .cornerRadius(DesignSystem.CornerRadius.medium)
-        .overlay(
-            RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.medium)
-                .stroke(
-                    text.isEmpty ? Color.clear : DesignSystem.Colors.primary.opacity(0.3),
-                    lineWidth: 1
-                )
-        )
-        .animation(DesignSystem.Animation.quick, value: text.isEmpty)
+        .animation(DesignSystem.Animation.standard, value: isExpanded)
     }
 }

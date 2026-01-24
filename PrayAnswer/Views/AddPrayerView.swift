@@ -18,7 +18,12 @@ struct AddPrayerView: View {
     // Voice Recording
     @State private var showVoiceRecordingOverlay = false
     @State private var showVoicePermissionAlert = false
-    private var speechManager = SpeechRecognitionManager.shared
+    private var speechManager: SpeechRecognitionManager
+
+    init(selectedTab: Binding<Int>) {
+        self._selectedTab = selectedTab
+        self.speechManager = SpeechRecognitionManager.shared
+    }
 
     // 기존 기도대상자 목록
     private var existingTargets: [String] {
@@ -27,10 +32,14 @@ struct AddPrayerView: View {
 
     var body: some View {
         NavigationView {
-            ScrollView {
-                VStack(spacing: DesignSystem.Spacing.xl) {
+            VStack(spacing: 0) {
+                // 인라인 헤더
+                InlineHeader(title: L.Nav.newPrayer)
 
-                    // 폼 섹션들
+                ScrollView {
+                    VStack(spacing: DesignSystem.Spacing.xl) {
+
+                        // 폼 섹션들
                     VStack(spacing: DesignSystem.Spacing.lg) {
                         // 기도대상자 선택 (상단으로 이동)
                         ModernCard {
@@ -179,9 +188,9 @@ struct AddPrayerView: View {
                     .padding(.top, DesignSystem.Spacing.lg)
                     .padding(.bottom, DesignSystem.Spacing.xxxl)
                 }
+                }
             }
-            .navigationTitle(L.Nav.newPrayer)
-            .navigationBarTitleDisplayMode(.large)
+            .navigationBarHidden(true)
             .background(DesignSystem.Colors.background)
             .onAppear {
                 if prayerViewModel == nil {

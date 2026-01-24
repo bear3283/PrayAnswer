@@ -1,5 +1,22 @@
 import SwiftUI
 
+// MARK: - Inline Header (Apple Style)
+
+/// 애플 기본 앱 스타일의 인라인 헤더 - 가운데 작은 글자
+struct InlineHeader: View {
+    let title: String
+
+    var body: some View {
+        Text(title)
+            .font(DesignSystem.Typography.callout)
+            .fontWeight(.semibold)
+            .foregroundColor(DesignSystem.Colors.secondaryText)
+            .frame(maxWidth: .infinity, alignment: .center)
+            .padding(.vertical, DesignSystem.Spacing.sm)
+            .background(DesignSystem.Colors.background)
+    }
+}
+
 // MARK: - Prayer List Components
 
 // 모던한 기도 행 컴포넌트
@@ -17,25 +34,17 @@ struct ModernPrayerRow: View {
             VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
                 HStack(alignment: .top, spacing: DesignSystem.Spacing.md) {
                     StatusIndicator(storage: prayer.storage, size: .medium)
-                    
-                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-                        Text(prayer.title)
-                            .font(DesignSystem.Typography.headline)
-                            .foregroundColor(DesignSystem.Colors.primaryText)
-                            .lineLimit(2)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                        
-                        Text(prayer.content)
-                            .font(DesignSystem.Typography.callout)
-                            .foregroundColor(DesignSystem.Colors.secondaryText)
-                            .lineLimit(2)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    
+
+                    // 기도 내용만 표시 (대상자 정보는 하단에 별도 표시)
+                    Text(prayer.content)
+                        .font(DesignSystem.Typography.body)
+                        .foregroundColor(DesignSystem.Colors.primaryText)
+                        .lineLimit(3)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
                     VStack(spacing: DesignSystem.Spacing.sm) {
                         CategoryTag(category: prayer.category, size: .small)
-                        
+
                         if let onFavoriteToggle = onFavoriteToggle {
                             FavoriteButton(isFavorite: prayer.isFavorite) {
                                 onFavoriteToggle()
@@ -536,7 +545,6 @@ struct FavoriteButton: View {
     }
 }
 
-<<<<<<< HEAD
 // MARK: - D-Day Components
 
 /// D-Day 표시 배지 컴포넌트
@@ -613,7 +621,7 @@ struct DDayBadge: View {
         if prayer.isDDay {
             return DesignSystem.Colors.answered // 오늘 D-Day - 강조 색상
         } else if prayer.isDDayPassed {
-            return DesignSystem.Colors.unanswered // D-Day 지남 - 회색/빨간색
+            return DesignSystem.Colors.notAnswered // D-Day 지남 - 회색/빨간색
         } else if prayer.isDDayApproaching {
             return Color.orange // D-Day 임박 - 주황색
         } else {
@@ -756,7 +764,7 @@ struct DDayFormSection: View {
         if days == 0 {
             return DesignSystem.Colors.answered
         } else if days < 0 {
-            return DesignSystem.Colors.unanswered
+            return DesignSystem.Colors.notAnswered
         } else if days <= 7 {
             return Color.orange
         } else {
@@ -791,7 +799,7 @@ struct DDayDatePickerSheet: View {
                 if let days = daysUntilDate(selectedDate) {
                     HStack(spacing: DesignSystem.Spacing.sm) {
                         Text(dDayText(days: days))
-                            .font(DesignSystem.Typography.title)
+                            .font(DesignSystem.Typography.title1)
                             .fontWeight(.bold)
                             .foregroundColor(dDayColor(days: days))
                     }
@@ -856,7 +864,7 @@ struct DDayDatePickerSheet: View {
         if days == 0 {
             return DesignSystem.Colors.answered
         } else if days < 0 {
-            return DesignSystem.Colors.unanswered
+            return DesignSystem.Colors.notAnswered
         } else if days <= 7 {
             return Color.orange
         } else {
@@ -1086,7 +1094,7 @@ struct VoicePermissionAlert: View {
         VStack(spacing: DesignSystem.Spacing.xl) {
             Image(systemName: "mic.slash.fill")
                 .font(.system(size: 50))
-                .foregroundColor(DesignSystem.Colors.unanswered)
+                .foregroundColor(DesignSystem.Colors.notAnswered)
 
             VStack(spacing: DesignSystem.Spacing.md) {
                 Text(L.Voice.permissionRequired)

@@ -191,6 +191,8 @@ enum L {
         static let selectTarget = NSLocalizedString("target.select_target", comment: "Select prayer target")
         static let addNewTarget = NSLocalizedString("target.add_new", comment: "Add new target")
         static let newTargetPlaceholder = NSLocalizedString("target.new_placeholder", comment: "New target name placeholder")
+        static let searchOrAddPlaceholder = NSLocalizedString("target.search_or_add_placeholder", comment: "Search or add new target placeholder")
+        static let addAsNewTarget = NSLocalizedString("target.add_as_new", comment: "Add as new target")
 
         static func titleFormat(_ target: String, _ category: String) -> String {
             String(format: NSLocalizedString("target.title_format", comment: "Auto-generated title format"), target, category)

@@ -298,6 +298,7 @@ struct CategoryTag: View {
 struct StatusIndicator: View {
     let storage: PrayerStorage
     let size: IndicatorSize
+    var style: IndicatorStyle = .colored
 
     enum IndicatorSize {
         case small, medium, large
@@ -311,6 +312,11 @@ struct StatusIndicator: View {
         }
     }
 
+    enum IndicatorStyle {
+        case colored      // 색상 아이콘만 표시 (기도 목록용)
+        case circleWhite  // 색상 원형 배경 + 흰색 아이콘 (보관소 카드용)
+    }
+
     // filled 버전 아이콘 이름
     private var filledIconName: String {
         switch storage {
@@ -321,9 +327,20 @@ struct StatusIndicator: View {
     }
 
     var body: some View {
-        Image(systemName: filledIconName)
-            .font(.system(size: size.iconSize, weight: .medium))
-            .foregroundColor(storage.color)
-            .symbolRenderingMode(.hierarchical)
+        switch style {
+        case .colored:
+            Image(systemName: filledIconName)
+                .font(.system(size: size.iconSize, weight: .medium))
+                .foregroundColor(storage.color)
+                .symbolRenderingMode(.hierarchical)
+
+        case .circleWhite:
+            Image(systemName: storage.icon)
+                .font(.system(size: size.iconSize * 0.5, weight: .semibold))
+                .foregroundColor(.white)
+                .frame(width: size.iconSize, height: size.iconSize)
+                .background(storage.color)
+                .clipShape(Circle())
+        }
     }
 } 

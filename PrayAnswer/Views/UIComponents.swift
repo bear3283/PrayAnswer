@@ -215,14 +215,14 @@ struct ModernStorageCard: View {
     var body: some View {
         Button(action: onTap) {
             VStack(spacing: DesignSystem.Spacing.sm) {
-                StatusIndicator(storage: storage, size: .medium)
-                
+                StatusIndicator(storage: storage, size: .medium, style: .circleWhite)
+
                 VStack(spacing: DesignSystem.Spacing.xs) {
                     Text(storage.displayName)
                         .font(DesignSystem.Typography.caption)
                         .fontWeight(.semibold)
                         .foregroundColor(isSelected ? .white : DesignSystem.Colors.primaryText)
-                    
+
                     Text("\(count)")
                         .font(DesignSystem.Typography.caption2)
                         .fontWeight(.medium)
@@ -564,13 +564,13 @@ struct ModernStoragePickerView: View {
 struct ModernStorageOptionCard: View {
     let storage: PrayerStorage
     let onTap: () -> Void
-    
+
     var body: some View {
         Button(action: onTap) {
             ModernCard(shadowStyle: DesignSystem.Shadow.medium) {
                 HStack(spacing: DesignSystem.Spacing.lg) {
-                    StatusIndicator(storage: storage, size: .medium)
-                    
+                    StatusIndicator(storage: storage, size: .medium, style: .circleWhite)
+
                     VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
                         Text(storage.displayName)
                             .font(DesignSystem.Typography.headline)

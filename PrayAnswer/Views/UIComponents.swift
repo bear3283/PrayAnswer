@@ -122,27 +122,29 @@ struct ModernPrayerRow: View {
     var body: some View {
         ModernCard {
             VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
-                HStack(alignment: .top, spacing: DesignSystem.Spacing.md) {
+                // 상단: 상태 아이콘 + 카테고리 + 즐겨찾기
+                HStack(alignment: .center, spacing: DesignSystem.Spacing.sm) {
                     StatusIndicator(storage: prayer.storage, size: .medium)
 
-                    // 기도 내용만 표시 (대상자 정보는 하단에 별도 표시)
-                    Text(prayer.content)
-                        .font(DesignSystem.Typography.body)
-                        .foregroundColor(DesignSystem.Colors.primaryText)
-                        .lineLimit(3)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                    CategoryTag(category: prayer.category, size: .small)
 
-                    VStack(spacing: DesignSystem.Spacing.sm) {
-                        CategoryTag(category: prayer.category, size: .small)
+                    Spacer()
 
-                        if let onFavoriteToggle = onFavoriteToggle {
-                            FavoriteButton(isFavorite: prayer.isFavorite) {
-                                onFavoriteToggle()
-                            }
+                    if let onFavoriteToggle = onFavoriteToggle {
+                        FavoriteButton(isFavorite: prayer.isFavorite) {
+                            onFavoriteToggle()
                         }
                     }
                 }
-                
+
+                // 중간: 기도 내용 (전체 너비 사용, 3줄)
+                Text(prayer.content)
+                    .font(DesignSystem.Typography.body)
+                    .foregroundColor(DesignSystem.Colors.primaryText)
+                    .lineLimit(3)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                // 하단: 대상자/D-Day + 날짜
                 HStack {
                     if prayer.hasTarget {
                         HStack(spacing: DesignSystem.Spacing.xs) {

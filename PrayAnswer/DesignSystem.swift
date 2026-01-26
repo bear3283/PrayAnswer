@@ -298,33 +298,49 @@ struct CategoryTag: View {
 struct StatusIndicator: View {
     let storage: PrayerStorage
     let size: IndicatorSize
-    
+    var style: IndicatorStyle = .colored
+
     enum IndicatorSize {
         case small, medium, large
-        
+
         var iconSize: CGFloat {
             switch self {
-            case .small: return 16
-            case .medium: return 20
-            case .large: return 24
-            }
-        }
-        
-        var padding: CGFloat {
-            switch self {
-            case .small: return DesignSystem.Spacing.xs
-            case .medium: return DesignSystem.Spacing.sm
-            case .large: return DesignSystem.Spacing.md
+            case .small: return 24
+            case .medium: return 32
+            case .large: return 40
             }
         }
     }
-    
+
+    enum IndicatorStyle {
+        case colored      // 색상 아이콘만 표시 (기도 목록용)
+        case circleWhite  // 색상 원형 배경 + 흰색 아이콘 (보관소 카드용)
+    }
+
+    // filled 버전 아이콘 이름
+    private var filledIconName: String {
+        switch storage {
+        case .wait: return "clock.fill"
+        case .yes: return "checkmark.circle.fill"
+        case .no: return "xmark.circle.fill"
+        }
+    }
+
     var body: some View {
-        Image(systemName: storage.iconName)
-            .font(.system(size: size.iconSize, weight: .semibold))
-            .foregroundColor(.white)
-            .padding(size.padding)
-            .background(storage.color)
-            .clipShape(Circle())
+        switch style {
+        case .colored:
+            Image(systemName: filledIconName)
+                .font(.system(size: size.iconSize, weight: .medium))
+                .foregroundColor(storage.color)
+                .symbolRenderingMode(.hierarchical)
+
+        case .circleWhite:
+            Image(systemName: storage.icon)
+                .font(.system(size: size.iconSize * 0.5, weight: .semibold))
+                .foregroundColor(.white)
+                .frame(width: size.iconSize, height: size.iconSize)
+                .background(storage.color)
+                .clipShape(Circle())
+        }
     }
 } 

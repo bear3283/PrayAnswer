@@ -54,8 +54,13 @@ final class Prayer {
     var category: PrayerCategory
     var target: String // 기도 대상자
     var isFavorite: Bool // 즐겨찾기 여부
-    
-    init(title: String, content: String, category: PrayerCategory = .personal, target: String = "", storage: PrayerStorage = .wait, isFavorite: Bool = false) {
+    var targetDate: Date? // D-Day 목표 날짜
+    var notificationEnabled: Bool = false // 알림 활성화 여부 (기본값으로 마이그레이션 지원)
+    var notificationSettingsData: Data? // 알림 세부설정 JSON 저장
+    var calendarEventId: String? // 캘린더 이벤트 식별자
+
+    // 기본 이니셜라이저 (위젯에서도 사용 가능)
+    init(title: String, content: String, category: PrayerCategory = .personal, target: String = "", storage: PrayerStorage = .wait, isFavorite: Bool = false, targetDate: Date? = nil, notificationEnabled: Bool = false, notificationSettingsData: Data? = nil) {
         self.title = title
         self.content = content
         self.category = category
@@ -63,23 +68,42 @@ final class Prayer {
         self.createdDate = Date()
         self.storage = storage
         self.isFavorite = isFavorite
+        self.targetDate = targetDate
+        self.notificationEnabled = notificationEnabled
+        self.notificationSettingsData = notificationSettingsData
     }
-    
-    func updateContent(title: String, content: String, category: PrayerCategory, target: String) {
+
+    // 기본 업데이트 메서드 (위젯에서도 사용 가능)
+    func updateContent(title: String, content: String, category: PrayerCategory, target: String, targetDate: Date? = nil, notificationEnabled: Bool = false, notificationSettingsData: Data? = nil) {
         self.title = title
         self.content = content
         self.category = category
         self.target = target
+        self.targetDate = targetDate
+        self.notificationEnabled = notificationEnabled
+        if let data = notificationSettingsData {
+            self.notificationSettingsData = data
+        }
         self.modifiedDate = Date()
     }
-    
+
     func moveToStorage(_ newStorage: PrayerStorage) {
         self.storage = newStorage
         self.movedDate = Date()
     }
-    
+
     func toggleFavorite() {
         self.isFavorite.toggle()
+        self.modifiedDate = Date()
+    }
+
+    func updateTargetDate(_ date: Date?) {
+        self.targetDate = date
+        self.modifiedDate = Date()
+    }
+
+    func toggleNotification() {
+        self.notificationEnabled.toggle()
         self.modifiedDate = Date()
     }
 }
@@ -87,7 +111,51 @@ final class Prayer {
 // MARK: - Prayer Extensions
 
 extension Prayer {
-    
+
+    #if !WIDGET_EXTENSION
+    // MARK: - Convenience Initializer with NotificationSettings
+
+    /// NotificationSettings를 사용하는 편의 이니셜라이저
+    convenience init(title: String, content: String, category: PrayerCategory = .personal, target: String = "", storage: PrayerStorage = .wait, isFavorite: Bool = false, targetDate: Date? = nil, notificationEnabled: Bool = false, notificationSettings: NotificationSettings?) {
+        let settingsData = notificationSettings.flatMap { try? JSONEncoder().encode($0) }
+        self.init(title: title, content: content, category: category, target: target, storage: storage, isFavorite: isFavorite, targetDate: targetDate, notificationEnabled: notificationEnabled, notificationSettingsData: settingsData)
+    }
+
+    // MARK: - Notification Settings
+
+    /// 알림 세부설정 (JSON에서 디코딩)
+    var notificationSettings: NotificationSettings {
+        get {
+            guard let data = notificationSettingsData else { return NotificationSettings() }
+            return (try? JSONDecoder().decode(NotificationSettings.self, from: data)) ?? NotificationSettings()
+        }
+        set {
+            notificationSettingsData = try? JSONEncoder().encode(newValue)
+        }
+    }
+
+    /// 알림 세부설정 업데이트
+    func updateNotificationSettings(_ settings: NotificationSettings) {
+        notificationSettingsData = try? JSONEncoder().encode(settings)
+        notificationEnabled = settings.isEnabled
+        modifiedDate = Date()
+    }
+
+    /// NotificationSettings를 사용하는 편의 업데이트 메서드
+    func updateContent(title: String, content: String, category: PrayerCategory, target: String, targetDate: Date? = nil, notificationEnabled: Bool = false, notificationSettings: NotificationSettings?) {
+        self.title = title
+        self.content = content
+        self.category = category
+        self.target = target
+        self.targetDate = targetDate
+        self.notificationEnabled = notificationEnabled
+        if let settings = notificationSettings {
+            self.notificationSettingsData = try? JSONEncoder().encode(settings)
+        }
+        self.modifiedDate = Date()
+    }
+    #endif
+
     // MARK: - Accessibility
     
     var accessibilityLabel: String {
@@ -125,12 +193,88 @@ extension Prayer {
     var daysSinceCreated: Int {
         return Calendar.current.dateComponents([.day], from: createdDate, to: Date()).day ?? 0
     }
-    
+
+    // MARK: - D-Day Helpers
+
+    /// D-Day까지 남은 일수 (음수면 지난 날짜)
+    var daysUntilTarget: Int? {
+        guard let targetDate = targetDate else { return nil }
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        let target = calendar.startOfDay(for: targetDate)
+        return calendar.dateComponents([.day], from: today, to: target).day
+    }
+
+    /// D-Day 표시 텍스트 ("D-7", "D-Day", "D+3")
+    var dDayDisplayText: String? {
+        guard let days = daysUntilTarget else { return nil }
+        if days == 0 {
+            return "D-Day"
+        } else if days > 0 {
+            return "D-\(days)"
+        } else {
+            return "D+\(abs(days))"
+        }
+    }
+
+    /// D-Day가 설정되어 있는지 여부
+    var hasTargetDate: Bool {
+        return targetDate != nil
+    }
+
+    /// D-Day가 임박한지 여부 (7일 이내)
+    var isDDayApproaching: Bool {
+        guard let days = daysUntilTarget else { return false }
+        return days >= 0 && days <= 7
+    }
+
+    /// D-Day가 오늘인지 여부
+    var isDDay: Bool {
+        guard let days = daysUntilTarget else { return false }
+        return days == 0
+    }
+
+    /// D-Day가 지났는지 여부
+    var isDDayPassed: Bool {
+        guard let days = daysUntilTarget else { return false }
+        return days < 0
+    }
+
+    /// 캘린더에 추가되어 있는지 여부
+    var isAddedToCalendar: Bool {
+        #if !WIDGET_EXTENSION
+        guard let eventId = calendarEventId else { return false }
+        return CalendarManager.shared.eventExists(withIdentifier: eventId)
+        #else
+        return calendarEventId != nil
+        #endif
+    }
+
+    /// 캘린더 이벤트 ID 업데이트
+    func updateCalendarEventId(_ eventId: String?) {
+        self.calendarEventId = eventId
+        self.modifiedDate = Date()
+    }
+
+    /// 포맷된 목표 날짜 문자열
+    var formattedTargetDate: String? {
+        guard let targetDate = targetDate else { return nil }
+        return DateFormatter.compact.string(from: targetDate)
+    }
+
     // MARK: - Validation
     
     var isValid: Bool {
         return !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
                !content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    // MARK: - Title Generation
+
+    /// 기도대상자와 카테고리로부터 제목 자동 생성
+    static func generateTitle(from target: String, category: PrayerCategory) -> String {
+        let targetName = target.isEmpty ? L.Target.myself : target
+        return L.Target.titleFormat(targetName, category.displayName)
     }
     
     var validationErrors: [String] {
@@ -214,5 +358,41 @@ extension Array where Element == Prayer {
     
     var totalFavoritePrayers: Int {
         return favoritePrayers.count
+    }
+
+    // MARK: - D-Day Statistics
+
+    /// D-Day가 설정된 기도들
+    var prayersWithDDay: [Prayer] {
+        return filter { $0.hasTargetDate }
+    }
+
+    /// D-Day 임박순 정렬 (가까운 날짜가 먼저)
+    var sortedByDDay: [Prayer] {
+        return sorted { prayer1, prayer2 in
+            guard let days1 = prayer1.daysUntilTarget else { return false }
+            guard let days2 = prayer2.daysUntilTarget else { return true }
+            return days1 < days2
+        }
+    }
+
+    /// D-Day가 임박한 기도들 (7일 이내)
+    var approachingDDayPrayers: [Prayer] {
+        return filter { $0.isDDayApproaching }
+    }
+
+    /// 오늘이 D-Day인 기도들
+    var todayDDayPrayers: [Prayer] {
+        return filter { $0.isDDay }
+    }
+
+    /// D-Day가 지난 기도들
+    var passedDDayPrayers: [Prayer] {
+        return filter { $0.isDDayPassed }
+    }
+
+    /// 알림이 활성화된 기도들
+    var notificationEnabledPrayers: [Prayer] {
+        return filter { $0.notificationEnabled }
     }
 } 

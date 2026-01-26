@@ -123,3 +123,202 @@
 // MARK: - Validation
 "validation.title_required" = "제목이 필요합니다";
 "validation.content_required" = "기도 내용이 필요합니다";
+
+// MARK: - Target (기도대상자)
+"target.myself" = "본인";
+"target.select_target" = "기도대상자 선택";
+"target.add_new" = "새 대상자 추가";
+"target.new_placeholder" = "새 대상자 이름 입력";
+"target.search_or_add_placeholder" = "이름 검색 또는 새 대상자 추가";
+"target.add_as_new" = "새 대상자로 추가";
+"target.title_format" = "%@을(를) 위한 %@ 기도";
+"target.prayer_for_format" = "%@을(를) 위한 기도";
+
+// MARK: - D-Day
+"dday.title" = "D-Day";
+"dday.set_target_date" = "목표 날짜 설정";
+"dday.target_date" = "목표 날짜";
+"dday.enable_notification" = "알림 받기";
+"dday.notification_description" = "D-7, D-3, D-1, D-Day에 알림을 받습니다";
+"dday.clear_date" = "날짜 삭제";
+"dday.today" = "오늘이 D-Day입니다";
+"dday.approaching" = "D-Day가 다가오고 있습니다";
+"dday.passed" = "D-Day가 지났습니다";
+"dday.notification_title" = "기도 알림";
+"dday.notification_dday_title" = "오늘이 D-Day입니다!";
+"dday.notification_week_before" = "%@을(를) 위한 기도 D-Day까지 일주일 남았습니다";
+"dday.notification_3days_before" = "%@을(를) 위한 기도 D-Day까지 3일 남았습니다";
+"dday.notification_1day_before" = "%@을(를) 위한 기도 D-Day가 내일입니다";
+"dday.notification_dday" = "%@을(를) 위한 기도 D-Day입니다. 기도로 응원해주세요!";
+"dday.notification_generic" = "%@을(를) 위한 기도 D-Day까지 %d일 남았습니다";
+
+// MARK: - Voice Recording
+// Status
+"voice.recording" = "녹음 중...";
+"voice.listening" = "듣고 있습니다...";
+"voice.tap_to_start" = "탭하여 음성 입력 시작";
+"voice.tap_to_stop" = "탭하여 녹음 중지";
+
+// Buttons
+"voice.start_recording" = "녹음 시작";
+"voice.stop_recording" = "녹음 중지";
+"voice.use_text" = "텍스트 사용";
+"voice.cancel" = "취소";
+"voice.retry" = "다시 시도";
+
+// Permissions
+"voice.permission_required" = "권한 필요";
+"voice.microphone_permission" = "음성 입력을 위해 마이크 접근 권한이 필요합니다.";
+"voice.speech_permission" = "음성을 텍스트로 변환하기 위해 음성 인식 권한이 필요합니다.";
+"voice.open_settings" = "설정 열기";
+
+// Errors
+"voice.error_recording_failed" = "녹음을 시작할 수 없습니다.";
+"voice.error_recognizer_unavailable" = "음성 인식을 사용할 수 없습니다.";
+"voice.error_request_failed" = "음성 인식 요청에 실패했습니다.";
+"voice.error_permission_denied" = "마이크 또는 음성 인식 권한이 거부되었습니다.";
+"voice.error_audio_session" = "오디오 세션을 시작할 수 없습니다.";
+"voice.error_no_text" = "인식된 텍스트가 없습니다.";
+
+// Accessibility
+"voice.accessibility_microphone" = "음성으로 기도 내용 입력";
+"voice.accessibility_recording_hint" = "탭하여 음성 녹음을 시작하거나 중지합니다";
+
+// MARK: - Notification Settings
+// Section titles
+"notification.settings" = "알림 설정";
+"notification.time_settings" = "시간 설정";
+"notification.schedule_settings" = "일정 설정";
+"notification.repeat_settings" = "반복 설정";
+
+// Time
+"notification.notification_time" = "알림 시간";
+"notification.select_time" = "알림 시간 선택";
+
+// Reminder days
+"notification.reminder_days" = "알림 일자";
+"notification.select_days" = "알림받을 일자 선택";
+"notification.no_days_selected" = "선택된 일자 없음";
+"notification.no_selected_days" = "선택된 일자가 없습니다";
+
+// Repeat types
+"notification.repeat_type" = "반복 유형";
+"notification.repeat_none" = "반복 안 함";
+"notification.repeat_daily" = "매일";
+"notification.repeat_weekdays" = "평일";
+"notification.repeat_weekly" = "매주";
+"notification.repeat_custom" = "사용자 지정";
+
+// Repeat descriptions
+"notification.repeat_none_desc" = "선택한 날짜에만 알림";
+"notification.repeat_daily_desc" = "D-Day까지 매일 알림";
+"notification.repeat_weekdays_desc" = "D-Day까지 평일에만 알림";
+"notification.repeat_weekly_desc" = "D-Day까지 매주 같은 요일에 알림";
+"notification.repeat_custom_desc" = "원하는 요일을 직접 선택";
+
+// Weekday selection
+"notification.select_weekdays" = "요일 선택";
+"notification.repeat_end_date" = "반복 종료일";
+"notification.no_end_date" = "종료일 없음";
+"notification.max_repeat_count" = "최대 반복 횟수";
+"notification.unlimited" = "무제한";
+
+// Buttons
+"notification.advanced_settings" = "세부 설정";
+"notification.reset_to_default" = "기본값으로 재설정";
+
+// Preview
+"notification.preview" = "알림 미리보기";
+"notification.next_notification" = "다음 알림";
+
+// MARK: - Weekday Names
+"weekday.sunday" = "일요일";
+"weekday.monday" = "월요일";
+"weekday.tuesday" = "화요일";
+"weekday.wednesday" = "수요일";
+"weekday.thursday" = "목요일";
+"weekday.friday" = "금요일";
+"weekday.saturday" = "토요일";
+
+"weekday.sunday_short" = "일";
+"weekday.monday_short" = "월";
+"weekday.tuesday_short" = "화";
+"weekday.wednesday_short" = "수";
+"weekday.thursday_short" = "목";
+"weekday.friday_short" = "금";
+"weekday.saturday_short" = "토";
+
+// MARK: - Calendar Integration
+// Buttons
+"calendar.add_to_calendar" = "캘린더에 추가";
+"calendar.remove_from_calendar" = "캘린더에서 삭제";
+"calendar.open_calendar" = "캘린더 열기";
+
+// Status
+"calendar.added_to_calendar" = "캘린더에 추가됨";
+"calendar.not_in_calendar" = "캘린더에 없음";
+
+// Alerts
+"calendar.permission_required" = "캘린더 권한 필요";
+"calendar.permission_message" = "D-Day 일정을 캘린더에 추가하려면 캘린더 접근 권한이 필요합니다.";
+"calendar.open_settings" = "설정 열기";
+
+// Success/Error
+"calendar.add_success" = "D-Day 일정이 캘린더에 추가되었습니다";
+"calendar.remove_success" = "D-Day 일정이 캘린더에서 삭제되었습니다";
+"calendar.add_failed" = "캘린더에 추가하지 못했습니다";
+"calendar.remove_failed" = "캘린더에서 삭제하지 못했습니다";
+
+// Event content
+"calendar.event_title" = "%@을(를) 위한 기도 D-Day";
+"calendar.event_notes" = "기도 제목: %@\n\n기도 내용:\n%@";
+
+// Error messages
+"calendar.error_permission_denied" = "캘린더 접근 권한이 없습니다. 설정에서 권한을 허용해주세요.";
+"calendar.error_event_not_found" = "캘린더에서 해당 일정을 찾을 수 없습니다.";
+"calendar.error_unknown" = "알 수 없는 오류가 발생했습니다.";
+"calendar.error_save_failed" = "캘린더 저장 실패: %@";
+"calendar.error_delete_failed" = "캘린더 삭제 실패: %@";
+
+// MARK: - AI Summarization
+// Status
+"ai.processing" = "처리 중...";
+"ai.summarizing" = "AI가 정리하고 있습니다...";
+
+// Buttons
+"ai.summarize" = "AI로 정리하기";
+"ai.retry" = "다시 시도";
+"ai.apply" = "적용하기";
+"ai.use_original" = "원본 사용";
+
+// Preview
+"ai.summary_result" = "AI 정리 결과";
+"ai.summary_result_description" = "AI가 음성 내용을 기도문 형식으로 정리했습니다";
+"ai.original_text" = "원본";
+"ai.summarized_text" = "정리됨";
+"ai.original_recording" = "원본 녹음 내용";
+"ai.ai_summarized" = "AI 정리 결과";
+"ai.characters" = "자";
+"ai.reduction" = "압축률";
+"ai.original_length" = "원본 길이";
+"ai.summarized_length" = "정리 길이";
+
+// Availability
+"ai.not_available" = "AI 기능을 사용할 수 없습니다";
+"ai.requires_apple_intelligence" = "Apple Intelligence가 필요합니다";
+
+// Errors
+"ai.error_empty_input" = "정리할 텍스트가 없습니다";
+"ai.error_not_available" = "AI 기능을 사용할 수 없습니다";
+"ai.error_device_not_supported" = "이 기기에서는 AI 기능을 지원하지 않습니다";
+"ai.error_apple_intelligence_disabled" = "Apple Intelligence가 비활성화되어 있습니다. 설정에서 활성화해주세요.";
+"ai.error_model_not_ready" = "AI 모델이 아직 준비되지 않았습니다. 잠시 후 다시 시도해주세요.";
+"ai.error_summarization_failed" = "AI 정리에 실패했습니다. 다시 시도해주세요.";
+"ai.error_unknown" = "알 수 없는 오류가 발생했습니다";
+"ai.error_requires_ios26" = "AI 정리 기능은 iOS 26 이상에서 사용할 수 있습니다";
+"ai.error_user_disabled" = "AI 정리 기능이 비활성화되어 있습니다";
+
+// Settings
+"ai.settings_title" = "AI 정리 기능";
+"ai.enable_feature" = "AI로 기도문 정리";
+"ai.enable_feature_description" = "음성 녹음 후 Apple Intelligence를 사용하여 기도문을 자동으로 정리합니다";

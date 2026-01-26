@@ -3,6 +3,14 @@ import SwiftUI
 import SwiftData
 import WidgetKit
 
+/// 기도 관련 에러 타입
+enum PrayerError: Error {
+    case invalidState
+    case saveFailed
+    case deleteFailed
+    case updateFailed
+}
+
 @Observable
 final class PrayerViewModel: ObservableObject {
     private var modelContext: ModelContext
@@ -25,32 +33,42 @@ final class PrayerViewModel: ObservableObject {
         return true
     }
     
-    // 기도 추가 - 에러를 외부로 전파
-    func addPrayer(title: String, content: String, category: PrayerCategory = .personal, target: String = "") throws {
-        guard checkIfValid() else { return }
-        let newPrayer = Prayer(title: title, content: content, category: category, target: target)
+    // 기도 추가 - 에러를 외부로 전파, Prayer 객체 반환
+    @discardableResult
+    func addPrayer(title: String, content: String, category: PrayerCategory = .personal, target: String = "", targetDate: Date? = nil, notificationEnabled: Bool = false, notificationSettings: NotificationSettings? = nil) throws -> Prayer {
+        guard checkIfValid() else { throw PrayerError.invalidState }
+        let newPrayer = Prayer(title: title, content: content, category: category, target: target, targetDate: targetDate, notificationEnabled: notificationEnabled, notificationSettings: notificationSettings)
         modelContext.insert(newPrayer)
-        
+
         do {
             try modelContext.save()
             PrayerLogger.shared.prayerCreated(title: title)
-            
+
             // 위젯 데이터 업데이트
             updateWidgetData()
+
+            return newPrayer
         } catch {
             PrayerLogger.shared.prayerOperationFailed("저장", error: error)
             throw error
         }
     }
-    
+
     // 기도 수정
-    func updatePrayer(_ prayer: Prayer, title: String, content: String, category: PrayerCategory, target: String) throws {
-        prayer.updateContent(title: title, content: content, category: category, target: target)
-        
+    func updatePrayer(_ prayer: Prayer, title: String, content: String, category: PrayerCategory, target: String, targetDate: Date? = nil, notificationEnabled: Bool = false, notificationSettings: NotificationSettings? = nil) throws {
+        prayer.updateContent(title: title, content: content, category: category, target: target, targetDate: targetDate, notificationEnabled: notificationEnabled, notificationSettings: notificationSettings)
+
+        // D-Day 알림 업데이트
+        if notificationEnabled, let date = targetDate {
+            NotificationManager.shared.scheduleNotifications(for: prayer, targetDate: date)
+        } else {
+            NotificationManager.shared.cancelAllNotifications(for: prayer)
+        }
+
         do {
             try modelContext.save()
             PrayerLogger.shared.prayerUpdated(title: prayer.title)
-            
+
             // 위젯 데이터 업데이트
             updateWidgetData()
         } catch {
@@ -61,12 +79,15 @@ final class PrayerViewModel: ObservableObject {
     
     // 기도 삭제
     func deletePrayer(_ prayer: Prayer) throws {
+        // D-Day 알림 취소 (기본 + 커스텀 + 반복 알림 모두)
+        NotificationManager.shared.cancelAllNotifications(for: prayer)
+
         modelContext.delete(prayer)
-        
+
         do {
             try modelContext.save()
             PrayerLogger.shared.prayerDeleted(title: prayer.title)
-            
+
             // 위젯 데이터 업데이트
             updateWidgetData()
         } catch {

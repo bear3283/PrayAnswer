@@ -712,8 +712,24 @@ struct DDayBadge: View {
 struct DDayFormSection: View {
     @Binding var targetDate: Date?
     @Binding var notificationEnabled: Bool
+    @Binding var notificationSettings: NotificationSettings
+    @Binding var calendarEventId: String?
+    var prayer: Prayer?
     @State private var showDatePicker = false
+    @State private var showNotificationSettings = false
+    @State private var showCalendarPermissionAlert = false
+    @State private var showCalendarSuccessAlert = false
+    @State private var calendarAlertMessage = ""
+    @State private var isCalendarLoading = false
     @State private var tempDate = Date()
+
+    init(targetDate: Binding<Date?>, notificationEnabled: Binding<Bool>, notificationSettings: Binding<NotificationSettings>? = nil, calendarEventId: Binding<String?>? = nil, prayer: Prayer? = nil) {
+        self._targetDate = targetDate
+        self._notificationEnabled = notificationEnabled
+        self._notificationSettings = notificationSettings ?? .constant(NotificationSettings())
+        self._calendarEventId = calendarEventId ?? .constant(nil)
+        self.prayer = prayer
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
@@ -762,6 +778,7 @@ struct DDayFormSection: View {
                             withAnimation {
                                 targetDate = nil
                                 notificationEnabled = false
+                                notificationSettings = NotificationSettings()
                             }
                         }) {
                             Image(systemName: "xmark.circle.fill")
@@ -784,7 +801,13 @@ struct DDayFormSection: View {
             // 알림 토글 (날짜가 설정된 경우에만 표시)
             if targetDate != nil {
                 VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-                    Toggle(isOn: $notificationEnabled) {
+                    Toggle(isOn: Binding(
+                        get: { notificationEnabled },
+                        set: { newValue in
+                            notificationEnabled = newValue
+                            notificationSettings.isEnabled = newValue
+                        }
+                    )) {
                         HStack(spacing: DesignSystem.Spacing.sm) {
                             Image(systemName: notificationEnabled ? "bell.fill" : "bell")
                                 .foregroundColor(notificationEnabled ? DesignSystem.Colors.primary : DesignSystem.Colors.secondaryText)
@@ -799,7 +822,45 @@ struct DDayFormSection: View {
                     .background(DesignSystem.Colors.secondaryBackground)
                     .cornerRadius(DesignSystem.CornerRadius.medium)
 
+                    // 알림 세부설정 버튼 (알림이 활성화된 경우에만 표시)
                     if notificationEnabled {
+                        Button(action: {
+                            showNotificationSettings = true
+                        }) {
+                            HStack {
+                                Image(systemName: "gearshape")
+                                    .foregroundColor(DesignSystem.Colors.primary)
+
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(L.Notification.advancedSettings)
+                                        .font(DesignSystem.Typography.callout)
+                                        .foregroundColor(DesignSystem.Colors.primaryText)
+
+                                    Text(notificationSettingsSummary)
+                                        .font(DesignSystem.Typography.caption2)
+                                        .foregroundColor(DesignSystem.Colors.secondaryText)
+                                        .lineLimit(1)
+                                }
+
+                                Spacer()
+
+                                Image(systemName: "chevron.right")
+                                    .font(.caption)
+                                    .foregroundColor(DesignSystem.Colors.tertiaryText)
+                            }
+                            .padding(DesignSystem.Spacing.md)
+                            .background(DesignSystem.Colors.primary.opacity(0.05))
+                            .cornerRadius(DesignSystem.CornerRadius.medium)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.medium)
+                                    .stroke(DesignSystem.Colors.primary.opacity(0.2), lineWidth: 1)
+                            )
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        .transition(.opacity.combined(with: .move(edge: .top)))
+                    }
+
+                    if notificationEnabled && !notificationSettings.isEnabled {
                         Text(L.DDay.notificationDescription)
                             .font(DesignSystem.Typography.caption2)
                             .foregroundColor(DesignSystem.Colors.tertiaryText)
@@ -807,9 +868,13 @@ struct DDayFormSection: View {
                     }
                 }
                 .transition(.opacity.combined(with: .move(edge: .top)))
+
+                // 캘린더 추가 버튼
+                calendarButton
             }
         }
         .animation(DesignSystem.Animation.quick, value: targetDate != nil)
+        .animation(DesignSystem.Animation.quick, value: notificationEnabled)
         .sheet(isPresented: $showDatePicker) {
             DDayDatePickerSheet(
                 selectedDate: $tempDate,
@@ -818,6 +883,150 @@ struct DDayFormSection: View {
                 },
                 onCancel: {}
             )
+        }
+        .sheet(isPresented: $showNotificationSettings) {
+            NotificationSettingsView(settings: $notificationSettings)
+        }
+        .alert(L.Calendar.permissionRequired, isPresented: $showCalendarPermissionAlert) {
+            Button(L.Calendar.openSettings) {
+                if let settingsUrl = URL(string: UIApplication.openSettingsURLString) {
+                    UIApplication.shared.open(settingsUrl)
+                }
+            }
+            Button(L.Button.cancel, role: .cancel) { }
+        } message: {
+            Text(L.Calendar.permissionMessage)
+        }
+        .alert(L.Alert.notification, isPresented: $showCalendarSuccessAlert) {
+            Button(L.Button.confirm) { }
+        } message: {
+            Text(calendarAlertMessage)
+        }
+    }
+
+    // MARK: - Calendar Button
+
+    @ViewBuilder
+    private var calendarButton: some View {
+        if let date = targetDate {
+            Button(action: {
+                handleCalendarAction(targetDate: date)
+            }) {
+                HStack {
+                    if isCalendarLoading {
+                        ProgressView()
+                            .scaleEffect(0.8)
+                    } else {
+                        Image(systemName: isAddedToCalendar ? "calendar.badge.checkmark" : "calendar.badge.plus")
+                            .font(.title3)
+                            .foregroundColor(isAddedToCalendar ? DesignSystem.Colors.answered : DesignSystem.Colors.primary)
+                    }
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(isAddedToCalendar ? L.Calendar.addedToCalendar : L.Calendar.addToCalendar)
+                            .font(DesignSystem.Typography.body)
+                            .foregroundColor(DesignSystem.Colors.primaryText)
+
+                        if isAddedToCalendar {
+                            Text(L.Calendar.removeFromCalendar)
+                                .font(DesignSystem.Typography.caption2)
+                                .foregroundColor(DesignSystem.Colors.secondaryText)
+                        }
+                    }
+
+                    Spacer()
+
+                    Image(systemName: "chevron.right")
+                        .font(.caption)
+                        .foregroundColor(DesignSystem.Colors.tertiaryText)
+                }
+                .padding(DesignSystem.Spacing.md)
+                .background(isAddedToCalendar ? DesignSystem.Colors.answered.opacity(0.1) : DesignSystem.Colors.secondaryBackground)
+                .cornerRadius(DesignSystem.CornerRadius.medium)
+                .overlay(
+                    RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.medium)
+                        .stroke(isAddedToCalendar ? DesignSystem.Colors.answered.opacity(0.3) : Color.clear, lineWidth: 1)
+                )
+            }
+            .buttonStyle(PlainButtonStyle())
+            .disabled(isCalendarLoading)
+            .transition(.opacity.combined(with: .move(edge: .top)))
+        }
+    }
+
+    /// 캘린더에 추가되어 있는지 확인
+    private var isAddedToCalendar: Bool {
+        guard let eventId = calendarEventId else { return false }
+        return CalendarManager.shared.eventExists(withIdentifier: eventId)
+    }
+
+    /// 캘린더 액션 처리 (추가/삭제)
+    private func handleCalendarAction(targetDate: Date) {
+        if isAddedToCalendar, let eventId = calendarEventId {
+            // 캘린더에서 삭제
+            isCalendarLoading = true
+            CalendarManager.shared.removeEvent(withIdentifier: eventId) { result in
+                isCalendarLoading = false
+                switch result {
+                case .success:
+                    calendarEventId = nil
+                    calendarAlertMessage = L.Calendar.removeSuccess
+                    showCalendarSuccessAlert = true
+                case .failure(let error):
+                    calendarAlertMessage = error.localizedDescription ?? L.Calendar.removeFailed
+                    showCalendarSuccessAlert = true
+                }
+            }
+        } else {
+            // 캘린더에 추가
+            guard let prayer = prayer else {
+                calendarAlertMessage = L.Calendar.addFailed
+                showCalendarSuccessAlert = true
+                return
+            }
+
+            // 권한 확인
+            if !CalendarManager.shared.hasCalendarAccess {
+                CalendarManager.shared.requestAccess { granted, _ in
+                    if granted {
+                        addToCalendar(prayer: prayer, targetDate: targetDate)
+                    } else {
+                        showCalendarPermissionAlert = true
+                    }
+                }
+            } else {
+                addToCalendar(prayer: prayer, targetDate: targetDate)
+            }
+        }
+    }
+
+    /// 캘린더에 이벤트 추가
+    private func addToCalendar(prayer: Prayer, targetDate: Date) {
+        isCalendarLoading = true
+        CalendarManager.shared.addDDayEvent(for: prayer, targetDate: targetDate, addReminder: notificationEnabled) { result in
+            isCalendarLoading = false
+            switch result {
+            case .success(let eventId):
+                calendarEventId = eventId
+                calendarAlertMessage = L.Calendar.addSuccess
+                showCalendarSuccessAlert = true
+            case .failure(let error):
+                if case .permissionDenied = error {
+                    showCalendarPermissionAlert = true
+                } else {
+                    calendarAlertMessage = error.localizedDescription ?? L.Calendar.addFailed
+                    showCalendarSuccessAlert = true
+                }
+            }
+        }
+    }
+
+    /// 알림 설정 요약 텍스트
+    private var notificationSettingsSummary: String {
+        if notificationSettings.isEnabled {
+            return "\(notificationSettings.timeDisplayText) • \(notificationSettings.reminderDaysDisplayText)"
+        } else {
+            return L.DDay.notificationDescription
         }
     }
 
@@ -994,13 +1203,30 @@ struct VoiceRecordingButton: View {
     }
 }
 
-/// 음성 녹음 오버레이 - 녹음 중 전체 화면 표시
+/// 음성 녹음 오버레이 - 녹음 중 전체 화면 표시 (AI 정리 기능 포함)
 struct VoiceRecordingOverlay: View {
     @Bindable var speechManager: SpeechRecognitionManager
     let onUseText: (String) -> Void
     let onCancel: () -> Void
 
     @State private var pulseAnimation = false
+    @State private var isAIProcessing = false
+    @State private var showAISummaryPreview = false
+    @State private var summarizedText = ""
+    @State private var aiErrorMessage: String?
+
+    /// AI 사용자 설정 (AppStorage 연동)
+    @AppStorage("aiFeatureEnabled") private var isAIUserEnabled: Bool = true
+
+    /// AI 기능 사용 가능 여부 (시스템 지원 + 사용자 활성화)
+    private var isAIAvailable: Bool {
+        AIFeatureAvailability.isSupported
+    }
+
+    /// 시스템이 AI를 지원하는지 여부 (사용자 설정과 무관)
+    private var isAISystemSupported: Bool {
+        AIFeatureAvailability.isSystemSupported
+    }
 
     var body: some View {
         ZStack {
@@ -1009,12 +1235,70 @@ struct VoiceRecordingOverlay: View {
                 .ignoresSafeArea()
                 .onTapGesture {
                     // 배경 탭으로 취소
-                    if !speechManager.isRecording {
+                    if !speechManager.isRecording && !isAIProcessing {
                         onCancel()
                     }
                 }
 
             VStack(spacing: DesignSystem.Spacing.xxl) {
+                // AI 토글 버튼 (시스템이 지원하는 경우에만 표시)
+                if isAISystemSupported {
+                    HStack {
+                        Spacer()
+                        Button(action: {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                isAIUserEnabled.toggle()
+                            }
+                        }) {
+                            HStack(spacing: DesignSystem.Spacing.xs) {
+                                Image(systemName: isAIUserEnabled ? "sparkles" : "sparkles.slash")
+                                    .font(.caption)
+                                Text(isAIUserEnabled ? "AI ON" : "AI OFF")
+                                    .font(DesignSystem.Typography.caption)
+                                    .fontWeight(.medium)
+                            }
+                            .foregroundColor(isAIUserEnabled ? .cyan : .white.opacity(0.5))
+                            .padding(.horizontal, DesignSystem.Spacing.md)
+                            .padding(.vertical, DesignSystem.Spacing.sm)
+                            .background(
+                                isAIUserEnabled
+                                    ? LinearGradient(
+                                        colors: [.purple.opacity(0.3), .blue.opacity(0.3), .cyan.opacity(0.3)],
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
+                                    : LinearGradient(
+                                        colors: [.white.opacity(0.1), .white.opacity(0.1)],
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
+                            )
+                            .cornerRadius(DesignSystem.CornerRadius.medium)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.medium)
+                                    .stroke(
+                                        isAIUserEnabled
+                                            ? LinearGradient(
+                                                colors: [.purple.opacity(0.5), .cyan.opacity(0.5)],
+                                                startPoint: .leading,
+                                                endPoint: .trailing
+                                            )
+                                            : LinearGradient(
+                                                colors: [.white.opacity(0.2), .white.opacity(0.2)],
+                                                startPoint: .leading,
+                                                endPoint: .trailing
+                                            ),
+                                        lineWidth: 1
+                                    )
+                            )
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        .disabled(isAIProcessing)
+                    }
+                    .padding(.horizontal, DesignSystem.Spacing.xl)
+                    .padding(.top, DesignSystem.Spacing.xl)
+                }
+
                 Spacer()
 
                 // 녹음 상태 인디케이터
@@ -1042,12 +1326,46 @@ struct VoiceRecordingOverlay: View {
                             )
                     }
 
-                    // 마이크 버튼
+                    // AI 처리 중 애니메이션
+                    if isAIProcessing {
+                        Circle()
+                            .fill(
+                                LinearGradient(
+                                    colors: [.purple.opacity(0.3), .blue.opacity(0.3), .cyan.opacity(0.3)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .frame(width: 160, height: 160)
+                            .scaleEffect(pulseAnimation ? 1.2 : 1.0)
+                            .opacity(pulseAnimation ? 0 : 0.5)
+                            .animation(
+                                .easeInOut(duration: 1.5).repeatForever(autoreverses: true),
+                                value: pulseAnimation
+                            )
+                    }
+
+                    // 마이크/AI 버튼
                     Button(action: {
-                        speechManager.toggleRecording()
+                        if !isAIProcessing {
+                            speechManager.toggleRecording()
+                        }
                     }) {
                         Circle()
-                            .fill(speechManager.isRecording ? Color.red : DesignSystem.Colors.primary)
+                            .fill(
+                                isAIProcessing
+                                    ? LinearGradient(
+                                        colors: [.purple, .blue, .cyan],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                    : LinearGradient(
+                                        colors: [speechManager.isRecording ? .red : DesignSystem.Colors.primary,
+                                                 speechManager.isRecording ? .red : DesignSystem.Colors.primary],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                            )
                             .frame(width: 120, height: 120)
                             .shadow(
                                 color: (speechManager.isRecording ? Color.red : DesignSystem.Colors.primary).opacity(0.4),
@@ -1056,12 +1374,21 @@ struct VoiceRecordingOverlay: View {
                                 y: 10
                             )
                             .overlay(
-                                Image(systemName: speechManager.isRecording ? "stop.fill" : "mic.fill")
-                                    .font(.system(size: 50, weight: .medium))
-                                    .foregroundColor(.white)
+                                Group {
+                                    if isAIProcessing {
+                                        ProgressView()
+                                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                            .scaleEffect(2)
+                                    } else {
+                                        Image(systemName: speechManager.isRecording ? "stop.fill" : "mic.fill")
+                                            .font(.system(size: 50, weight: .medium))
+                                            .foregroundColor(.white)
+                                    }
+                                }
                             )
                     }
                     .buttonStyle(PlainButtonStyle())
+                    .disabled(isAIProcessing)
                 }
                 .onAppear {
                     pulseAnimation = true
@@ -1069,11 +1396,23 @@ struct VoiceRecordingOverlay: View {
 
                 // 상태 텍스트
                 VStack(spacing: DesignSystem.Spacing.md) {
-                    Text(speechManager.isRecording ? L.Voice.listening : L.Voice.tapToStart)
-                        .font(DesignSystem.Typography.headline)
-                        .foregroundColor(.white)
+                    if isAIProcessing {
+                        Text(L.AI.summarizing)
+                            .font(DesignSystem.Typography.headline)
+                            .foregroundStyle(
+                                LinearGradient(
+                                    colors: [.purple, .blue, .cyan],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
+                    } else {
+                        Text(speechManager.isRecording ? L.Voice.listening : L.Voice.tapToStart)
+                            .font(DesignSystem.Typography.headline)
+                            .foregroundColor(.white)
+                    }
 
-                    if let errorMessage = speechManager.errorMessage {
+                    if let errorMessage = speechManager.errorMessage ?? aiErrorMessage {
                         Text(errorMessage)
                             .font(DesignSystem.Typography.caption)
                             .foregroundColor(Color.red.opacity(0.9))
@@ -1102,44 +1441,91 @@ struct VoiceRecordingOverlay: View {
                 Spacer()
 
                 // 하단 버튼
-                HStack(spacing: DesignSystem.Spacing.xl) {
-                    // 취소 버튼
-                    Button(action: {
-                        speechManager.stopRecording()
-                        speechManager.clearText()
-                        onCancel()
-                    }) {
-                        HStack(spacing: DesignSystem.Spacing.sm) {
-                            Image(systemName: "xmark")
-                            Text(L.Voice.cancel)
-                        }
-                        .font(DesignSystem.Typography.headline)
-                        .foregroundColor(.white.opacity(0.8))
-                        .padding(.horizontal, DesignSystem.Spacing.xl)
-                        .padding(.vertical, DesignSystem.Spacing.md)
-                        .background(Color.white.opacity(0.2))
-                        .cornerRadius(DesignSystem.CornerRadius.large)
-                    }
-                    .buttonStyle(PlainButtonStyle())
-
-                    // 텍스트 사용 버튼 (텍스트가 있을 때만)
-                    if !speechManager.recognizedText.isEmpty && !speechManager.isRecording {
+                VStack(spacing: DesignSystem.Spacing.md) {
+                    // AI 정리 버튼 (텍스트가 있고 녹음이 완료된 경우에만)
+                    if !speechManager.recognizedText.isEmpty && !speechManager.isRecording && isAIAvailable {
                         Button(action: {
-                            onUseText(speechManager.recognizedText)
-                            speechManager.clearText()
+                            performAISummarization()
                         }) {
                             HStack(spacing: DesignSystem.Spacing.sm) {
-                                Image(systemName: "checkmark")
-                                Text(L.Voice.useText)
+                                Image(systemName: "sparkles")
+                                Text(L.AI.summarize)
                             }
                             .font(DesignSystem.Typography.headline)
-                            .foregroundColor(.white)
+                            .foregroundStyle(
+                                LinearGradient(
+                                    colors: [.purple, .blue, .cyan],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
                             .padding(.horizontal, DesignSystem.Spacing.xl)
                             .padding(.vertical, DesignSystem.Spacing.md)
-                            .background(DesignSystem.Colors.primary)
+                            .background(
+                                LinearGradient(
+                                    colors: [.purple.opacity(0.2), .blue.opacity(0.2), .cyan.opacity(0.2)],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
+                            .cornerRadius(DesignSystem.CornerRadius.large)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.large)
+                                    .stroke(
+                                        LinearGradient(
+                                            colors: [.purple.opacity(0.5), .blue.opacity(0.5), .cyan.opacity(0.5)],
+                                            startPoint: .leading,
+                                            endPoint: .trailing
+                                        ),
+                                        lineWidth: 1
+                                    )
+                            )
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        .disabled(isAIProcessing)
+                    }
+
+                    HStack(spacing: DesignSystem.Spacing.xl) {
+                        // 취소 버튼
+                        Button(action: {
+                            speechManager.stopRecording()
+                            speechManager.clearText()
+                            onCancel()
+                        }) {
+                            HStack(spacing: DesignSystem.Spacing.sm) {
+                                Image(systemName: "xmark")
+                                Text(L.Voice.cancel)
+                            }
+                            .font(DesignSystem.Typography.headline)
+                            .foregroundColor(.white.opacity(0.8))
+                            .padding(.horizontal, DesignSystem.Spacing.xl)
+                            .padding(.vertical, DesignSystem.Spacing.md)
+                            .background(Color.white.opacity(0.2))
                             .cornerRadius(DesignSystem.CornerRadius.large)
                         }
                         .buttonStyle(PlainButtonStyle())
+                        .disabled(isAIProcessing)
+
+                        // 텍스트 사용 버튼 (텍스트가 있을 때만)
+                        if !speechManager.recognizedText.isEmpty && !speechManager.isRecording {
+                            Button(action: {
+                                onUseText(speechManager.recognizedText)
+                                speechManager.clearText()
+                            }) {
+                                HStack(spacing: DesignSystem.Spacing.sm) {
+                                    Image(systemName: "checkmark")
+                                    Text(L.Voice.useText)
+                                }
+                                .font(DesignSystem.Typography.headline)
+                                .foregroundColor(.white)
+                                .padding(.horizontal, DesignSystem.Spacing.xl)
+                                .padding(.vertical, DesignSystem.Spacing.md)
+                                .background(DesignSystem.Colors.primary)
+                                .cornerRadius(DesignSystem.CornerRadius.large)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                            .disabled(isAIProcessing)
+                        }
                     }
                 }
                 .padding(.bottom, DesignSystem.Spacing.xxxl)
@@ -1147,6 +1533,59 @@ struct VoiceRecordingOverlay: View {
         }
         .animation(DesignSystem.Animation.standard, value: speechManager.isRecording)
         .animation(DesignSystem.Animation.standard, value: speechManager.recognizedText)
+        .animation(DesignSystem.Animation.standard, value: isAIProcessing)
+        .sheet(isPresented: $showAISummaryPreview) {
+            AISummaryPreviewView(
+                originalText: speechManager.recognizedText,
+                summarizedText: $summarizedText,
+                onApply: {
+                    onUseText(summarizedText)
+                    speechManager.clearText()
+                    showAISummaryPreview = false
+                },
+                onCancel: {
+                    showAISummaryPreview = false
+                },
+                onRetry: {
+                    showAISummaryPreview = false
+                    performAISummarization()
+                }
+            )
+            .presentationDetents([.large])
+            .presentationDragIndicator(.visible)
+        }
+    }
+
+    // MARK: - AI Summarization
+
+    private func performAISummarization() {
+        guard !speechManager.recognizedText.isEmpty else { return }
+
+        isAIProcessing = true
+        aiErrorMessage = nil
+
+        Task {
+            do {
+                if #available(iOS 26.0, *) {
+                    let result = try await AISummarizationManager.shared.summarize(text: speechManager.recognizedText)
+                    await MainActor.run {
+                        summarizedText = result
+                        isAIProcessing = false
+                        showAISummaryPreview = true
+                    }
+                } else {
+                    await MainActor.run {
+                        aiErrorMessage = L.AI.errorRequiresiOS26
+                        isAIProcessing = false
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    aiErrorMessage = error.localizedDescription
+                    isAIProcessing = false
+                }
+            }
+        }
     }
 }
 

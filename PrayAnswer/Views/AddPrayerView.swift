@@ -9,6 +9,7 @@ struct AddPrayerView: View {
     @State private var target = ""
     @State private var targetDate: Date? = nil
     @State private var notificationEnabled: Bool = false
+    @State private var notificationSettings: NotificationSettings = NotificationSettings()
     @State private var showingAlert = false
     @State private var showingSuccessAlert = false
     @State private var alertMessage = ""
@@ -114,7 +115,8 @@ struct AddPrayerView: View {
                         ModernCard {
                             DDayFormSection(
                                 targetDate: $targetDate,
-                                notificationEnabled: $notificationEnabled
+                                notificationEnabled: $notificationEnabled,
+                                notificationSettings: $notificationSettings
                             )
                             .padding(DesignSystem.Spacing.lg)
                         }
@@ -317,6 +319,10 @@ struct AddPrayerView: View {
         }
 
         do {
+            // 알림 설정 동기화
+            var finalSettings = notificationSettings
+            finalSettings.isEnabled = notificationEnabled
+
             // 기도 저장 (제목은 자동 생성)
             let prayer = try viewModel.addPrayer(
                 title: generatedTitle,
@@ -324,7 +330,8 @@ struct AddPrayerView: View {
                 category: category,
                 target: target.trimmingCharacters(in: .whitespacesAndNewlines),
                 targetDate: targetDate,
-                notificationEnabled: notificationEnabled
+                notificationEnabled: notificationEnabled,
+                notificationSettings: finalSettings
             )
 
             // D-Day 알림 스케줄링
@@ -356,6 +363,7 @@ struct AddPrayerView: View {
         target = ""
         targetDate = nil
         notificationEnabled = false
+        notificationSettings = NotificationSettings()
 
         // 폼 초기화 후 내용 필드에 다시 포커스
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {

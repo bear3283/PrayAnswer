@@ -56,8 +56,11 @@ final class Prayer {
     var isFavorite: Bool // 즐겨찾기 여부
     var targetDate: Date? // D-Day 목표 날짜
     var notificationEnabled: Bool = false // 알림 활성화 여부 (기본값으로 마이그레이션 지원)
+    var notificationSettingsData: Data? // 알림 세부설정 JSON 저장
+    var calendarEventId: String? // 캘린더 이벤트 식별자
 
-    init(title: String, content: String, category: PrayerCategory = .personal, target: String = "", storage: PrayerStorage = .wait, isFavorite: Bool = false, targetDate: Date? = nil, notificationEnabled: Bool = false) {
+    // 기본 이니셜라이저 (위젯에서도 사용 가능)
+    init(title: String, content: String, category: PrayerCategory = .personal, target: String = "", storage: PrayerStorage = .wait, isFavorite: Bool = false, targetDate: Date? = nil, notificationEnabled: Bool = false, notificationSettingsData: Data? = nil) {
         self.title = title
         self.content = content
         self.category = category
@@ -67,15 +70,20 @@ final class Prayer {
         self.isFavorite = isFavorite
         self.targetDate = targetDate
         self.notificationEnabled = notificationEnabled
+        self.notificationSettingsData = notificationSettingsData
     }
 
-    func updateContent(title: String, content: String, category: PrayerCategory, target: String, targetDate: Date? = nil, notificationEnabled: Bool = false) {
+    // 기본 업데이트 메서드 (위젯에서도 사용 가능)
+    func updateContent(title: String, content: String, category: PrayerCategory, target: String, targetDate: Date? = nil, notificationEnabled: Bool = false, notificationSettingsData: Data? = nil) {
         self.title = title
         self.content = content
         self.category = category
         self.target = target
         self.targetDate = targetDate
         self.notificationEnabled = notificationEnabled
+        if let data = notificationSettingsData {
+            self.notificationSettingsData = data
+        }
         self.modifiedDate = Date()
     }
 
@@ -103,7 +111,51 @@ final class Prayer {
 // MARK: - Prayer Extensions
 
 extension Prayer {
-    
+
+    #if !WIDGET_EXTENSION
+    // MARK: - Convenience Initializer with NotificationSettings
+
+    /// NotificationSettings를 사용하는 편의 이니셜라이저
+    convenience init(title: String, content: String, category: PrayerCategory = .personal, target: String = "", storage: PrayerStorage = .wait, isFavorite: Bool = false, targetDate: Date? = nil, notificationEnabled: Bool = false, notificationSettings: NotificationSettings?) {
+        let settingsData = notificationSettings.flatMap { try? JSONEncoder().encode($0) }
+        self.init(title: title, content: content, category: category, target: target, storage: storage, isFavorite: isFavorite, targetDate: targetDate, notificationEnabled: notificationEnabled, notificationSettingsData: settingsData)
+    }
+
+    // MARK: - Notification Settings
+
+    /// 알림 세부설정 (JSON에서 디코딩)
+    var notificationSettings: NotificationSettings {
+        get {
+            guard let data = notificationSettingsData else { return NotificationSettings() }
+            return (try? JSONDecoder().decode(NotificationSettings.self, from: data)) ?? NotificationSettings()
+        }
+        set {
+            notificationSettingsData = try? JSONEncoder().encode(newValue)
+        }
+    }
+
+    /// 알림 세부설정 업데이트
+    func updateNotificationSettings(_ settings: NotificationSettings) {
+        notificationSettingsData = try? JSONEncoder().encode(settings)
+        notificationEnabled = settings.isEnabled
+        modifiedDate = Date()
+    }
+
+    /// NotificationSettings를 사용하는 편의 업데이트 메서드
+    func updateContent(title: String, content: String, category: PrayerCategory, target: String, targetDate: Date? = nil, notificationEnabled: Bool = false, notificationSettings: NotificationSettings?) {
+        self.title = title
+        self.content = content
+        self.category = category
+        self.target = target
+        self.targetDate = targetDate
+        self.notificationEnabled = notificationEnabled
+        if let settings = notificationSettings {
+            self.notificationSettingsData = try? JSONEncoder().encode(settings)
+        }
+        self.modifiedDate = Date()
+    }
+    #endif
+
     // MARK: - Accessibility
     
     var accessibilityLabel: String {
@@ -186,6 +238,22 @@ extension Prayer {
     var isDDayPassed: Bool {
         guard let days = daysUntilTarget else { return false }
         return days < 0
+    }
+
+    /// 캘린더에 추가되어 있는지 여부
+    var isAddedToCalendar: Bool {
+        #if !WIDGET_EXTENSION
+        guard let eventId = calendarEventId else { return false }
+        return CalendarManager.shared.eventExists(withIdentifier: eventId)
+        #else
+        return calendarEventId != nil
+        #endif
+    }
+
+    /// 캘린더 이벤트 ID 업데이트
+    func updateCalendarEventId(_ eventId: String?) {
+        self.calendarEventId = eventId
+        self.modifiedDate = Date()
     }
 
     /// 포맷된 목표 날짜 문자열

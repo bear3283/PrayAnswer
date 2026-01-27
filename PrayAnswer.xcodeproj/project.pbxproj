@@ -61,12 +61,20 @@
 			);
 			target = 09858FB62E177FD30062F295 /* PrayerWidgetExtension */;
 		};
+		09A4525F2F289D9C001A2D7D /* Exceptions for "PrayAnswer" folder in "PrayAnswer" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 0900991B2E10474300690554 /* PrayAnswer */;
+		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		0900991E2E10474300690554 /* PrayAnswer */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
+				09A4525F2F289D9C001A2D7D /* Exceptions for "PrayAnswer" folder in "PrayAnswer" target */,
 				09858FD72E1AB8F30062F295 /* Exceptions for "PrayAnswer" folder in "PrayerWidgetExtension" target */,
 			);
 			path = PrayAnswer;
@@ -374,8 +382,12 @@
 				DEVELOPMENT_TEAM = 36CPZWS26C;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = PrayAnswer/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Pray;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";
+				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "D-Day를 캘린더에 추가하여 일정을 관리할 수 있습니다.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "음성으로 기도 내용을 입력할 수 있습니다.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "음성을 텍스트로 변환하여 기도문을 작성할 수 있습니다.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -410,8 +422,12 @@
 				DEVELOPMENT_TEAM = 36CPZWS26C;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = PrayAnswer/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Pray;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";
+				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "D-Day를 캘린더에 추가하여 일정을 관리할 수 있습니다.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "음성으로 기도 내용을 입력할 수 있습니다.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "음성을 텍스트로 변환하여 기도문을 작성할 수 있습니다.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

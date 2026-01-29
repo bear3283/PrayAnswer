@@ -5,6 +5,7 @@ struct PrayerDetailView: View {
     let prayer: Prayer
     @Environment(\.modelContext) private var modelContext
     @Environment(\.presentationMode) var presentationMode
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     @State private var isEditing = false
     @State private var editedContent = ""
@@ -48,7 +49,9 @@ struct PrayerDetailView: View {
                 }
                 .padding(.horizontal, DesignSystem.Spacing.xl)
                 .padding(.bottom, DesignSystem.Spacing.xxxl)
+                .adaptiveFrame(sizeClass: horizontalSizeClass, maxWidth: DesignSystem.AdaptiveLayout.maxDetailWidth)
             }
+            .frame(maxWidth: .infinity)
         }
         .navigationTitle(isEditing ? L.Nav.prayerEdit : L.Nav.prayerDetail)
         .navigationBarTitleDisplayMode(.inline)

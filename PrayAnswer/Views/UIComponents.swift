@@ -13,14 +13,19 @@ extension View {
 
 /// iOS 전화 앱 스타일의 인라인 헤더 - 중앙 제목 + 하단 페이드 효과
 struct InlineHeader: View {
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     let title: String
     var showFadeGradient: Bool = true
+
+    private var fontSize: CGFloat {
+        horizontalSizeClass == .regular ? 20 : 17
+    }
 
     var body: some View {
         VStack(spacing: 0) {
             // 헤더 영역
             Text(title)
-                .font(.system(size: 17, weight: .semibold))
+                .font(.system(size: fontSize, weight: .semibold))
                 .foregroundColor(DesignSystem.Colors.primaryText)
                 .frame(maxWidth: .infinity, alignment: .center)
                 .padding(.vertical, 11)
@@ -46,12 +51,17 @@ struct InlineHeader: View {
 
 /// 스크롤 가능한 리스트용 헤더 컨테이너 - ZStack으로 오버레이
 struct ScrollFadeHeaderContainer<Content: View>: View {
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     let title: String
     let content: Content
 
     init(title: String, @ViewBuilder content: () -> Content) {
         self.title = title
         self.content = content()
+    }
+
+    private var fontSize: CGFloat {
+        horizontalSizeClass == .regular ? 20 : 17
     }
 
     var body: some View {
@@ -64,7 +74,7 @@ struct ScrollFadeHeaderContainer<Content: View>: View {
             VStack(spacing: 0) {
                 // 헤더 영역
                 Text(title)
-                    .font(.system(size: 17, weight: .semibold))
+                    .font(.system(size: fontSize, weight: .semibold))
                     .foregroundColor(DesignSystem.Colors.primaryText)
                     .frame(maxWidth: .infinity, alignment: .center)
                     .frame(height: 44)

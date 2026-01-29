@@ -3,6 +3,7 @@ import SwiftData
 
 struct AddPrayerView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Binding var selectedTab: Int
     @State private var content = ""
     @State private var category: PrayerCategory = .personal
@@ -32,6 +33,90 @@ struct AddPrayerView: View {
     }
 
     var body: some View {
+        Group {
+            if horizontalSizeClass == .regular {
+                // iPad: NavigationView 없이 컨텐츠만
+                iPadAddPrayerContent
+            } else {
+                // iPhone: 기존 NavigationView 구조
+                iPhoneAddPrayerContent
+            }
+        }
+    }
+
+    // MARK: - iPad Content
+
+    @ViewBuilder
+    private var iPadAddPrayerContent: some View {
+        ScrollView {
+            VStack(spacing: DesignSystem.Spacing.xl) {
+                formContent
+                    .frame(maxWidth: DesignSystem.AdaptiveLayout.maxFormWidth)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, DesignSystem.Spacing.xl)
+        }
+        .scrollDismissesKeyboard(.interactively)
+        .background(DesignSystem.Colors.background)
+        .onAppear {
+            if prayerViewModel == nil {
+                prayerViewModel = PrayerViewModel(modelContext: modelContext)
+            }
+            PrayerLogger.shared.viewDidAppear("AddPrayerView")
+            PrayerLogger.shared.logMemoryUsage()
+        }
+        .alert(L.Alert.notification, isPresented: $showingAlert) {
+            Button(L.Button.confirm) { }
+        } message: {
+            Text(alertMessage)
+        }
+        .alert(L.Alert.saveComplete, isPresented: $showingSuccessAlert) {
+            Button(L.Button.confirm) { }
+        } message: {
+            Text(L.Success.saveMessage)
+        }
+        .fullScreenCover(isPresented: $showVoiceRecordingOverlay) {
+            VoiceRecordingOverlay(
+                speechManager: speechManager,
+                onUseText: { text in
+                    if content.isEmpty {
+                        content = text
+                    } else {
+                        content += "\n" + text
+                    }
+                    showVoiceRecordingOverlay = false
+                },
+                onCancel: {
+                    showVoiceRecordingOverlay = false
+                }
+            )
+            .background(ClearBackgroundView())
+        }
+        .sheet(isPresented: $showVoicePermissionAlert) {
+            VStack {
+                Spacer()
+                VoicePermissionAlert(
+                    onOpenSettings: {
+                        if let settingsUrl = URL(string: UIApplication.openSettingsURLString) {
+                            UIApplication.shared.open(settingsUrl)
+                        }
+                        showVoicePermissionAlert = false
+                    },
+                    onCancel: {
+                        showVoicePermissionAlert = false
+                    }
+                )
+                Spacer()
+            }
+            .presentationDetents([.medium])
+            .presentationDragIndicator(.visible)
+        }
+    }
+
+    // MARK: - iPhone Content
+
+    @ViewBuilder
+    private var iPhoneAddPrayerContent: some View {
         NavigationView {
             ZStack(alignment: .top) {
                 // 메인 스크롤 컨텐츠
@@ -40,161 +125,13 @@ struct AddPrayerView: View {
                         // 헤더 공간 확보
                         Color.clear.frame(height: 44)
 
-                        // 폼 섹션들
-                    VStack(spacing: DesignSystem.Spacing.lg) {
-                        // 기도대상자 선택 (상단으로 이동)
-                        ModernCard {
-                            TargetPicker(
-                                selectedTarget: $target,
-                                existingTargets: existingTargets
-                            )
-                            .padding(DesignSystem.Spacing.lg)
-                        }
-
-                        // 기도 내용 입력 (음성 녹음 버튼 포함)
-                        ModernCard {
-                            VStack(spacing: DesignSystem.Spacing.md) {
-                                VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-                                    HStack {
-                                        Text(L.Label.prayerContent)
-                                            .font(DesignSystem.Typography.callout)
-                                            .foregroundColor(DesignSystem.Colors.primaryText)
-                                            .fontWeight(.medium)
-
-                                        Spacer()
-
-                                        // 음성 녹음 버튼
-                                        VoiceRecordingButton(isRecording: speechManager.isRecording) {
-                                            startVoiceRecording()
-                                        }
-                                    }
-
-                                    ZStack(alignment: .topLeading) {
-                                        TextEditor(text: $content)
-                                            .font(DesignSystem.Typography.body)
-                                            .padding(DesignSystem.Spacing.md)
-                                            .scrollContentBackground(.hidden)
-                                            .background(DesignSystem.Colors.secondaryBackground)
-                                            .frame(height: 200)
-                                            .cornerRadius(DesignSystem.CornerRadius.medium)
-                                            .focused($isContentFieldFocused)
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.medium)
-                                                    .stroke(
-                                                        content.isEmpty ? Color.clear : DesignSystem.Colors.primary.opacity(0.3),
-                                                        lineWidth: 1
-                                                    )
-                                            )
-
-                                        if content.isEmpty {
-                                            Text(L.Placeholder.content)
-                                                .font(DesignSystem.Typography.body)
-                                                .foregroundColor(DesignSystem.Colors.tertiaryText)
-                                                .padding(.horizontal, DesignSystem.Spacing.md + 4)
-                                                .padding(.vertical, DesignSystem.Spacing.md + 8)
-                                                .allowsHitTesting(false)
-                                        }
-                                    }
-                                    .animation(DesignSystem.Animation.quick, value: content.isEmpty)
-                                }
-                            }
-                            .padding(DesignSystem.Spacing.lg)
-                        }
-
-                        // 분류 섹션
-                        ModernFormSection(title: L.Label.classification) {
-                            VStack(spacing: DesignSystem.Spacing.md) {
-                                ModernCategoryPicker(
-                                    title: L.Label.category,
-                                    selection: $category
-                                )
-                            }
-                        }
-
-                        // D-Day 섹션
-                        ModernCard {
-                            DDayFormSection(
-                                targetDate: $targetDate,
-                                notificationEnabled: $notificationEnabled,
-                                notificationSettings: $notificationSettings
-                            )
-                            .padding(DesignSystem.Spacing.lg)
-                        }
-
-                        // 생성될 기도 제목 미리보기
-                        if !content.isEmpty {
-                            ModernCard(
-                                backgroundColor: DesignSystem.Colors.primary.opacity(0.05),
-                                cornerRadius: DesignSystem.CornerRadius.medium,
-                                shadowStyle: DesignSystem.Shadow.small
-                            ) {
-                                HStack(spacing: DesignSystem.Spacing.md) {
-                                    Image(systemName: "text.quote")
-                                        .font(.title3)
-                                        .foregroundColor(DesignSystem.Colors.primary)
-
-                                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
-                                        Text(L.Label.title)
-                                            .font(DesignSystem.Typography.caption)
-                                            .foregroundColor(DesignSystem.Colors.secondaryText)
-
-                                        Text(generatedTitle)
-                                            .font(DesignSystem.Typography.callout)
-                                            .fontWeight(.medium)
-                                            .foregroundColor(DesignSystem.Colors.primaryText)
-                                    }
-
-                                    Spacer()
-                                }
-                                .padding(DesignSystem.Spacing.md)
-                            }
-                        }
-
-                        // 저장 안내
-                        ModernCard(
-                            backgroundColor: DesignSystem.Colors.wait.opacity(0.1),
-                            cornerRadius: DesignSystem.CornerRadius.medium,
-                            shadowStyle: DesignSystem.Shadow.small
-                        ) {
-                            HStack(spacing: DesignSystem.Spacing.md) {
-                                StatusIndicator(storage: .wait, size: .medium)
-
-                                VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
-                                    Text(L.Info.saveNotice)
-                                        .font(DesignSystem.Typography.caption)
-                                        .fontWeight(.semibold)
-                                        .foregroundColor(DesignSystem.Colors.primaryText)
-
-                                    Text(L.Info.saveDescription)
-                                        .font(DesignSystem.Typography.caption2)
-                                        .foregroundColor(DesignSystem.Colors.secondaryText)
-                                }
-
-                                Spacer()
-                            }
-                            .padding(DesignSystem.Spacing.md)
-                        }
-
-                        // 저장 버튼
-                        ModernButton(
-                            title: L.Button.savePrayer,
-                            style: .primary,
-                            size: .large
-                        ) {
-                            savePrayer()
-                        }
-                        .disabled(content.isEmpty)
-                        .opacity(content.isEmpty ? 0.6 : 1.0)
-                        .animation(.easeInOut(duration: 0.2), value: content.isEmpty)
+                        formContent
+                            .padding(.top, DesignSystem.Spacing.lg)
+                            .padding(.bottom, DesignSystem.Spacing.xxxl)
                     }
-                    .padding(.horizontal, DesignSystem.Spacing.xl)
-                    .padding(.top, DesignSystem.Spacing.lg)
-                    .padding(.bottom, DesignSystem.Spacing.xxxl)
-                }
                 }
                 .scrollDismissesKeyboard(.interactively)
                 .onTapGesture {
-                    // 빈 공간 탭 시 키보드 dismiss
                     isContentFieldFocused = false
                 }
 
@@ -211,7 +148,6 @@ struct AddPrayerView: View {
                 if prayerViewModel == nil {
                     prayerViewModel = PrayerViewModel(modelContext: modelContext)
                 }
-
                 PrayerLogger.shared.viewDidAppear("AddPrayerView")
                 PrayerLogger.shared.logMemoryUsage()
             }
@@ -236,7 +172,6 @@ struct AddPrayerView: View {
                 VoiceRecordingOverlay(
                     speechManager: speechManager,
                     onUseText: { text in
-                        // 인식된 텍스트를 기도 내용에 추가
                         if content.isEmpty {
                             content = text
                         } else {
@@ -270,6 +205,158 @@ struct AddPrayerView: View {
                 .presentationDragIndicator(.visible)
             }
         }
+    }
+
+    // MARK: - Form Content (Shared)
+
+    @ViewBuilder
+    private var formContent: some View {
+        VStack(spacing: DesignSystem.Spacing.lg) {
+            // 기도대상자 선택
+            ModernCard {
+                TargetPicker(
+                    selectedTarget: $target,
+                    existingTargets: existingTargets
+                )
+                .padding(DesignSystem.Spacing.lg)
+            }
+
+            // 기도 내용 입력 (음성 녹음 버튼 포함)
+            ModernCard {
+                VStack(spacing: DesignSystem.Spacing.md) {
+                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+                        HStack {
+                            Text(L.Label.prayerContent)
+                                .font(DesignSystem.Typography.callout)
+                                .foregroundColor(DesignSystem.Colors.primaryText)
+                                .fontWeight(.medium)
+
+                            Spacer()
+
+                            VoiceRecordingButton(isRecording: speechManager.isRecording) {
+                                startVoiceRecording()
+                            }
+                        }
+
+                        ZStack(alignment: .topLeading) {
+                            TextEditor(text: $content)
+                                .font(DesignSystem.Typography.body)
+                                .padding(DesignSystem.Spacing.md)
+                                .scrollContentBackground(.hidden)
+                                .background(DesignSystem.Colors.secondaryBackground)
+                                .frame(height: 200)
+                                .cornerRadius(DesignSystem.CornerRadius.medium)
+                                .focused($isContentFieldFocused)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.medium)
+                                        .stroke(
+                                            content.isEmpty ? Color.clear : DesignSystem.Colors.primary.opacity(0.3),
+                                            lineWidth: 1
+                                        )
+                                )
+
+                            if content.isEmpty {
+                                Text(L.Placeholder.content)
+                                    .font(DesignSystem.Typography.body)
+                                    .foregroundColor(DesignSystem.Colors.tertiaryText)
+                                    .padding(.horizontal, DesignSystem.Spacing.md + 4)
+                                    .padding(.vertical, DesignSystem.Spacing.md + 8)
+                                    .allowsHitTesting(false)
+                            }
+                        }
+                        .animation(DesignSystem.Animation.quick, value: content.isEmpty)
+                    }
+                }
+                .padding(DesignSystem.Spacing.lg)
+            }
+
+            // 분류 섹션
+            ModernFormSection(title: L.Label.classification) {
+                VStack(spacing: DesignSystem.Spacing.md) {
+                    ModernCategoryPicker(
+                        title: L.Label.category,
+                        selection: $category
+                    )
+                }
+            }
+
+            // D-Day 섹션
+            ModernCard {
+                DDayFormSection(
+                    targetDate: $targetDate,
+                    notificationEnabled: $notificationEnabled,
+                    notificationSettings: $notificationSettings
+                )
+                .padding(DesignSystem.Spacing.lg)
+            }
+
+            // 생성될 기도 제목 미리보기
+            if !content.isEmpty {
+                ModernCard(
+                    backgroundColor: DesignSystem.Colors.primary.opacity(0.05),
+                    cornerRadius: DesignSystem.CornerRadius.medium,
+                    shadowStyle: DesignSystem.Shadow.small
+                ) {
+                    HStack(spacing: DesignSystem.Spacing.md) {
+                        Image(systemName: "text.quote")
+                            .font(.title3)
+                            .foregroundColor(DesignSystem.Colors.primary)
+
+                        VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
+                            Text(L.Label.title)
+                                .font(DesignSystem.Typography.caption)
+                                .foregroundColor(DesignSystem.Colors.secondaryText)
+
+                            Text(generatedTitle)
+                                .font(DesignSystem.Typography.callout)
+                                .fontWeight(.medium)
+                                .foregroundColor(DesignSystem.Colors.primaryText)
+                        }
+
+                        Spacer()
+                    }
+                    .padding(DesignSystem.Spacing.md)
+                }
+            }
+
+            // 저장 안내
+            ModernCard(
+                backgroundColor: DesignSystem.Colors.wait.opacity(0.1),
+                cornerRadius: DesignSystem.CornerRadius.medium,
+                shadowStyle: DesignSystem.Shadow.small
+            ) {
+                HStack(spacing: DesignSystem.Spacing.md) {
+                    StatusIndicator(storage: .wait, size: .medium)
+
+                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
+                        Text(L.Info.saveNotice)
+                            .font(DesignSystem.Typography.caption)
+                            .fontWeight(.semibold)
+                            .foregroundColor(DesignSystem.Colors.primaryText)
+
+                        Text(L.Info.saveDescription)
+                            .font(DesignSystem.Typography.caption2)
+                            .foregroundColor(DesignSystem.Colors.secondaryText)
+                    }
+
+                    Spacer()
+                }
+                .padding(DesignSystem.Spacing.md)
+            }
+
+            // 저장 버튼
+            ModernButton(
+                title: L.Button.savePrayer,
+                style: .primary,
+                size: .large
+            ) {
+                savePrayer()
+            }
+            .disabled(content.isEmpty)
+            .opacity(content.isEmpty ? 0.6 : 1.0)
+            .animation(.easeInOut(duration: 0.2), value: content.isEmpty)
+        }
+        .padding(.horizontal, DesignSystem.Spacing.xl)
     }
 
     // MARK: - Voice Recording

@@ -3,6 +3,7 @@ import SwiftData
 
 struct PeopleListView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Query private var allPrayers: [Prayer]
     @State private var prayerViewModel: PrayerViewModel?
     @State private var showingErrorAlert = false

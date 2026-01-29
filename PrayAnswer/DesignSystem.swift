@@ -85,6 +85,36 @@ struct DesignSystem {
         static let standard = SwiftUI.Animation.easeInOut(duration: 0.3)
         static let slow = SwiftUI.Animation.easeInOut(duration: 0.5)
     }
+
+    // MARK: - Adaptive Layout (iPad Support)
+    struct AdaptiveLayout {
+        static func spacing(_ base: CGFloat, for sizeClass: UserInterfaceSizeClass?) -> CGFloat {
+            sizeClass == .regular ? base * 1.25 : base
+        }
+
+        static let sidebarWidth: CGFloat = 320
+        static let contentColumnWidth: CGFloat = 400
+        static let maxFormWidth: CGFloat = 600
+        static let maxDetailWidth: CGFloat = 700
+    }
+}
+
+// MARK: - Adaptive Frame Modifier
+
+extension View {
+    @ViewBuilder
+    func adaptiveFrame(sizeClass: UserInterfaceSizeClass?, maxWidth: CGFloat) -> some View {
+        if sizeClass == .regular {
+            self.frame(maxWidth: maxWidth)
+        } else {
+            self
+        }
+    }
+
+    @ViewBuilder
+    func adaptivePadding(sizeClass: UserInterfaceSizeClass?, base: CGFloat = DesignSystem.Spacing.lg) -> some View {
+        self.padding(.horizontal, DesignSystem.AdaptiveLayout.spacing(base, for: sizeClass))
+    }
 }
 
 // MARK: - Storage Utilities

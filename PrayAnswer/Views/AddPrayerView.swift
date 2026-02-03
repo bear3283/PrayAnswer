@@ -22,8 +22,19 @@ struct AddPrayerView: View {
     @State private var showVoicePermissionAlert = false
     private var speechManager: SpeechRecognitionManager
 
-    init(selectedTab: Binding<Int>) {
+    // Image Attachment
+    @State private var selectedImage: UIImage?
+    @State private var imageFileName: String?
+    @State private var showOCRResult = false
+    @State private var extractedText = ""
+    @State private var isExtractingText = false
+
+    // iPad: 외부에서 전달받은 녹음 텍스트 (사이드 패널에서)
+    @Binding var externalRecordedText: String
+
+    init(selectedTab: Binding<Int>, externalRecordedText: Binding<String>? = nil) {
         self._selectedTab = selectedTab
+        self._externalRecordedText = externalRecordedText ?? .constant("")
         self.speechManager = SpeechRecognitionManager.shared
     }
 
@@ -51,13 +62,25 @@ struct AddPrayerView: View {
         ScrollView {
             VStack(spacing: DesignSystem.Spacing.xl) {
                 formContent
-                    .frame(maxWidth: DesignSystem.AdaptiveLayout.maxFormWidth)
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, DesignSystem.Spacing.xl)
+            .padding(.horizontal, DesignSystem.Spacing.xl)
         }
         .scrollDismissesKeyboard(.interactively)
         .background(DesignSystem.Colors.background)
+        .onChange(of: externalRecordedText) { oldValue, newValue in
+            // 사이드 패널에서 녹음된 텍스트를 content에 추가
+            if !newValue.isEmpty {
+                if content.isEmpty {
+                    content = newValue
+                } else {
+                    content += "\n" + newValue
+                }
+                // 텍스트 사용 후 초기화
+                externalRecordedText = ""
+            }
+        }
         .onAppear {
             if prayerViewModel == nil {
                 prayerViewModel = PrayerViewModel(modelContext: modelContext)
@@ -110,6 +133,39 @@ struct AddPrayerView: View {
             }
             .presentationDetents([.medium])
             .presentationDragIndicator(.visible)
+        }
+        .sheet(isPresented: $showOCRResult) {
+            OCRResultPreviewView(
+                extractedText: $extractedText,
+                onApply: { text in
+                    applyExtractedText(text)
+                    showOCRResult = false
+                },
+                onCancel: {
+                    showOCRResult = false
+                }
+            )
+            .presentationDetents([.large])
+            .presentationDragIndicator(.visible)
+        }
+        .overlay {
+            if isExtractingText {
+                ZStack {
+                    Color.black.opacity(0.3)
+                        .ignoresSafeArea()
+                    VStack(spacing: DesignSystem.Spacing.md) {
+                        ProgressView()
+                            .scaleEffect(1.5)
+                            .tint(.white)
+                        Text(L.Image.extractingText)
+                            .font(DesignSystem.Typography.callout)
+                            .foregroundColor(.white)
+                    }
+                    .padding(DesignSystem.Spacing.xl)
+                    .background(DesignSystem.Colors.primaryText.opacity(0.8))
+                    .cornerRadius(DesignSystem.CornerRadius.large)
+                }
+            }
         }
     }
 
@@ -204,6 +260,39 @@ struct AddPrayerView: View {
                 .presentationDetents([.medium])
                 .presentationDragIndicator(.visible)
             }
+            .sheet(isPresented: $showOCRResult) {
+                OCRResultPreviewView(
+                    extractedText: $extractedText,
+                    onApply: { text in
+                        applyExtractedText(text)
+                        showOCRResult = false
+                    },
+                    onCancel: {
+                        showOCRResult = false
+                    }
+                )
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
+            }
+            .overlay {
+                if isExtractingText {
+                    ZStack {
+                        Color.black.opacity(0.3)
+                            .ignoresSafeArea()
+                        VStack(spacing: DesignSystem.Spacing.md) {
+                            ProgressView()
+                                .scaleEffect(1.5)
+                                .tint(.white)
+                            Text(L.Image.extractingText)
+                                .font(DesignSystem.Typography.callout)
+                                .foregroundColor(.white)
+                        }
+                        .padding(DesignSystem.Spacing.xl)
+                        .background(DesignSystem.Colors.primaryText.opacity(0.8))
+                        .cornerRadius(DesignSystem.CornerRadius.large)
+                    }
+                }
+            }
         }
     }
 
@@ -221,7 +310,7 @@ struct AddPrayerView: View {
                 .padding(DesignSystem.Spacing.lg)
             }
 
-            // 기도 내용 입력 (음성 녹음 버튼 포함)
+            // 기도 내용 입력 (음성 녹음 버튼 포함 - iPhone만)
             ModernCard {
                 VStack(spacing: DesignSystem.Spacing.md) {
                     VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
@@ -233,8 +322,19 @@ struct AddPrayerView: View {
 
                             Spacer()
 
-                            VoiceRecordingButton(isRecording: speechManager.isRecording) {
-                                startVoiceRecording()
+                            // iPad에서는 사이드 패널에서 녹음하므로 안내 표시
+                            if horizontalSizeClass == .regular {
+                                HStack(spacing: DesignSystem.Spacing.xs) {
+                                    Image(systemName: "arrow.left")
+                                        .font(.caption2)
+                                    Image(systemName: "mic.fill")
+                                        .font(.caption)
+                                }
+                                .foregroundColor(DesignSystem.Colors.tertiaryText)
+                            } else {
+                                VoiceRecordingButton(isRecording: speechManager.isRecording) {
+                                    startVoiceRecording()
+                                }
                             }
                         }
 
@@ -269,6 +369,15 @@ struct AddPrayerView: View {
                 }
                 .padding(DesignSystem.Spacing.lg)
             }
+
+            // 이미지 첨부 섹션
+            ImageAttachmentSection(
+                selectedImage: $selectedImage,
+                imageFileName: $imageFileName,
+                onExtractText: { image in
+                    extractTextFromImage(image)
+                }
+            )
 
             // 분류 섹션
             ModernFormSection(title: L.Label.classification) {
@@ -418,7 +527,8 @@ struct AddPrayerView: View {
                 target: target.trimmingCharacters(in: .whitespacesAndNewlines),
                 targetDate: targetDate,
                 notificationEnabled: notificationEnabled,
-                notificationSettings: finalSettings
+                notificationSettings: finalSettings,
+                imageFileName: imageFileName
             )
 
             // D-Day 알림 스케줄링
@@ -452,6 +562,11 @@ struct AddPrayerView: View {
         notificationEnabled = false
         notificationSettings = NotificationSettings()
 
+        // 이미지 관련 상태 초기화 (파일은 이미 저장되었으므로 삭제하지 않음)
+        selectedImage = nil
+        imageFileName = nil
+        extractedText = ""
+
         // 폼 초기화 후 내용 필드에 다시 포커스
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
             isContentFieldFocused = true
@@ -467,5 +582,36 @@ struct AddPrayerView: View {
 
         // 위젯 데이터 매니저를 통해 데이터 공유
         WidgetDataManager.shared.shareFavoritePrayersByStorage(favoritesByStorage)
+    }
+
+    // MARK: - Image OCR
+
+    private func extractTextFromImage(_ image: UIImage) {
+        isExtractingText = true
+
+        Task {
+            do {
+                let text = try await ImageTextRecognizer.shared.recognizeText(from: image)
+                await MainActor.run {
+                    extractedText = text
+                    isExtractingText = false
+                    showOCRResult = true
+                }
+            } catch {
+                await MainActor.run {
+                    isExtractingText = false
+                    alertMessage = error.localizedDescription
+                    showingAlert = true
+                }
+            }
+        }
+    }
+
+    private func applyExtractedText(_ text: String) {
+        if content.isEmpty {
+            content = text
+        } else {
+            content += "\n\n" + text
+        }
     }
 }

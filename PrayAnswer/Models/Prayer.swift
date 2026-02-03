@@ -58,9 +58,10 @@ final class Prayer {
     var notificationEnabled: Bool = false // 알림 활성화 여부 (기본값으로 마이그레이션 지원)
     var notificationSettingsData: Data? // 알림 세부설정 JSON 저장
     var calendarEventId: String? // 캘린더 이벤트 식별자
+    var imageFileName: String? // 첨부 이미지 파일명
 
     // 기본 이니셜라이저 (위젯에서도 사용 가능)
-    init(title: String, content: String, category: PrayerCategory = .personal, target: String = "", storage: PrayerStorage = .wait, isFavorite: Bool = false, targetDate: Date? = nil, notificationEnabled: Bool = false, notificationSettingsData: Data? = nil) {
+    init(title: String, content: String, category: PrayerCategory = .personal, target: String = "", storage: PrayerStorage = .wait, isFavorite: Bool = false, targetDate: Date? = nil, notificationEnabled: Bool = false, notificationSettingsData: Data? = nil, imageFileName: String? = nil) {
         self.title = title
         self.content = content
         self.category = category
@@ -71,10 +72,11 @@ final class Prayer {
         self.targetDate = targetDate
         self.notificationEnabled = notificationEnabled
         self.notificationSettingsData = notificationSettingsData
+        self.imageFileName = imageFileName
     }
 
     // 기본 업데이트 메서드 (위젯에서도 사용 가능)
-    func updateContent(title: String, content: String, category: PrayerCategory, target: String, targetDate: Date? = nil, notificationEnabled: Bool = false, notificationSettingsData: Data? = nil) {
+    func updateContent(title: String, content: String, category: PrayerCategory, target: String, targetDate: Date? = nil, notificationEnabled: Bool = false, notificationSettingsData: Data? = nil, imageFileName: String? = nil) {
         self.title = title
         self.content = content
         self.category = category
@@ -84,6 +86,13 @@ final class Prayer {
         if let data = notificationSettingsData {
             self.notificationSettingsData = data
         }
+        self.imageFileName = imageFileName
+        self.modifiedDate = Date()
+    }
+
+    // 이미지 파일명 업데이트
+    func updateImageFileName(_ fileName: String?) {
+        self.imageFileName = fileName
         self.modifiedDate = Date()
     }
 
@@ -116,9 +125,9 @@ extension Prayer {
     // MARK: - Convenience Initializer with NotificationSettings
 
     /// NotificationSettings를 사용하는 편의 이니셜라이저
-    convenience init(title: String, content: String, category: PrayerCategory = .personal, target: String = "", storage: PrayerStorage = .wait, isFavorite: Bool = false, targetDate: Date? = nil, notificationEnabled: Bool = false, notificationSettings: NotificationSettings?) {
+    convenience init(title: String, content: String, category: PrayerCategory = .personal, target: String = "", storage: PrayerStorage = .wait, isFavorite: Bool = false, targetDate: Date? = nil, notificationEnabled: Bool = false, notificationSettings: NotificationSettings?, imageFileName: String? = nil) {
         let settingsData = notificationSettings.flatMap { try? JSONEncoder().encode($0) }
-        self.init(title: title, content: content, category: category, target: target, storage: storage, isFavorite: isFavorite, targetDate: targetDate, notificationEnabled: notificationEnabled, notificationSettingsData: settingsData)
+        self.init(title: title, content: content, category: category, target: target, storage: storage, isFavorite: isFavorite, targetDate: targetDate, notificationEnabled: notificationEnabled, notificationSettingsData: settingsData, imageFileName: imageFileName)
     }
 
     // MARK: - Notification Settings
@@ -142,7 +151,7 @@ extension Prayer {
     }
 
     /// NotificationSettings를 사용하는 편의 업데이트 메서드
-    func updateContent(title: String, content: String, category: PrayerCategory, target: String, targetDate: Date? = nil, notificationEnabled: Bool = false, notificationSettings: NotificationSettings?) {
+    func updateContent(title: String, content: String, category: PrayerCategory, target: String, targetDate: Date? = nil, notificationEnabled: Bool = false, notificationSettings: NotificationSettings?, imageFileName: String? = nil) {
         self.title = title
         self.content = content
         self.category = category
@@ -152,9 +161,18 @@ extension Prayer {
         if let settings = notificationSettings {
             self.notificationSettingsData = try? JSONEncoder().encode(settings)
         }
+        self.imageFileName = imageFileName
         self.modifiedDate = Date()
     }
     #endif
+
+    // MARK: - Image Helpers
+
+    /// 이미지가 첨부되어 있는지 여부
+    var hasImage: Bool {
+        guard let fileName = imageFileName, !fileName.isEmpty else { return false }
+        return true
+    }
 
     // MARK: - Accessibility
     

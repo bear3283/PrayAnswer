@@ -35,9 +35,9 @@ final class PrayerViewModel: ObservableObject {
     
     // 기도 추가 - 에러를 외부로 전파, Prayer 객체 반환
     @discardableResult
-    func addPrayer(title: String, content: String, category: PrayerCategory = .personal, target: String = "", targetDate: Date? = nil, notificationEnabled: Bool = false, notificationSettings: NotificationSettings? = nil) throws -> Prayer {
+    func addPrayer(title: String, content: String, category: PrayerCategory = .personal, target: String = "", targetDate: Date? = nil, notificationEnabled: Bool = false, notificationSettings: NotificationSettings? = nil, imageFileName: String? = nil) throws -> Prayer {
         guard checkIfValid() else { throw PrayerError.invalidState }
-        let newPrayer = Prayer(title: title, content: content, category: category, target: target, targetDate: targetDate, notificationEnabled: notificationEnabled, notificationSettings: notificationSettings)
+        let newPrayer = Prayer(title: title, content: content, category: category, target: target, targetDate: targetDate, notificationEnabled: notificationEnabled, notificationSettings: notificationSettings, imageFileName: imageFileName)
         modelContext.insert(newPrayer)
 
         do {
@@ -55,8 +55,8 @@ final class PrayerViewModel: ObservableObject {
     }
 
     // 기도 수정
-    func updatePrayer(_ prayer: Prayer, title: String, content: String, category: PrayerCategory, target: String, targetDate: Date? = nil, notificationEnabled: Bool = false, notificationSettings: NotificationSettings? = nil) throws {
-        prayer.updateContent(title: title, content: content, category: category, target: target, targetDate: targetDate, notificationEnabled: notificationEnabled, notificationSettings: notificationSettings)
+    func updatePrayer(_ prayer: Prayer, title: String, content: String, category: PrayerCategory, target: String, targetDate: Date? = nil, notificationEnabled: Bool = false, notificationSettings: NotificationSettings? = nil, imageFileName: String? = nil) throws {
+        prayer.updateContent(title: title, content: content, category: category, target: target, targetDate: targetDate, notificationEnabled: notificationEnabled, notificationSettings: notificationSettings, imageFileName: imageFileName)
 
         // D-Day 알림 업데이트
         if notificationEnabled, let date = targetDate {
@@ -81,6 +81,9 @@ final class PrayerViewModel: ObservableObject {
     func deletePrayer(_ prayer: Prayer) throws {
         // D-Day 알림 취소 (기본 + 커스텀 + 반복 알림 모두)
         NotificationManager.shared.cancelAllNotifications(for: prayer)
+
+        // 첨부 이미지 파일은 호출자에서 삭제 (ImageStorageManager.shared.deleteImage)
+        // Note: Widget Extension에서는 ImageStorageManager를 사용할 수 없음
 
         modelContext.delete(prayer)
 

@@ -152,6 +152,43 @@
 "dday.notification_dday" = "Today is D-Day for prayer for %@. Send your prayers!";
 "dday.notification_generic" = "%d days until D-Day for prayer for %@";
 
+// MARK: - Image Attachment & OCR
+// Section
+"image.attach_image" = "Attach Image";
+"image.attached_image" = "Attached Image";
+
+// Buttons
+"image.select_image" = "Select Image";
+"image.change_image" = "Change Image";
+"image.remove_image" = "Remove Image";
+"image.extract_text" = "Extract Text";
+
+// OCR
+"image.extracting_text" = "Extracting text...";
+"image.extracted_text" = "Extracted Text";
+"image.ocr_result" = "Text Extraction Result";
+"image.ocr_result_description" = "You can edit the extracted text from the image";
+"image.apply_to_content" = "Apply to Prayer Content";
+"image.edit_extracted_text" = "Edit Extracted Text";
+
+// AI Summary
+"image.ai_organize" = "Organize with AI";
+"image.ai_organizing" = "AI is organizing...";
+
+// Errors
+"image.error_directory_creation" = "Unable to create image storage folder";
+"image.error_save_failed" = "Failed to save image";
+"image.error_load_failed" = "Unable to load image";
+"image.error_delete_failed" = "Failed to delete image";
+"image.error_invalid_image" = "Invalid image";
+"image.error_ocr_failed" = "Failed to extract text";
+"image.error_no_text_found" = "No text found in image";
+
+// Accessibility
+"image.accessibility_attached_image" = "Attached image";
+"image.accessibility_select_image" = "Tap to select an image";
+"image.accessibility_extract_text" = "Tap to extract text from image";
+
 // MARK: - Voice Recording
 // Status
 "voice.recording" = "Recording...";

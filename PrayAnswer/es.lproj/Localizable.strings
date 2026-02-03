@@ -150,6 +150,43 @@
 "dday.notification_dday" = "Hoy es el Día D para la oración por %@. ¡Envía tus oraciones!";
 "dday.notification_generic" = "%d días hasta el Día D para la oración por %@";
 
+// MARK: - Image Attachment & OCR
+// Section
+"image.attach_image" = "Adjuntar Imagen";
+"image.attached_image" = "Imagen Adjunta";
+
+// Buttons
+"image.select_image" = "Seleccionar Imagen";
+"image.change_image" = "Cambiar Imagen";
+"image.remove_image" = "Eliminar Imagen";
+"image.extract_text" = "Extraer Texto";
+
+// OCR
+"image.extracting_text" = "Extrayendo texto...";
+"image.extracted_text" = "Texto Extraído";
+"image.ocr_result" = "Resultado de Extracción";
+"image.ocr_result_description" = "Puede editar el texto extraído de la imagen";
+"image.apply_to_content" = "Aplicar al Contenido";
+"image.edit_extracted_text" = "Editar Texto Extraído";
+
+// AI Summary
+"image.ai_organize" = "Organizar con IA";
+"image.ai_organizing" = "IA organizando...";
+
+// Errors
+"image.error_directory_creation" = "No se puede crear la carpeta de imágenes";
+"image.error_save_failed" = "Error al guardar la imagen";
+"image.error_load_failed" = "No se puede cargar la imagen";
+"image.error_delete_failed" = "Error al eliminar la imagen";
+"image.error_invalid_image" = "Imagen no válida";
+"image.error_ocr_failed" = "Error al extraer texto";
+"image.error_no_text_found" = "No se encontró texto en la imagen";
+
+// Accessibility
+"image.accessibility_attached_image" = "Imagen adjunta";
+"image.accessibility_select_image" = "Toque para seleccionar una imagen";
+"image.accessibility_extract_text" = "Toque para extraer texto de la imagen";
+
 // MARK: - Voice Recording
 // Status
 "voice.recording" = "Grabando...";

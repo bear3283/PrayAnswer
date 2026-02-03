@@ -400,6 +400,45 @@ enum L {
         static let enableFeatureDescription = NSLocalizedString("ai.enable_feature_description", comment: "AI feature description")
     }
 
+    // MARK: - Image Attachment & OCR
+    enum Image {
+        // Section
+        static let attachImage = NSLocalizedString("image.attach_image", comment: "Attach image")
+        static let attachedImage = NSLocalizedString("image.attached_image", comment: "Attached image")
+
+        // Buttons
+        static let selectImage = NSLocalizedString("image.select_image", comment: "Select image button")
+        static let changeImage = NSLocalizedString("image.change_image", comment: "Change image button")
+        static let removeImage = NSLocalizedString("image.remove_image", comment: "Remove image button")
+        static let extractText = NSLocalizedString("image.extract_text", comment: "Extract text button")
+
+        // OCR
+        static let extractingText = NSLocalizedString("image.extracting_text", comment: "Extracting text status")
+        static let extractedText = NSLocalizedString("image.extracted_text", comment: "Extracted text title")
+        static let ocrResult = NSLocalizedString("image.ocr_result", comment: "OCR result title")
+        static let ocrResultDescription = NSLocalizedString("image.ocr_result_description", comment: "OCR result description")
+        static let applyToContent = NSLocalizedString("image.apply_to_content", comment: "Apply to content button")
+        static let editExtractedText = NSLocalizedString("image.edit_extracted_text", comment: "Edit extracted text")
+
+        // AI Summary
+        static let aiOrganize = NSLocalizedString("image.ai_organize", comment: "AI organize button")
+        static let aiOrganizing = NSLocalizedString("image.ai_organizing", comment: "AI organizing status")
+
+        // Errors
+        static let errorDirectoryCreation = NSLocalizedString("image.error_directory_creation", comment: "Directory creation error")
+        static let errorSaveFailed = NSLocalizedString("image.error_save_failed", comment: "Image save failed error")
+        static let errorLoadFailed = NSLocalizedString("image.error_load_failed", comment: "Image load failed error")
+        static let errorDeleteFailed = NSLocalizedString("image.error_delete_failed", comment: "Image delete failed error")
+        static let errorInvalidImage = NSLocalizedString("image.error_invalid_image", comment: "Invalid image error")
+        static let errorOCRFailed = NSLocalizedString("image.error_ocr_failed", comment: "OCR failed error")
+        static let errorNoTextFound = NSLocalizedString("image.error_no_text_found", comment: "No text found error")
+
+        // Accessibility
+        static let accessibilityAttachedImage = NSLocalizedString("image.accessibility_attached_image", comment: "Attached image accessibility")
+        static let accessibilitySelectImage = NSLocalizedString("image.accessibility_select_image", comment: "Select image accessibility")
+        static let accessibilityExtractText = NSLocalizedString("image.accessibility_extract_text", comment: "Extract text accessibility")
+    }
+
     // MARK: - Voice Recording
     enum Voice {
         // Status

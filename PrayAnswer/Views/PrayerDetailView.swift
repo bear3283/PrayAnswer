@@ -25,6 +25,13 @@ struct PrayerDetailView: View {
     @State private var calendarAlertMessage = ""
     @State private var isCalendarLoading = false
 
+    // Image Attachment
+    @State private var editedSelectedImage: UIImage?
+    @State private var editedImageFileName: String?
+    @State private var showOCRResult = false
+    @State private var extractedText = ""
+    @State private var isExtractingText = false
+
     // 기존 기도대상자 목록
     private var existingTargets: [String] {
         prayerViewModel?.allTargets() ?? []
@@ -124,6 +131,39 @@ struct PrayerDetailView: View {
         } message: {
             Text(calendarAlertMessage)
         }
+        .sheet(isPresented: $showOCRResult) {
+            OCRResultPreviewView(
+                extractedText: $extractedText,
+                onApply: { text in
+                    applyExtractedText(text)
+                    showOCRResult = false
+                },
+                onCancel: {
+                    showOCRResult = false
+                }
+            )
+            .presentationDetents([.large])
+            .presentationDragIndicator(.visible)
+        }
+        .overlay {
+            if isExtractingText {
+                ZStack {
+                    Color.black.opacity(0.3)
+                        .ignoresSafeArea()
+                    VStack(spacing: DesignSystem.Spacing.md) {
+                        ProgressView()
+                            .scaleEffect(1.5)
+                            .tint(.white)
+                        Text(L.Image.extractingText)
+                            .font(DesignSystem.Typography.callout)
+                            .foregroundColor(.white)
+                    }
+                    .padding(DesignSystem.Spacing.xl)
+                    .background(DesignSystem.Colors.primaryText.opacity(0.8))
+                    .cornerRadius(DesignSystem.CornerRadius.large)
+                }
+            }
+        }
     }
 
     // MARK: - Viewing Mode View
@@ -189,6 +229,31 @@ struct PrayerDetailView: View {
                 }
             }
             .padding(DesignSystem.Spacing.lg)
+        }
+
+        // 이미지 섹션 (보기 모드)
+        if prayer.hasImage, let fileName = prayer.imageFileName,
+           let image = ImageStorageManager.shared.loadImage(fileName: fileName) {
+            ModernCard {
+                VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
+                    Text(L.Image.attachedImage)
+                        .font(DesignSystem.Typography.callout)
+                        .foregroundColor(DesignSystem.Colors.primaryText)
+                        .fontWeight(.medium)
+
+                    Image(uiImage: image)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(maxHeight: 250)
+                        .cornerRadius(DesignSystem.CornerRadius.medium)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.medium)
+                                .stroke(DesignSystem.Colors.primary.opacity(0.2), lineWidth: 1)
+                        )
+                        .accessibilityLabel(L.Image.accessibilityAttachedImage)
+                }
+                .padding(DesignSystem.Spacing.lg)
+            }
         }
 
         // 기도 대상자 섹션
@@ -333,6 +398,15 @@ struct PrayerDetailView: View {
             .padding(DesignSystem.Spacing.lg)
         }
 
+        // 이미지 첨부 섹션 (편집 모드)
+        ImageAttachmentSection(
+            selectedImage: $editedSelectedImage,
+            imageFileName: $editedImageFileName,
+            onExtractText: { image in
+                extractTextFromImage(image)
+            }
+        )
+
         // 카테고리 선택
         ModernFormSection(title: L.Label.classification) {
             VStack(spacing: DesignSystem.Spacing.md) {
@@ -391,6 +465,15 @@ struct PrayerDetailView: View {
         editedNotificationEnabled = prayer.notificationEnabled
         editedNotificationSettings = prayer.notificationSettings
         editedCalendarEventId = prayer.calendarEventId
+
+        // 이미지 상태 로드
+        editedImageFileName = prayer.imageFileName
+        if let fileName = prayer.imageFileName {
+            editedSelectedImage = ImageStorageManager.shared.loadImage(fileName: fileName)
+        } else {
+            editedSelectedImage = nil
+        }
+
         withAnimation(.easeInOut(duration: 0.3)) {
             isEditing = true
         }
@@ -407,6 +490,15 @@ struct PrayerDetailView: View {
         editedNotificationEnabled = false
         editedNotificationSettings = NotificationSettings()
         editedCalendarEventId = nil
+
+        // 이미지 상태 초기화 (새로 추가한 이미지가 있으면 삭제)
+        if let editedFileName = editedImageFileName, editedFileName != prayer.imageFileName {
+            // 편집 중 새로 추가한 이미지 파일 삭제
+            ImageStorageManager.shared.deleteImage(fileName: editedFileName)
+        }
+        editedSelectedImage = nil
+        editedImageFileName = nil
+        extractedText = ""
     }
 
     private func saveChanges() {
@@ -432,6 +524,11 @@ struct PrayerDetailView: View {
             var finalSettings = editedNotificationSettings
             finalSettings.isEnabled = editedNotificationEnabled
 
+            // 이전 이미지 파일 삭제 (이미지가 변경되었거나 삭제된 경우)
+            if let oldFileName = prayer.imageFileName, oldFileName != editedImageFileName {
+                ImageStorageManager.shared.deleteImage(fileName: oldFileName)
+            }
+
             // 제목을 자동 생성하여 업데이트
             try viewModel.updatePrayer(
                 prayer,
@@ -441,7 +538,8 @@ struct PrayerDetailView: View {
                 target: editedTarget.trimmingCharacters(in: .whitespacesAndNewlines),
                 targetDate: editedTargetDate,
                 notificationEnabled: editedNotificationEnabled,
-                notificationSettings: finalSettings
+                notificationSettings: finalSettings,
+                imageFileName: editedImageFileName
             )
 
             // 캘린더 이벤트 ID 업데이트
@@ -470,6 +568,11 @@ struct PrayerDetailView: View {
             CalendarManager.shared.removeEvent(withIdentifier: eventId) { _ in
                 // 캘린더 이벤트 삭제 결과와 관계없이 기도 삭제 진행
             }
+        }
+
+        // 첨부 이미지 파일 삭제
+        if let imageFileName = prayer.imageFileName {
+            ImageStorageManager.shared.deleteImage(fileName: imageFileName)
         }
 
         do {
@@ -616,6 +719,37 @@ struct PrayerDetailView: View {
                     showingCalendarSuccessAlert = true
                 }
             }
+        }
+    }
+
+    // MARK: - Image OCR
+
+    private func extractTextFromImage(_ image: UIImage) {
+        isExtractingText = true
+
+        Task {
+            do {
+                let text = try await ImageTextRecognizer.shared.recognizeText(from: image)
+                await MainActor.run {
+                    extractedText = text
+                    isExtractingText = false
+                    showOCRResult = true
+                }
+            } catch {
+                await MainActor.run {
+                    isExtractingText = false
+                    errorMessage = error.localizedDescription
+                    showingErrorAlert = true
+                }
+            }
+        }
+    }
+
+    private func applyExtractedText(_ text: String) {
+        if editedContent.isEmpty {
+            editedContent = text
+        } else {
+            editedContent += "\n\n" + text
         }
     }
 }

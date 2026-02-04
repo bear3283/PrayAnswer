@@ -10,6 +10,7 @@ struct PeopleListView: View {
     @State private var errorMessage = ""
     @State private var searchText = ""
     @State private var showSearchOverlay = false
+    @State private var scrollOffset: CGFloat = 0
     @FocusState private var isSearchFocused: Bool
 
     // "본인" 기도 (target이 비어있는 기도들)
@@ -87,9 +88,12 @@ struct PeopleListView: View {
                         }
                     } else {
                         List {
-                            // 헤더 공간 확보를 위한 상단 여백
+                            // 헤더 공간 확보를 위한 상단 여백 + 스크롤 오프셋 감지
                             Section {
                                 Color.clear.frame(height: 24)
+                                    .overlay(alignment: .top) {
+                                        ScrollOffsetDetector()
+                                    }
                             }
                             .listRowBackground(Color.clear)
                             .listRowSeparator(.hidden)
@@ -130,6 +134,10 @@ struct PeopleListView: View {
                         }
                         .listStyle(PlainListStyle())
                         .scrollContentBackground(.hidden)
+                        .coordinateSpace(name: "scroll")
+                        .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
+                            scrollOffset = value
+                        }
                         .contentMargins(.bottom, showSearchOverlay ? 80 : 0, for: .scrollContent)
                     }
 
@@ -146,7 +154,7 @@ struct PeopleListView: View {
 
                 // 고정 헤더 오버레이 (iOS 전화 앱 스타일)
                 VStack(spacing: 0) {
-                    InlineHeader(title: L.Nav.peopleList, showFadeGradient: true)
+                    InlineHeader(title: L.Nav.peopleList, showFadeGradient: true, fadeOpacity: min(1.0, max(0.0, -scrollOffset / 30.0)))
                     Spacer()
                 }
                 .allowsHitTesting(false)

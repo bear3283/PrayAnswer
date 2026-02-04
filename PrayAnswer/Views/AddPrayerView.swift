@@ -28,6 +28,7 @@ struct AddPrayerView: View {
     @State private var showOCRResult = false
     @State private var extractedText = ""
     @State private var isExtractingText = false
+    @State private var scrollOffset: CGFloat = 0
 
     // iPad: 외부에서 전달받은 녹음 텍스트 (사이드 패널에서)
     @Binding var externalRecordedText: String
@@ -178,12 +179,19 @@ struct AddPrayerView: View {
                 // 메인 스크롤 컨텐츠
                 ScrollView {
                     VStack(spacing: DesignSystem.Spacing.xl) {
-                        // 헤더 공간 확보 (기도대상자 탭과 동일한 높이)
+                        // 헤더 공간 확보 + 스크롤 오프셋 감지
                         Color.clear.frame(height: 24)
+                            .overlay(alignment: .top) {
+                                ScrollOffsetDetector()
+                            }
 
                         formContent
                             .padding(.bottom, DesignSystem.Spacing.xxxl)
                     }
+                }
+                .coordinateSpace(name: "scroll")
+                .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
+                    scrollOffset = value
                 }
                 .scrollDismissesKeyboard(.interactively)
                 .onTapGesture {
@@ -192,7 +200,7 @@ struct AddPrayerView: View {
 
                 // 고정 헤더 오버레이 (iOS 전화 앱 스타일)
                 VStack(spacing: 0) {
-                    InlineHeader(title: L.Nav.newPrayer, showFadeGradient: true)
+                    InlineHeader(title: L.Nav.newPrayer, showFadeGradient: true, fadeOpacity: min(1.0, max(0.0, -scrollOffset / 30.0)))
                     Spacer()
                 }
                 .allowsHitTesting(false)

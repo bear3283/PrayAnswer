@@ -123,6 +123,14 @@ struct iPadContentView: View {
     @State private var selectedPrayer: Prayer?
     @State private var selectedPerson: String?
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
+    @State private var addPrayerRecordedText: String = ""
+
+    // DEBUG: 스크린샷용 데이터 생성
+    #if DEBUG
+    @State private var debugTapCount = 0
+    @State private var showDebugMenu = false
+    @State private var showDebugConfirmation = false
+    #endif
 
     enum iPadSection: String, CaseIterable, Identifiable {
         case prayers = "prayers"
@@ -150,104 +158,157 @@ struct iPadContentView: View {
 
     var body: some View {
         NavigationSplitView(columnVisibility: $columnVisibility) {
-            // Sidebar
-            List {
-                Section {
-                    ForEach(iPadSection.allCases) { section in
-                        Button {
-                            selectedSection = section
-                        } label: {
-                            HStack {
-                                Label(section.title, systemImage: section.icon)
-                                Spacer()
-                                if selectedSection == section {
-                                    Image(systemName: "checkmark")
-                                        .foregroundColor(DesignSystem.Colors.primary)
-                                }
-                            }
-                        }
-                        .foregroundColor(selectedSection == section ? DesignSystem.Colors.primary : DesignSystem.Colors.primaryText)
-                    }
-                } header: {
-                    Text("Pray")
-                        .font(DesignSystem.Typography.title2)
-                        .foregroundColor(DesignSystem.Colors.primary)
-                        .padding(.bottom, DesignSystem.Spacing.sm)
-                }
-
-                if selectedSection == .prayers {
-                    Section {
-                        ForEach(PrayerStorage.allCases, id: \.self) { storage in
-                            iPadStorageButton(
-                                storage: storage,
-                                count: prayerCount(for: storage),
-                                isSelected: selectedStorage == storage
-                            ) {
-                                selectedStorage = storage
-                                selectedPrayer = nil
-                            }
-                        }
-                    } header: {
-                        Text(L.StoragePicker.title)
-                    }
-                }
-            }
-            .listStyle(SidebarListStyle())
-            .navigationTitle("Pray")
+            sidebarContent
         } content: {
-            // Content Column
-            switch selectedSection {
-            case .prayers:
-                iPadPrayerListContentView(
-                    selectedStorage: $selectedStorage,
-                    selectedPrayer: $selectedPrayer,
-                    allPrayers: allPrayers
-                )
-            case .people:
-                iPadPeopleListContentView(
-                    selectedPerson: $selectedPerson,
-                    allPrayers: allPrayers
-                )
-            case .addPrayer:
-                iPadAddPrayerContentView()
-            }
+            contentColumn
         } detail: {
-            // Detail Column
-            switch selectedSection {
-            case .prayers:
-                if let prayer = selectedPrayer {
-                    PrayerDetailView(prayer: prayer)
-                } else {
-                    iPadEmptyDetailView(
-                        icon: "hands.sparkles",
-                        title: L.Empty.storageTitle,
-                        description: selectedStorage.localizedDescription
-                    )
-                }
-            case .people:
-                if let person = selectedPerson {
-                    if person.isEmpty {
-                        MyselfPrayerListView()
-                    } else {
-                        PersonDetailView(target: person)
-                    }
-                } else {
-                    iPadEmptyDetailView(
-                        icon: "person.2",
-                        title: L.Empty.peopleTitle,
-                        description: L.Empty.peopleDescription
-                    )
-                }
-            case .addPrayer:
-                iPadEmptyDetailView(
-                    icon: "hands.clap",
-                    title: L.Info.saveNotice,
-                    description: L.Info.saveDescription
-                )
-            }
+            detailColumn
         }
         .navigationSplitViewStyle(.balanced)
         .tint(DesignSystem.Colors.primary)
+    }
+
+    // MARK: - Sidebar
+
+    @ViewBuilder
+    private var sidebarContent: some View {
+        List {
+            Section {
+                ForEach(iPadSection.allCases) { section in
+                    Button {
+                        selectedSection = section
+                        withAnimation {
+                            columnVisibility = .all
+                        }
+                    } label: {
+                        HStack {
+                            Label(section.title, systemImage: section.icon)
+                            Spacer()
+                            if selectedSection == section {
+                                Image(systemName: "checkmark")
+                                    .foregroundColor(DesignSystem.Colors.primary)
+                            }
+                        }
+                    }
+                    .foregroundColor(selectedSection == section ? DesignSystem.Colors.primary : DesignSystem.Colors.primaryText)
+                }
+            } header: {
+                Text("Pray")
+                    .font(DesignSystem.Typography.title2)
+                    .foregroundColor(DesignSystem.Colors.primary)
+                    .padding(.bottom, DesignSystem.Spacing.sm)
+            }
+
+            if selectedSection == .prayers {
+                Section {
+                    ForEach(PrayerStorage.allCases, id: \.self) { storage in
+                        iPadStorageButton(
+                            storage: storage,
+                            count: prayerCount(for: storage),
+                            isSelected: selectedStorage == storage
+                        ) {
+                            selectedStorage = storage
+                            selectedPrayer = nil
+                        }
+                    }
+                } header: {
+                    Text(L.StoragePicker.title)
+                }
+            }
+        }
+        .listStyle(SidebarListStyle())
+        .scrollContentBackground(.hidden)
+        .background(DesignSystem.Colors.background)
+        .navigationTitle("Pray")
+        #if DEBUG
+        .toolbar {
+            ToolbarItem(placement: .bottomBar) {
+                Button(action: { showDebugMenu = true }) {
+                    Label("Debug", systemImage: "ladybug").font(.caption)
+                }
+            }
+        }
+        .confirmationDialog("🛠️ 디버그 메뉴", isPresented: $showDebugMenu, titleVisibility: .visible) {
+            Button("📸 스크린샷용 샘플 데이터 생성") { showDebugConfirmation = true }
+            Button("🗑️ 모든 데이터 삭제", role: .destructive) {
+                ScreenshotDataGenerator.clearAllData(in: modelContext)
+            }
+            Button("취소", role: .cancel) { }
+        }
+        .alert("⚠️ 데이터 교체 확인", isPresented: $showDebugConfirmation) {
+            Button("생성", role: .destructive) {
+                ScreenshotDataGenerator.generateSampleData(in: modelContext)
+            }
+            Button("취소", role: .cancel) { }
+        } message: {
+            Text("기존 데이터가 모두 삭제되고 스크린샷용 샘플 데이터로 교체됩니다.")
+        }
+        #endif
+    }
+
+    // MARK: - Content Column
+
+    @ViewBuilder
+    private var contentColumn: some View {
+        switch selectedSection {
+        case .prayers:
+            iPadPrayerListContentView(
+                selectedStorage: $selectedStorage,
+                selectedPrayer: $selectedPrayer,
+                allPrayers: allPrayers
+            )
+        case .people:
+            iPadPeopleListContentView(
+                selectedPerson: $selectedPerson,
+                allPrayers: allPrayers
+            )
+        case .addPrayer:
+            iPadAddPrayerSidePanel(recordedText: $addPrayerRecordedText)
+        }
+    }
+
+    // MARK: - Detail Column
+
+    @ViewBuilder
+    private var detailColumn: some View {
+        switch selectedSection {
+        case .prayers:
+            prayerDetailContent
+        case .people:
+            peopleDetailContent
+        case .addPrayer:
+            iPadAddPrayerDetailView(recordedText: $addPrayerRecordedText)
+        }
+    }
+
+    @ViewBuilder
+    private var prayerDetailContent: some View {
+        if let prayer = selectedPrayer {
+            PrayerDetailView(prayer: prayer)
+        } else {
+            iPadEmptyDetailView(
+                icon: "hands.sparkles",
+                title: L.Empty.storageTitle,
+                description: selectedStorage.localizedDescription
+            )
+        }
+    }
+
+    @ViewBuilder
+    private var peopleDetailContent: some View {
+        if let person = selectedPerson {
+            if person.isEmpty {
+                MyselfPrayerListView()
+            } else {
+                PersonDetailView(target: person)
+            }
+        } else {
+            iPadEmptyDetailView(
+                icon: "person.2",
+                title: L.Empty.peopleTitle,
+                description: L.Empty.peopleDescription
+            )
+        }
     }
 
     private func prayerCount(for storage: PrayerStorage) -> Int {
@@ -498,13 +559,461 @@ struct iPadPersonRow: View {
     }
 }
 
-// MARK: - iPad Add Prayer Content View
+// MARK: - iPad Add Prayer Side Panel (인라인 녹음 UI)
 
-struct iPadAddPrayerContentView: View {
+struct iPadAddPrayerSidePanel: View {
+    @Binding var recordedText: String
+
+    @State private var isRecordingMode = false
+    @State private var showVoicePermissionAlert = false
+    @State private var pulseAnimation = false
+    @Bindable var speechManager = SpeechRecognitionManager.shared
+
+    // AI 기능
+    @State private var isAIProcessing = false
+    @State private var showAISummaryPreview = false
+    @State private var summarizedText = ""
+    @State private var aiErrorMessage: String?
+    @AppStorage("aiFeatureEnabled") private var isAIUserEnabled: Bool = true
+
+    private var isAIAvailable: Bool {
+        AIFeatureAvailability.isSupported
+    }
+
+    private var isAISystemSupported: Bool {
+        AIFeatureAvailability.isSystemSupported
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            if isRecordingMode {
+                inlineRecordingView
+            } else {
+                idleStateView
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(DesignSystem.Colors.secondaryBackground)
+        .navigationTitle(L.Voice.recording)
+        .sheet(isPresented: $showVoicePermissionAlert) {
+            permissionAlert
+        }
+        .sheet(isPresented: $showAISummaryPreview) {
+            AISummaryPreviewView(
+                originalText: speechManager.recognizedText,
+                summarizedText: $summarizedText,
+                onApply: {
+                    recordedText = summarizedText
+                    speechManager.clearText()
+                    showAISummaryPreview = false
+                    isRecordingMode = false
+                },
+                onCancel: {
+                    showAISummaryPreview = false
+                },
+                onRetry: {
+                    showAISummaryPreview = false
+                    performAISummarization()
+                }
+            )
+            .presentationDetents([.large])
+            .presentationDragIndicator(.visible)
+        }
+    }
+
+    // MARK: - Idle State (녹음 대기 상태)
+
+    @ViewBuilder
+    private var idleStateView: some View {
+        VStack(spacing: DesignSystem.Spacing.xl) {
+            Spacer()
+
+            Button(action: startVoiceRecording) {
+                VStack(spacing: DesignSystem.Spacing.md) {
+                    ZStack {
+                        Circle()
+                            .fill(DesignSystem.Colors.primary)
+                            .frame(width: 80, height: 80)
+                            .shadow(color: DesignSystem.Colors.primary.opacity(0.3), radius: 10, x: 0, y: 5)
+
+                        Image(systemName: "mic.fill")
+                            .font(.system(size: 32, weight: .medium))
+                            .foregroundColor(.white)
+                    }
+
+                    Text(L.Voice.tapToStart)
+                        .font(DesignSystem.Typography.caption)
+                        .foregroundColor(DesignSystem.Colors.secondaryText)
+                        .multilineTextAlignment(.center)
+                }
+            }
+            .buttonStyle(PlainButtonStyle())
+
+            Spacer()
+
+            VStack(spacing: DesignSystem.Spacing.sm) {
+                Image(systemName: "hand.point.right.fill")
+                    .font(.title2)
+                    .foregroundColor(DesignSystem.Colors.tertiaryText)
+
+                Text("오른쪽에서\n기도를 작성하세요")
+                    .font(DesignSystem.Typography.caption)
+                    .foregroundColor(DesignSystem.Colors.tertiaryText)
+                    .multilineTextAlignment(.center)
+            }
+            .padding(.bottom, DesignSystem.Spacing.xxl)
+        }
+    }
+
+    // MARK: - Inline Recording View (녹음 중 상태)
+
+    @ViewBuilder
+    private var inlineRecordingView: some View {
+        VStack(spacing: DesignSystem.Spacing.lg) {
+            // AI 토글 버튼
+            if isAISystemSupported {
+                HStack {
+                    Spacer()
+                    aiToggleButton
+                }
+                .padding(.horizontal, DesignSystem.Spacing.md)
+                .padding(.top, DesignSystem.Spacing.md)
+            }
+
+            Spacer()
+
+            // 녹음 버튼
+            recordingButton
+
+            // 상태 텍스트
+            statusText
+
+            // 인식된 텍스트
+            if !speechManager.recognizedText.isEmpty {
+                recognizedTextView
+            }
+
+            Spacer()
+
+            // 하단 버튼들
+            actionButtons
+                .padding(.bottom, DesignSystem.Spacing.xl)
+        }
+        .padding(.horizontal, DesignSystem.Spacing.md)
+    }
+
+    @ViewBuilder
+    private var aiToggleButton: some View {
+        Button(action: {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                isAIUserEnabled.toggle()
+            }
+        }) {
+            HStack(spacing: DesignSystem.Spacing.xs) {
+                Image(systemName: isAIUserEnabled ? "sparkles" : "sparkles.slash")
+                    .font(.caption2)
+                Text(isAIUserEnabled ? "AI" : "AI")
+                    .font(.caption2)
+                    .fontWeight(.medium)
+            }
+            .foregroundColor(isAIUserEnabled ? .cyan : DesignSystem.Colors.tertiaryText)
+            .padding(.horizontal, DesignSystem.Spacing.sm)
+            .padding(.vertical, DesignSystem.Spacing.xs)
+            .background(
+                isAIUserEnabled
+                    ? LinearGradient(
+                        colors: [.purple.opacity(0.2), .cyan.opacity(0.2)],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                    : LinearGradient(
+                        colors: [DesignSystem.Colors.tertiaryText.opacity(0.1)],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+            )
+            .cornerRadius(DesignSystem.CornerRadius.small)
+        }
+        .buttonStyle(PlainButtonStyle())
+        .disabled(isAIProcessing)
+    }
+
+    @ViewBuilder
+    private var recordingButton: some View {
+        ZStack {
+            // 펄스 애니메이션
+            if speechManager.isRecording {
+                Circle()
+                    .fill(DesignSystem.Colors.primary.opacity(0.2))
+                    .frame(width: 100, height: 100)
+                    .scaleEffect(pulseAnimation ? 1.3 : 1.0)
+                    .opacity(pulseAnimation ? 0 : 0.5)
+                    .animation(
+                        .easeInOut(duration: 1.0).repeatForever(autoreverses: false),
+                        value: pulseAnimation
+                    )
+            }
+
+            if isAIProcessing {
+                Circle()
+                    .fill(
+                        LinearGradient(
+                            colors: [.purple.opacity(0.2), .cyan.opacity(0.2)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 100, height: 100)
+                    .scaleEffect(pulseAnimation ? 1.2 : 1.0)
+                    .animation(
+                        .easeInOut(duration: 1.5).repeatForever(autoreverses: true),
+                        value: pulseAnimation
+                    )
+            }
+
+            Button(action: {
+                if !isAIProcessing {
+                    speechManager.toggleRecording()
+                }
+            }) {
+                Circle()
+                    .fill(
+                        isAIProcessing
+                            ? LinearGradient(colors: [.purple, .cyan], startPoint: .topLeading, endPoint: .bottomTrailing)
+                            : LinearGradient(
+                                colors: [speechManager.isRecording ? .red : DesignSystem.Colors.primary,
+                                         speechManager.isRecording ? .red : DesignSystem.Colors.primary],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                    )
+                    .frame(width: 70, height: 70)
+                    .shadow(
+                        color: (speechManager.isRecording ? Color.red : DesignSystem.Colors.primary).opacity(0.3),
+                        radius: 10,
+                        x: 0,
+                        y: 5
+                    )
+                    .overlay(
+                        Group {
+                            if isAIProcessing {
+                                ProgressView()
+                                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                    .scaleEffect(1.2)
+                            } else {
+                                Image(systemName: speechManager.isRecording ? "stop.fill" : "mic.fill")
+                                    .font(.system(size: 28, weight: .medium))
+                                    .foregroundColor(.white)
+                            }
+                        }
+                    )
+            }
+            .buttonStyle(PlainButtonStyle())
+            .disabled(isAIProcessing)
+        }
+        .onAppear { pulseAnimation = true }
+    }
+
+    @ViewBuilder
+    private var statusText: some View {
+        VStack(spacing: DesignSystem.Spacing.xs) {
+            if isAIProcessing {
+                Text(L.AI.summarizing)
+                    .font(DesignSystem.Typography.callout)
+                    .foregroundStyle(
+                        LinearGradient(colors: [.purple, .cyan], startPoint: .leading, endPoint: .trailing)
+                    )
+            } else {
+                Text(speechManager.isRecording ? L.Voice.listening : L.Voice.tapToStart)
+                    .font(DesignSystem.Typography.callout)
+                    .foregroundColor(DesignSystem.Colors.primaryText)
+            }
+
+            if let errorMessage = speechManager.errorMessage ?? aiErrorMessage {
+                Text(errorMessage)
+                    .font(DesignSystem.Typography.caption2)
+                    .foregroundColor(.red)
+                    .multilineTextAlignment(.center)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var recognizedTextView: some View {
+        ScrollView {
+            Text(speechManager.recognizedText)
+                .font(DesignSystem.Typography.body)
+                .foregroundColor(DesignSystem.Colors.primaryText)
+                .multilineTextAlignment(.leading)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(DesignSystem.Spacing.md)
+        }
+        .frame(maxHeight: 150)
+        .background(DesignSystem.Colors.cardBackground)
+        .cornerRadius(DesignSystem.CornerRadius.medium)
+    }
+
+    @ViewBuilder
+    private var actionButtons: some View {
+        VStack(spacing: DesignSystem.Spacing.sm) {
+            // AI 정리 버튼
+            if !speechManager.recognizedText.isEmpty && !speechManager.isRecording && isAIAvailable {
+                Button(action: performAISummarization) {
+                    HStack(spacing: DesignSystem.Spacing.xs) {
+                        Image(systemName: "sparkles")
+                            .font(.caption)
+                        Text(L.AI.summarize)
+                            .font(DesignSystem.Typography.caption)
+                    }
+                    .foregroundStyle(
+                        LinearGradient(colors: [.purple, .cyan], startPoint: .leading, endPoint: .trailing)
+                    )
+                    .padding(.horizontal, DesignSystem.Spacing.lg)
+                    .padding(.vertical, DesignSystem.Spacing.sm)
+                    .background(
+                        LinearGradient(
+                            colors: [.purple.opacity(0.15), .cyan.opacity(0.15)],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .cornerRadius(DesignSystem.CornerRadius.medium)
+                }
+                .buttonStyle(PlainButtonStyle())
+                .disabled(isAIProcessing)
+            }
+
+            HStack(spacing: DesignSystem.Spacing.md) {
+                // 취소 버튼
+                Button(action: {
+                    speechManager.stopRecording()
+                    speechManager.clearText()
+                    isRecordingMode = false
+                }) {
+                    HStack(spacing: DesignSystem.Spacing.xs) {
+                        Image(systemName: "xmark")
+                            .font(.caption)
+                        Text(L.Voice.cancel)
+                            .font(DesignSystem.Typography.caption)
+                    }
+                    .foregroundColor(DesignSystem.Colors.secondaryText)
+                    .padding(.horizontal, DesignSystem.Spacing.lg)
+                    .padding(.vertical, DesignSystem.Spacing.sm)
+                    .background(DesignSystem.Colors.cardBackground)
+                    .cornerRadius(DesignSystem.CornerRadius.medium)
+                }
+                .buttonStyle(PlainButtonStyle())
+                .disabled(isAIProcessing)
+
+                // 텍스트 사용 버튼
+                if !speechManager.recognizedText.isEmpty && !speechManager.isRecording {
+                    Button(action: {
+                        recordedText = speechManager.recognizedText
+                        speechManager.clearText()
+                        isRecordingMode = false
+                    }) {
+                        HStack(spacing: DesignSystem.Spacing.xs) {
+                            Image(systemName: "checkmark")
+                                .font(.caption)
+                            Text(L.Voice.useText)
+                                .font(DesignSystem.Typography.caption)
+                        }
+                        .foregroundColor(.white)
+                        .padding(.horizontal, DesignSystem.Spacing.lg)
+                        .padding(.vertical, DesignSystem.Spacing.sm)
+                        .background(DesignSystem.Colors.primary)
+                        .cornerRadius(DesignSystem.CornerRadius.medium)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    .disabled(isAIProcessing)
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var permissionAlert: some View {
+        VStack {
+            Spacer()
+            VoicePermissionAlert(
+                onOpenSettings: {
+                    if let settingsUrl = URL(string: UIApplication.openSettingsURLString) {
+                        UIApplication.shared.open(settingsUrl)
+                    }
+                    showVoicePermissionAlert = false
+                },
+                onCancel: {
+                    showVoicePermissionAlert = false
+                }
+            )
+            Spacer()
+        }
+        .presentationDetents([.medium])
+        .presentationDragIndicator(.visible)
+    }
+
+    // MARK: - Actions
+
+    private func startVoiceRecording() {
+        if speechManager.checkPermissions() {
+            isRecordingMode = true
+            // 약간의 딜레이 후 녹음 시작 (toggleRecording 내부에서 try-catch 처리됨)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                speechManager.toggleRecording()
+            }
+        } else {
+            speechManager.requestAllPermissions { granted in
+                if granted {
+                    isRecordingMode = true
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                        speechManager.toggleRecording()
+                    }
+                } else {
+                    showVoicePermissionAlert = true
+                }
+            }
+        }
+    }
+
+    private func performAISummarization() {
+        guard !speechManager.recognizedText.isEmpty else { return }
+
+        isAIProcessing = true
+        aiErrorMessage = nil
+
+        Task {
+            do {
+                if #available(iOS 26.0, *) {
+                    let result = try await AISummarizationManager.shared.summarize(text: speechManager.recognizedText)
+                    await MainActor.run {
+                        summarizedText = result
+                        isAIProcessing = false
+                        showAISummaryPreview = true
+                    }
+                } else {
+                    await MainActor.run {
+                        aiErrorMessage = L.AI.errorRequiresiOS26
+                        isAIProcessing = false
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    aiErrorMessage = error.localizedDescription
+                    isAIProcessing = false
+                }
+            }
+        }
+    }
+}
+
+// MARK: - iPad Add Prayer Detail View (넓은 영역 - 폼)
+
+struct iPadAddPrayerDetailView: View {
+    @Binding var recordedText: String
     @State private var dummyTab: Int = 0
 
     var body: some View {
-        AddPrayerView(selectedTab: $dummyTab)
+        AddPrayerView(selectedTab: $dummyTab, externalRecordedText: $recordedText)
             .navigationTitle(L.Nav.newPrayer)
     }
 }
@@ -549,6 +1058,14 @@ struct PrayerListView: View {
     @State private var showingErrorAlert = false
     @State private var errorMessage = ""
     @State private var prayerViewModel: PrayerViewModel?
+    @State private var scrollOffset: CGFloat = 0
+
+    // DEBUG: 스크린샷용 데이터 생성
+    #if DEBUG
+    @State private var debugTapCount = 0
+    @State private var showDebugMenu = false
+    @State private var showDebugConfirmation = false
+    #endif
 
     // 선택된 보관소에 따른 기도 목록 필터링
     private var filteredPrayers: [Prayer] {
@@ -573,9 +1090,12 @@ struct PrayerListView: View {
                     }
                 } else {
                     List {
-                        // 헤더 공간 확보를 위한 상단 여백
+                        // 헤더 공간 확보를 위한 상단 여백 + 스크롤 오프셋 감지
                         Section {
                             Color.clear.frame(height: 24)
+                                .overlay(alignment: .top) {
+                                    ScrollOffsetDetector()
+                                }
                         }
                         .listRowBackground(Color.clear)
                         .listRowSeparator(.hidden)
@@ -620,17 +1140,57 @@ struct PrayerListView: View {
                     }
                     .listStyle(PlainListStyle())
                     .scrollContentBackground(.hidden)
+                    .coordinateSpace(name: "scroll")
+                    .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
+                        scrollOffset = value
+                    }
                 }
 
                 // 고정 헤더 오버레이 (iOS 전화 앱 스타일)
                 VStack(spacing: 0) {
-                    InlineHeader(title: L.Nav.prayerList, showFadeGradient: true)
+                    #if DEBUG
+                    InlineHeader(title: L.Nav.prayerList, showFadeGradient: true, fadeOpacity: min(1.0, max(0.0, -scrollOffset / 30.0)))
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            debugTapCount += 1
+                            if debugTapCount >= 5 {
+                                debugTapCount = 0
+                                showDebugMenu = true
+                            }
+                            // 2초 후 탭 카운트 리셋
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                                debugTapCount = 0
+                            }
+                        }
+                        .allowsHitTesting(true)
+                    #else
+                    InlineHeader(title: L.Nav.prayerList, showFadeGradient: true, fadeOpacity: min(1.0, max(0.0, -scrollOffset / 30.0)))
+                        .allowsHitTesting(false)
+                    #endif
                     Spacer()
                 }
-                .allowsHitTesting(false)
             }
             .navigationBarHidden(true)
             .background(DesignSystem.Colors.background)
+            #if DEBUG
+            .confirmationDialog("🛠️ 디버그 메뉴", isPresented: $showDebugMenu, titleVisibility: .visible) {
+                Button("📸 스크린샷용 샘플 데이터 생성") {
+                    showDebugConfirmation = true
+                }
+                Button("🗑️ 모든 데이터 삭제", role: .destructive) {
+                    ScreenshotDataGenerator.clearAllData(in: modelContext)
+                }
+                Button("취소", role: .cancel) { }
+            }
+            .alert("⚠️ 데이터 교체 확인", isPresented: $showDebugConfirmation) {
+                Button("생성", role: .destructive) {
+                    ScreenshotDataGenerator.generateSampleData(in: modelContext)
+                }
+                Button("취소", role: .cancel) { }
+            } message: {
+                Text("기존 데이터가 모두 삭제되고 스크린샷용 샘플 데이터로 교체됩니다.")
+            }
+            #endif
             .onAppear {
                 if prayerViewModel == nil {
                     prayerViewModel = PrayerViewModel(modelContext: modelContext)

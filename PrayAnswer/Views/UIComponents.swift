@@ -9,13 +9,36 @@ extension View {
     }
 }
 
+// MARK: - Scroll Offset Tracking
+
+/// 스크롤 오프셋을 추적하기 위한 PreferenceKey
+struct ScrollOffsetPreferenceKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
+    }
+}
+
+/// 스크롤 오프셋 감지용 뷰
+struct ScrollOffsetDetector: View {
+    var body: some View {
+        GeometryReader { geometry in
+            Color.clear
+                .preference(key: ScrollOffsetPreferenceKey.self, value: geometry.frame(in: .named("scroll")).minY)
+        }
+        .frame(height: 0)
+    }
+}
+
 // MARK: - Inline Header (Apple Style)
 
 /// iOS 전화 앱 스타일의 인라인 헤더 - 중앙 제목 + 하단 페이드 효과
+/// fadeOpacity: 스크롤 위치에 따른 페이드 효과 투명도 (0.0 ~ 1.0)
 struct InlineHeader: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     let title: String
     var showFadeGradient: Bool = true
+    var fadeOpacity: CGFloat = 1.0  // 스크롤 시 페이드 효과 투명도
 
     private var fontSize: CGFloat {
         horizontalSizeClass == .regular ? 20 : 17
@@ -31,7 +54,7 @@ struct InlineHeader: View {
                 .padding(.vertical, 11)
                 .background(DesignSystem.Colors.background)
 
-            // 페이드 그라데이션 (컨텐츠가 헤더 아래로 스크롤될 때 자연스럽게 흐려지는 효과)
+            // 페이드 그라데이션 (스크롤 시에만 나타남)
             if showFadeGradient {
                 LinearGradient(
                     gradient: Gradient(colors: [
@@ -43,6 +66,7 @@ struct InlineHeader: View {
                     endPoint: .bottom
                 )
                 .frame(height: 16)
+                .opacity(fadeOpacity)
                 .allowsHitTesting(false)
             }
         }
@@ -983,7 +1007,7 @@ struct DDayFormSection: View {
                     calendarAlertMessage = L.Calendar.removeSuccess
                     showCalendarSuccessAlert = true
                 case .failure(let error):
-                    calendarAlertMessage = error.localizedDescription ?? L.Calendar.removeFailed
+                    calendarAlertMessage = error.localizedDescription
                     showCalendarSuccessAlert = true
                 }
             }
@@ -1024,7 +1048,7 @@ struct DDayFormSection: View {
                 if case .permissionDenied = error {
                     showCalendarPermissionAlert = true
                 } else {
-                    calendarAlertMessage = error.localizedDescription ?? L.Calendar.addFailed
+                    calendarAlertMessage = error.localizedDescription
                     showCalendarSuccessAlert = true
                 }
             }

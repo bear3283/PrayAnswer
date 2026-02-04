@@ -681,7 +681,7 @@ struct PrayerDetailView: View {
                     calendarAlertMessage = L.Calendar.removeSuccess
                     showingCalendarSuccessAlert = true
                 case .failure(let error):
-                    calendarAlertMessage = error.localizedDescription ?? L.Calendar.removeFailed
+                    calendarAlertMessage = error.localizedDescription
                     showingCalendarSuccessAlert = true
                 }
             }
@@ -715,7 +715,7 @@ struct PrayerDetailView: View {
                 if case .permissionDenied = error {
                     showingCalendarPermissionAlert = true
                 } else {
-                    calendarAlertMessage = error.localizedDescription ?? L.Calendar.addFailed
+                    calendarAlertMessage = error.localizedDescription
                     showingCalendarSuccessAlert = true
                 }
             }

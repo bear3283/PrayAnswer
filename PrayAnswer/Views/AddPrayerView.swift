@@ -178,11 +178,10 @@ struct AddPrayerView: View {
                 // 메인 스크롤 컨텐츠
                 ScrollView {
                     VStack(spacing: DesignSystem.Spacing.xl) {
-                        // 헤더 공간 확보
-                        Color.clear.frame(height: 44)
+                        // 헤더 공간 확보 (기도대상자 탭과 동일한 높이)
+                        Color.clear.frame(height: 24)
 
                         formContent
-                            .padding(.top, DesignSystem.Spacing.lg)
                             .padding(.bottom, DesignSystem.Spacing.xxxl)
                     }
                 }

@@ -7,8 +7,8 @@ struct DesignSystem {
     // MARK: - Colors
     struct Colors {
         // Primary Colors
-        static let primary = Color("PrimaryColor")
-        static let secondary = Color("SecondaryColor")
+        static let primary = Color("AppPrimaryColor")
+        static let secondary = Color("AppSecondaryColor")
         
         // Background Colors
         static let background = Color(.systemBackground)

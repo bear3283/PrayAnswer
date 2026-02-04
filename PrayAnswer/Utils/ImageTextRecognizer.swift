@@ -70,7 +70,7 @@ final class ImageTextRecognizer {
 
         return try await withCheckedThrowingContinuation { continuation in
             let request = VNRecognizeTextRequest { [weak self] request, error in
-                if let error = error {
+                if error != nil {
                     Task { @MainActor in
                         self?.errorMessage = L.Image.errorOCRFailed
                     }

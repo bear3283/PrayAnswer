@@ -19,12 +19,6 @@ struct PrayAnswerApp: App {
     init() {
         do {
             modelContainer = try ModelContainer(for: Prayer.self)
-
-            #if DEBUG
-            // 개발 모드에서 더미 데이터 삽입
-            let context = modelContainer.mainContext
-            DebugDummyData.insertIfNeeded(into: context)
-            #endif
         } catch {
             fatalError("Failed to create ModelContainer: \(error)")
         }

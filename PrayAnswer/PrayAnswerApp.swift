@@ -18,7 +18,7 @@ struct PrayAnswerApp: App {
 
     init() {
         do {
-            modelContainer = try ModelContainer(for: Prayer.self)
+            modelContainer = try ModelContainer(for: Prayer.self, Attachment.self)
         } catch {
             fatalError("Failed to create ModelContainer: \(error)")
         }
@@ -30,6 +30,13 @@ struct PrayAnswerApp: App {
                 .onAppear {
                     // 앱 시작 시 알림 권한 요청
                     requestNotificationPermission()
+
+                    // 첨부 파일 마이그레이션 실행
+                    Task {
+                        await AttachmentMigrationManager.shared.migrateIfNeeded(
+                            modelContext: modelContainer.mainContext
+                        )
+                    }
                 }
         }
         .modelContainer(modelContainer)

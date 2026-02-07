@@ -124,8 +124,23 @@ final class SpeechRecognitionManager: NSObject {
                 isFinal = result.isFinal
             }
 
+            // 에러 또는 최종 결과일 때 정리
             if error != nil || isFinal {
-                self.stopRecordingInternal()
+                // 인식 완료 후 리소스 정리
+                self.recognitionRequest = nil
+                self.recognitionTask = nil
+
+                // 오디오 엔진이 아직 실행 중이면 중지
+                if self.audioEngine.isRunning {
+                    self.audioEngine.stop()
+                    self.audioEngine.inputNode.removeTap(onBus: 0)
+                }
+
+                try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+
+                DispatchQueue.main.async {
+                    self.isRecording = false
+                }
             }
         }
 
@@ -153,19 +168,22 @@ final class SpeechRecognitionManager: NSObject {
     }
 
     private func stopRecordingInternal() {
+        // 이미 중지 상태면 무시
+        guard audioEngine.isRunning || recognitionRequest != nil else {
+            DispatchQueue.main.async {
+                self.isRecording = false
+            }
+            return
+        }
+
         // 오디오 엔진 중지
         if audioEngine.isRunning {
             audioEngine.stop()
             audioEngine.inputNode.removeTap(onBus: 0)
         }
 
-        // 인식 요청 종료
+        // 인식 요청 종료 (최종 결과를 받기 위해 endAudio만 호출)
         recognitionRequest?.endAudio()
-        recognitionRequest = nil
-
-        // 인식 작업 취소
-        recognitionTask?.cancel()
-        recognitionTask = nil
 
         // 오디오 세션 비활성화
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
@@ -173,6 +191,9 @@ final class SpeechRecognitionManager: NSObject {
         DispatchQueue.main.async {
             self.isRecording = false
         }
+
+        // 인식 작업은 취소하지 않음 - 자연스럽게 완료되도록 함
+        // recognitionTask가 완료되면 콜백에서 정리됨
     }
 
     /// 녹음 토글

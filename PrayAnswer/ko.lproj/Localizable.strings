@@ -359,3 +359,28 @@
 "ai.settings_title" = "AI 정리 기능";
 "ai.enable_feature" = "AI로 기도문 정리";
 "ai.enable_feature_description" = "음성 녹음 후 Apple Intelligence를 사용하여 기도문을 자동으로 정리합니다";
+
+// MARK: - Attachments (복수 이미지 + PDF)
+// Section
+"attachment.section_title" = "첨부";
+"attachment.add_attachment" = "이미지나 파일을 첨부하세요";
+
+// Buttons
+"attachment.add_image" = "사진 추가";
+"attachment.add_file" = "파일 추가";
+"attachment.remove" = "삭제";
+"attachment.extract_all_text" = "전체 텍스트 추출";
+
+// Types
+"attachment.type_image" = "이미지";
+"attachment.type_pdf" = "PDF";
+
+// Limits
+"attachment.max_reached" = "최대 첨부 개수 도달";
+"attachment.max_reached_message" = "최대 %d개까지 첨부할 수 있습니다";
+"attachment.file_too_large" = "파일 크기가 20MB를 초과합니다";
+"attachment.count_format" = "%d개";
+
+// Errors
+"attachment.error_invalid_document" = "유효하지 않은 문서입니다";
+"attachment.error_unsupported_format" = "지원하지 않는 파일 형식입니다";

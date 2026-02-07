@@ -53,14 +53,12 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				DesignSystem.swift,
+				Models/Attachment.swift,
 				Models/NotificationSettings.swift,
 				Models/Prayer.swift,
-				Utils/CalendarManager.swift,
 				Utils/LocalizationKeys.swift,
 				Utils/Logger.swift,
-				Utils/NotificationManager.swift,
 				Utils/WidgetDataManager.swift,
-				ViewModels/PrayerViewModel.swift,
 			);
 			target = 09858FB62E177FD30062F295 /* PrayerWidgetExtension */;
 		};
@@ -486,6 +484,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.restart.PrayAnswer.PrayerWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) WIDGET_EXTENSION";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -514,6 +513,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.restart.PrayAnswer.PrayerWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) WIDGET_EXTENSION";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";

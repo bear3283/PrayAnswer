@@ -1,7 +1,13 @@
 import SwiftUI
 import SwiftData
 
+/// 기도대상자 네비게이션 값 타입
+struct PeopleNavigationTarget: Hashable {
+    let target: String
+}
+
 struct PeopleListView: View {
+    var selectedTab: Int = 0
     @Environment(\.modelContext) private var modelContext
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Query private var allPrayers: [Prayer]
@@ -11,6 +17,7 @@ struct PeopleListView: View {
     @State private var searchText = ""
     @State private var showSearchOverlay = false
     @State private var scrollOffset: CGFloat = 0
+    @State private var navigationPath = NavigationPath()
     @FocusState private var isSearchFocused: Bool
 
     // "본인" 기도 (target이 비어있는 기도들)
@@ -75,7 +82,7 @@ struct PeopleListView: View {
     }
     
     var body: some View {
-        NavigationView {
+        NavigationStack(path: $navigationPath) {
             ZStack(alignment: .top) {
                 // 메인 컨텐츠
                 ZStack(alignment: .bottom) {
@@ -102,18 +109,10 @@ struct PeopleListView: View {
                             ForEach(filteredTargets, id: \.self) { target in
                                 ZStack {
                                     // 투명한 NavigationLink로 네비게이션 기능만 유지
-                                    // "본인"(빈 문자열)인 경우 특별 처리
-                                    if target.isEmpty {
-                                        NavigationLink(destination: MyselfPrayerListView()) {
-                                            EmptyView()
-                                        }
-                                        .opacity(0)
-                                    } else {
-                                        NavigationLink(destination: PersonDetailView(target: target)) {
-                                            EmptyView()
-                                        }
-                                        .opacity(0)
+                                    NavigationLink(value: PeopleNavigationTarget(target: target)) {
+                                        EmptyView()
                                     }
+                                    .opacity(0)
 
                                     // 실제 보이는 UI
                                     PersonRowView(
@@ -160,6 +159,13 @@ struct PeopleListView: View {
                 .allowsHitTesting(false)
             }
             .navigationBarHidden(true)
+            .navigationDestination(for: PeopleNavigationTarget.self) { nav in
+                if nav.target.isEmpty {
+                    MyselfPrayerListView()
+                } else {
+                    PersonDetailView(target: nav.target)
+                }
+            }
             .background(DesignSystem.Colors.background)
             .onAppear {
                 if prayerViewModel == nil {
@@ -171,6 +177,9 @@ struct PeopleListView: View {
             } message: {
                 Text(errorMessage)
             }
+        }
+        .onChange(of: selectedTab) {
+            navigationPath = NavigationPath()
         }
     }
     

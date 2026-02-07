@@ -59,7 +59,7 @@ struct iPhoneContentView: View {
     var body: some View {
         TabView(selection: $selectedTab) {
             // 기도 목록 탭 (첫 번째 화면)
-            PrayerListView()
+            PrayerListView(selectedTab: selectedTab)
                 .tabItem {
                     Image(systemName: "list.bullet.rectangle.portrait")
                     Text(L.Tab.prayerList)
@@ -74,7 +74,7 @@ struct iPhoneContentView: View {
                 .tag(1)
 
             // 기도대상자 탭 (세 번째 화면)
-            PeopleListView()
+            PeopleListView(selectedTab: selectedTab)
                 .tabItem {
                     Image(systemName: "person.2")
                     Text(L.Tab.people)
@@ -1051,6 +1051,7 @@ struct iPadEmptyDetailView: View {
 // MARK: - Prayer List View (Adaptive)
 
 struct PrayerListView: View {
+    var selectedTab: Int = 0
     @Environment(\.modelContext) private var modelContext
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Query private var allPrayers: [Prayer]
@@ -1059,6 +1060,7 @@ struct PrayerListView: View {
     @State private var errorMessage = ""
     @State private var prayerViewModel: PrayerViewModel?
     @State private var scrollOffset: CGFloat = 0
+    @State private var navigationPath = NavigationPath()
 
     // DEBUG: 스크린샷용 데이터 생성
     #if DEBUG
@@ -1074,7 +1076,7 @@ struct PrayerListView: View {
     }
 
     var body: some View {
-        NavigationView {
+        NavigationStack(path: $navigationPath) {
             ZStack(alignment: .top) {
                 // 메인 컨텐츠
                 if filteredPrayers.isEmpty {
@@ -1112,7 +1114,7 @@ struct PrayerListView: View {
                         ForEach(filteredPrayers) { prayer in
                             ZStack {
                                 // 투명한 NavigationLink로 네비게이션 기능만 유지
-                                NavigationLink(destination: PrayerDetailView(prayer: prayer)) {
+                                NavigationLink(value: prayer) {
                                     EmptyView()
                                 }
                                 .opacity(0)
@@ -1171,6 +1173,9 @@ struct PrayerListView: View {
                 }
             }
             .navigationBarHidden(true)
+            .navigationDestination(for: Prayer.self) { prayer in
+                PrayerDetailView(prayer: prayer)
+            }
             .background(DesignSystem.Colors.background)
             #if DEBUG
             .confirmationDialog("🛠️ 디버그 메뉴", isPresented: $showDebugMenu, titleVisibility: .visible) {
@@ -1212,7 +1217,9 @@ struct PrayerListView: View {
                 Text(errorMessage)
             }
         }
-        .navigationViewStyle(StackNavigationViewStyle())
+        .onChange(of: selectedTab) {
+            navigationPath = NavigationPath()
+        }
     }
 
     private func deletePrayer(_ prayer: Prayer) {

@@ -220,3 +220,28 @@
 // Accessibility
 "voice.accessibility_microphone" = "Enter prayer content by voice";
 "voice.accessibility_recording_hint" = "Tap to start or stop voice recording";
+
+// MARK: - Attachments (Multiple Images + PDF)
+// Section
+"attachment.section_title" = "Attachments";
+"attachment.add_attachment" = "Add images or files";
+
+// Buttons
+"attachment.add_image" = "Add Photo";
+"attachment.add_file" = "Add File";
+"attachment.remove" = "Remove";
+"attachment.extract_all_text" = "Extract All Text";
+
+// Types
+"attachment.type_image" = "Image";
+"attachment.type_pdf" = "PDF";
+
+// Limits
+"attachment.max_reached" = "Maximum Attachments Reached";
+"attachment.max_reached_message" = "You can attach up to %d items";
+"attachment.file_too_large" = "File size exceeds 20MB limit";
+"attachment.count_format" = "%d items";
+
+// Errors
+"attachment.error_invalid_document" = "Invalid document";
+"attachment.error_unsupported_format" = "Unsupported file format";

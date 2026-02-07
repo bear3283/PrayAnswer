@@ -58,7 +58,10 @@ final class Prayer {
     var notificationEnabled: Bool = false // 알림 활성화 여부 (기본값으로 마이그레이션 지원)
     var notificationSettingsData: Data? // 알림 세부설정 JSON 저장
     var calendarEventId: String? // 캘린더 이벤트 식별자
-    var imageFileName: String? // 첨부 이미지 파일명
+    var imageFileName: String? // 첨부 이미지 파일명 (레거시 - 위젯 호환용)
+
+    /// 첨부 파일 목록 (이미지, PDF)
+    @Relationship(deleteRule: .cascade) var attachments: [Attachment] = []
 
     // 기본 이니셜라이저 (위젯에서도 사용 가능)
     init(title: String, content: String, category: PrayerCategory = .personal, target: String = "", storage: PrayerStorage = .wait, isFavorite: Bool = false, targetDate: Date? = nil, notificationEnabled: Bool = false, notificationSettingsData: Data? = nil, imageFileName: String? = nil) {
@@ -168,10 +171,64 @@ extension Prayer {
 
     // MARK: - Image Helpers
 
-    /// 이미지가 첨부되어 있는지 여부
+    /// 이미지가 첨부되어 있는지 여부 (레거시 단일 이미지)
     var hasImage: Bool {
         guard let fileName = imageFileName, !fileName.isEmpty else { return false }
         return true
+    }
+
+    // MARK: - Attachment Helpers
+
+    /// 첨부 파일이 있는지 여부 (레거시 이미지 포함)
+    var hasAttachments: Bool {
+        !attachments.isEmpty || hasImage
+    }
+
+    /// 총 첨부 파일 개수 (레거시 이미지 포함)
+    var attachmentCount: Int {
+        let legacyCount = (hasImage && attachments.isEmpty) ? 1 : 0
+        return attachments.count + legacyCount
+    }
+
+    /// 이미지 첨부 파일만 필터링 (정렬됨)
+    var imageAttachments: [Attachment] {
+        attachments.filter { $0.isImage }.sorted { $0.order < $1.order }
+    }
+
+    /// PDF 첨부 파일만 필터링 (정렬됨)
+    var pdfAttachments: [Attachment] {
+        attachments.filter { $0.isPDF }.sorted { $0.order < $1.order }
+    }
+
+    /// 모든 첨부 파일 (정렬됨)
+    var sortedAttachments: [Attachment] {
+        attachments.sorted { $0.order < $1.order }
+    }
+
+    /// 첨부 파일 추가
+    func addAttachment(_ attachment: Attachment) {
+        attachment.order = attachments.count
+        attachment.prayer = self
+        attachments.append(attachment)
+        modifiedDate = Date()
+    }
+
+    /// 첨부 파일 제거
+    func removeAttachment(_ attachment: Attachment) {
+        attachments.removeAll { $0.fileName == attachment.fileName }
+        // 순서 재정렬
+        for (index, att) in attachments.sorted(by: { $0.order < $1.order }).enumerated() {
+            att.order = index
+        }
+        modifiedDate = Date()
+    }
+
+    /// 첨부 파일 순서 업데이트
+    func reorderAttachments(_ orderedAttachments: [Attachment]) {
+        for (index, attachment) in orderedAttachments.enumerated() {
+            attachment.order = index
+        }
+        modifiedDate = Date()
     }
 
     // MARK: - Accessibility

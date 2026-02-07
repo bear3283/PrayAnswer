@@ -82,8 +82,16 @@ final class PrayerViewModel: ObservableObject {
         // D-Day 알림 취소 (기본 + 커스텀 + 반복 알림 모두)
         NotificationManager.shared.cancelAllNotifications(for: prayer)
 
-        // 첨부 이미지 파일은 호출자에서 삭제 (ImageStorageManager.shared.deleteImage)
-        // Note: Widget Extension에서는 ImageStorageManager를 사용할 수 없음
+        #if !WIDGET_EXTENSION
+        // 첨부 파일 삭제 (이미지, PDF)
+        let fileNames = prayer.attachments.map { $0.fileName }
+        AttachmentStorageManager.shared.deleteFiles(fileNames: fileNames)
+
+        // 레거시 이미지 파일 삭제
+        if let legacyFileName = prayer.imageFileName {
+            ImageStorageManager.shared.deleteImage(fileName: legacyFileName)
+        }
+        #endif
 
         modelContext.delete(prayer)
 

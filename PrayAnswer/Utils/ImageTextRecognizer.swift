@@ -126,6 +126,105 @@ final class ImageTextRecognizer {
         }
     }
 
+    /// 여러 이미지에서 텍스트 추출 (배치 OCR)
+    /// - Parameter images: 텍스트를 추출할 UIImage 배열
+    /// - Returns: 추출된 텍스트 (각 이미지 결과를 구분자로 연결)
+    func recognizeText(from images: [UIImage]) async throws -> String {
+        guard !images.isEmpty else {
+            throw OCRError.noTextFound
+        }
+
+        await MainActor.run {
+            isProcessing = true
+            errorMessage = nil
+        }
+
+        defer {
+            Task { @MainActor in
+                isProcessing = false
+            }
+        }
+
+        var results: [String] = []
+
+        for (index, image) in images.enumerated() {
+            do {
+                let text = try await recognizeTextSingle(from: image)
+                if !text.isEmpty {
+                    results.append(text)
+                }
+            } catch OCRError.noTextFound {
+                // 텍스트가 없는 이미지는 건너뛰기
+                PrayerLogger.shared.userAction("이미지 \(index + 1): 텍스트 없음")
+                continue
+            } catch {
+                PrayerLogger.shared.dataOperationFailed("이미지 \(index + 1) OCR", error: error)
+                continue
+            }
+        }
+
+        if results.isEmpty {
+            await MainActor.run {
+                errorMessage = L.Image.errorNoTextFound
+            }
+            throw OCRError.noTextFound
+        }
+
+        let combinedText = results.joined(separator: "\n\n---\n\n")
+
+        await MainActor.run {
+            lastRecognizedText = combinedText
+        }
+
+        return combinedText
+    }
+
+    /// 단일 이미지 텍스트 인식 (내부용 - 상태 업데이트 없음)
+    private func recognizeTextSingle(from image: UIImage) async throws -> String {
+        guard let cgImage = image.cgImage else {
+            throw OCRError.invalidImage
+        }
+
+        return try await withCheckedThrowingContinuation { continuation in
+            let request = VNRecognizeTextRequest { request, error in
+                if error != nil {
+                    continuation.resume(throwing: OCRError.recognitionFailed)
+                    return
+                }
+
+                guard let observations = request.results as? [VNRecognizedTextObservation] else {
+                    continuation.resume(throwing: OCRError.noTextFound)
+                    return
+                }
+
+                let recognizedStrings = observations.compactMap { observation in
+                    observation.topCandidates(1).first?.string
+                }
+
+                let resultText = recognizedStrings.joined(separator: "\n")
+
+                if resultText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    continuation.resume(throwing: OCRError.noTextFound)
+                    return
+                }
+
+                continuation.resume(returning: resultText)
+            }
+
+            request.recognitionLanguages = ["ko-KR", "en-US"]
+            request.recognitionLevel = .accurate
+            request.usesLanguageCorrection = true
+
+            let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
+
+            do {
+                try handler.perform([request])
+            } catch {
+                continuation.resume(throwing: OCRError.recognitionFailed)
+            }
+        }
+    }
+
     /// 마지막 결과 초기화
     func clearResult() {
         lastRecognizedText = ""

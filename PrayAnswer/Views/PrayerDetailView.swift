@@ -25,9 +25,11 @@ struct PrayerDetailView: View {
     @State private var calendarAlertMessage = ""
     @State private var isCalendarLoading = false
 
-    // Image Attachment
-    @State private var editedSelectedImage: UIImage?
-    @State private var editedImageFileName: String?
+    // Attachments (복수 이미지 + PDF)
+    @State private var editedAttachments: [Attachment] = []
+    @State private var editedPendingAttachments: [PendingAttachment] = []
+    @State private var showAttachmentPreview = false
+    @State private var selectedAttachmentIndex = 0
     @State private var showOCRResult = false
     @State private var extractedText = ""
     @State private var isExtractingText = false
@@ -145,6 +147,33 @@ struct PrayerDetailView: View {
             .presentationDetents([.large])
             .presentationDragIndicator(.visible)
         }
+        .fullScreenCover(isPresented: $showAttachmentPreview) {
+            if isEditing {
+                // 편집 모드: editedAttachments 사용
+                let allAttachments = editedAttachments + editedPendingAttachments.map { pending in
+                    Attachment(
+                        fileName: pending.fileName,
+                        originalName: pending.originalName,
+                        type: pending.type,
+                        fileSize: pending.fileSize
+                    )
+                }
+                if !allAttachments.isEmpty {
+                    AttachmentPreviewView(
+                        attachments: allAttachments,
+                        selectedIndex: $selectedAttachmentIndex
+                    )
+                }
+            } else {
+                // 보기 모드: prayer.sortedAttachments 사용
+                if !prayer.sortedAttachments.isEmpty {
+                    AttachmentPreviewView(
+                        attachments: prayer.sortedAttachments,
+                        selectedIndex: $selectedAttachmentIndex
+                    )
+                }
+            }
+        }
         .overlay {
             if isExtractingText {
                 ZStack {
@@ -231,29 +260,16 @@ struct PrayerDetailView: View {
             .padding(DesignSystem.Spacing.lg)
         }
 
-        // 이미지 섹션 (보기 모드)
-        if prayer.hasImage, let fileName = prayer.imageFileName,
-           let image = ImageStorageManager.shared.loadImage(fileName: fileName) {
-            ModernCard {
-                VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
-                    Text(L.Image.attachedImage)
-                        .font(DesignSystem.Typography.callout)
-                        .foregroundColor(DesignSystem.Colors.primaryText)
-                        .fontWeight(.medium)
-
-                    Image(uiImage: image)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(maxHeight: 250)
-                        .cornerRadius(DesignSystem.CornerRadius.medium)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.medium)
-                                .stroke(DesignSystem.Colors.primary.opacity(0.2), lineWidth: 1)
-                        )
-                        .accessibilityLabel(L.Image.accessibilityAttachedImage)
+        // 첨부 파일 섹션 (보기 모드)
+        if prayer.hasAttachments {
+            AttachmentGallerySection(
+                attachments: .constant(prayer.sortedAttachments),
+                readOnly: true,
+                onTapAttachment: { index in
+                    selectedAttachmentIndex = index
+                    showAttachmentPreview = true
                 }
-                .padding(DesignSystem.Spacing.lg)
-            }
+            )
         }
 
         // 기도 대상자 섹션
@@ -398,12 +414,21 @@ struct PrayerDetailView: View {
             .padding(DesignSystem.Spacing.lg)
         }
 
-        // 이미지 첨부 섹션 (편집 모드)
-        ImageAttachmentSection(
-            selectedImage: $editedSelectedImage,
-            imageFileName: $editedImageFileName,
+        // 첨부 파일 섹션 (편집 모드)
+        AttachmentGallerySection(
+            attachments: $editedAttachments,
+            pendingAttachments: $editedPendingAttachments,
+            readOnly: false,
+            maxAttachments: 10,
+            onTapAttachment: { index in
+                selectedAttachmentIndex = index
+                showAttachmentPreview = true
+            },
             onExtractText: { image in
                 extractTextFromImage(image)
+            },
+            onExtractAllText: {
+                extractTextFromAllImages()
             }
         )
 
@@ -466,13 +491,9 @@ struct PrayerDetailView: View {
         editedNotificationSettings = prayer.notificationSettings
         editedCalendarEventId = prayer.calendarEventId
 
-        // 이미지 상태 로드
-        editedImageFileName = prayer.imageFileName
-        if let fileName = prayer.imageFileName {
-            editedSelectedImage = ImageStorageManager.shared.loadImage(fileName: fileName)
-        } else {
-            editedSelectedImage = nil
-        }
+        // 첨부 파일 상태 로드
+        editedAttachments = prayer.sortedAttachments
+        editedPendingAttachments = []
 
         withAnimation(.easeInOut(duration: 0.3)) {
             isEditing = true
@@ -491,13 +512,12 @@ struct PrayerDetailView: View {
         editedNotificationSettings = NotificationSettings()
         editedCalendarEventId = nil
 
-        // 이미지 상태 초기화 (새로 추가한 이미지가 있으면 삭제)
-        if let editedFileName = editedImageFileName, editedFileName != prayer.imageFileName {
-            // 편집 중 새로 추가한 이미지 파일 삭제
-            ImageStorageManager.shared.deleteImage(fileName: editedFileName)
+        // 새로 추가한 첨부 파일 삭제 (저장되지 않은 것들)
+        for pending in editedPendingAttachments {
+            AttachmentStorageManager.shared.deleteFile(fileName: pending.fileName)
         }
-        editedSelectedImage = nil
-        editedImageFileName = nil
+        editedAttachments = []
+        editedPendingAttachments = []
         extractedText = ""
     }
 
@@ -524,10 +544,33 @@ struct PrayerDetailView: View {
             var finalSettings = editedNotificationSettings
             finalSettings.isEnabled = editedNotificationEnabled
 
-            // 이전 이미지 파일 삭제 (이미지가 변경되었거나 삭제된 경우)
-            if let oldFileName = prayer.imageFileName, oldFileName != editedImageFileName {
-                ImageStorageManager.shared.deleteImage(fileName: oldFileName)
+            // 삭제된 첨부 파일 처리
+            let existingFileNames = Set(prayer.attachments.map { $0.fileName })
+            let editedFileNames = Set(editedAttachments.map { $0.fileName })
+            let deletedFileNames = existingFileNames.subtracting(editedFileNames)
+
+            for fileName in deletedFileNames {
+                AttachmentStorageManager.shared.deleteFile(fileName: fileName)
+                if let attachment = prayer.attachments.first(where: { $0.fileName == fileName }) {
+                    prayer.removeAttachment(attachment)
+                }
             }
+
+            // 새 첨부 파일 추가
+            let startOrder = editedAttachments.count
+            for (index, pending) in editedPendingAttachments.enumerated() {
+                let attachment = Attachment(
+                    fileName: pending.fileName,
+                    originalName: pending.originalName,
+                    type: pending.type,
+                    fileSize: pending.fileSize,
+                    order: startOrder + index
+                )
+                prayer.addAttachment(attachment)
+            }
+
+            // 레거시 imageFileName 업데이트 (첫 번째 이미지)
+            let firstImageFileName = prayer.imageAttachments.first?.fileName
 
             // 제목을 자동 생성하여 업데이트
             try viewModel.updatePrayer(
@@ -539,7 +582,7 @@ struct PrayerDetailView: View {
                 targetDate: editedTargetDate,
                 notificationEnabled: editedNotificationEnabled,
                 notificationSettings: finalSettings,
-                imageFileName: editedImageFileName
+                imageFileName: firstImageFileName
             )
 
             // 캘린더 이벤트 ID 업데이트
@@ -570,10 +613,7 @@ struct PrayerDetailView: View {
             }
         }
 
-        // 첨부 이미지 파일 삭제
-        if let imageFileName = prayer.imageFileName {
-            ImageStorageManager.shared.deleteImage(fileName: imageFileName)
-        }
+        // 첨부 파일 삭제는 ViewModel.deletePrayer에서 처리됨
 
         do {
             try viewModel.deletePrayer(prayer)
@@ -750,6 +790,46 @@ struct PrayerDetailView: View {
             editedContent = text
         } else {
             editedContent += "\n\n" + text
+        }
+    }
+
+    // MARK: - Batch OCR
+
+    private func extractTextFromAllImages() {
+        // 기존 첨부 + 새 첨부에서 이미지만 추출
+        var images: [UIImage] = []
+
+        for attachment in editedAttachments where attachment.isImage {
+            if let image = AttachmentStorageManager.shared.loadImage(fileName: attachment.fileName) {
+                images.append(image)
+            }
+        }
+
+        for pending in editedPendingAttachments where pending.type == .image {
+            if let image = AttachmentStorageManager.shared.loadImage(fileName: pending.fileName) {
+                images.append(image)
+            }
+        }
+
+        guard !images.isEmpty else { return }
+
+        isExtractingText = true
+
+        Task {
+            do {
+                let text = try await ImageTextRecognizer.shared.recognizeText(from: images)
+                await MainActor.run {
+                    extractedText = text
+                    isExtractingText = false
+                    showOCRResult = true
+                }
+            } catch {
+                await MainActor.run {
+                    isExtractingText = false
+                    errorMessage = error.localizedDescription
+                    showingErrorAlert = true
+                }
+            }
         }
     }
 }

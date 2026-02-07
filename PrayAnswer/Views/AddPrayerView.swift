@@ -22,9 +22,8 @@ struct AddPrayerView: View {
     @State private var showVoicePermissionAlert = false
     private var speechManager: SpeechRecognitionManager
 
-    // Image Attachment
-    @State private var selectedImage: UIImage?
-    @State private var imageFileName: String?
+    // Attachments (복수 이미지 + PDF)
+    @State private var pendingAttachments: [PendingAttachment] = []
     @State private var showOCRResult = false
     @State private var extractedText = ""
     @State private var isExtractingText = false
@@ -377,12 +376,16 @@ struct AddPrayerView: View {
                 .padding(DesignSystem.Spacing.lg)
             }
 
-            // 이미지 첨부 섹션
-            ImageAttachmentSection(
-                selectedImage: $selectedImage,
-                imageFileName: $imageFileName,
+            // 첨부 파일 섹션 (복수 이미지 + PDF)
+            AttachmentGallerySection(
+                pendingAttachments: $pendingAttachments,
+                readOnly: false,
+                maxAttachments: 10,
                 onExtractText: { image in
                     extractTextFromImage(image)
+                },
+                onExtractAllText: {
+                    extractTextFromAllImages()
                 }
             )
 
@@ -527,6 +530,9 @@ struct AddPrayerView: View {
             finalSettings.isEnabled = notificationEnabled
 
             // 기도 저장 (제목은 자동 생성)
+            // 첫 번째 이미지 파일명을 레거시 호환용으로 저장
+            let firstImageFileName = pendingAttachments.first(where: { $0.type == .image })?.fileName
+
             let prayer = try viewModel.addPrayer(
                 title: generatedTitle,
                 content: content.trimmingCharacters(in: .whitespacesAndNewlines),
@@ -535,12 +541,36 @@ struct AddPrayerView: View {
                 targetDate: targetDate,
                 notificationEnabled: notificationEnabled,
                 notificationSettings: finalSettings,
-                imageFileName: imageFileName
+                imageFileName: firstImageFileName
             )
+
+            // 첨부 파일 추가 (Attachment 모델로 변환)
+            for (index, pending) in pendingAttachments.enumerated() {
+                let attachment = Attachment(
+                    fileName: pending.fileName,
+                    originalName: pending.originalName,
+                    type: pending.type,
+                    fileSize: pending.fileSize,
+                    order: index
+                )
+                prayer.addAttachment(attachment)
+            }
+
+            // 변경사항 저장
+            try modelContext.save()
 
             // D-Day 알림 스케줄링
             if notificationEnabled, let date = targetDate {
                 NotificationManager.shared.scheduleNotifications(for: prayer, targetDate: date)
+            }
+
+            // 캘린더 이벤트 추가
+            if let date = targetDate {
+                CalendarManager.shared.addDDayEvent(for: prayer, targetDate: date) { result in
+                    if case .failure(let error) = result {
+                        PrayerLogger.shared.dataOperationFailed("캘린더 이벤트 추가", error: error)
+                    }
+                }
             }
 
             PrayerLogger.shared.userAction("기도 저장")
@@ -569,9 +599,8 @@ struct AddPrayerView: View {
         notificationEnabled = false
         notificationSettings = NotificationSettings()
 
-        // 이미지 관련 상태 초기화 (파일은 이미 저장되었으므로 삭제하지 않음)
-        selectedImage = nil
-        imageFileName = nil
+        // 첨부 파일 상태 초기화 (파일은 이미 저장되었으므로 삭제하지 않음)
+        pendingAttachments = []
         extractedText = ""
 
         // 폼 초기화 후 내용 필드에 다시 포커스
@@ -619,6 +648,36 @@ struct AddPrayerView: View {
             content = text
         } else {
             content += "\n\n" + text
+        }
+    }
+
+    // MARK: - Batch OCR
+
+    private func extractTextFromAllImages() {
+        // 모든 이미지 첨부 파일에서 이미지 로드
+        let images = pendingAttachments
+            .filter { $0.type == .image }
+            .compactMap { AttachmentStorageManager.shared.loadImage(fileName: $0.fileName) }
+
+        guard !images.isEmpty else { return }
+
+        isExtractingText = true
+
+        Task {
+            do {
+                let text = try await ImageTextRecognizer.shared.recognizeText(from: images)
+                await MainActor.run {
+                    extractedText = text
+                    isExtractingText = false
+                    showOCRResult = true
+                }
+            } catch {
+                await MainActor.run {
+                    isExtractingText = false
+                    alertMessage = error.localizedDescription
+                    showingAlert = true
+                }
+            }
         }
     }
 }

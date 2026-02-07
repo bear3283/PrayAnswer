@@ -472,6 +472,40 @@ enum L {
         static let microphoneButton = NSLocalizedString("voice.accessibility_microphone", comment: "Microphone button accessibility")
         static let recordingHint = NSLocalizedString("voice.accessibility_recording_hint", comment: "Recording hint accessibility")
     }
+
+    // MARK: - Attachments (복수 이미지 + PDF)
+    enum Attachment {
+        // Section
+        static let sectionTitle = NSLocalizedString("attachment.section_title", comment: "Attachments section title")
+        static let addAttachment = NSLocalizedString("attachment.add_attachment", comment: "Add attachment placeholder")
+
+        // Buttons
+        static let addImage = NSLocalizedString("attachment.add_image", comment: "Add image button")
+        static let addFile = NSLocalizedString("attachment.add_file", comment: "Add file button")
+        static let removeAttachment = NSLocalizedString("attachment.remove", comment: "Remove attachment button")
+        static let extractAllText = NSLocalizedString("attachment.extract_all_text", comment: "Extract all text button")
+
+        // Types
+        static let typeImage = NSLocalizedString("attachment.type_image", comment: "Image type")
+        static let typePDF = NSLocalizedString("attachment.type_pdf", comment: "PDF type")
+
+        // Limits
+        static let maxReached = NSLocalizedString("attachment.max_reached", comment: "Max attachments reached title")
+        static let fileTooLarge = NSLocalizedString("attachment.file_too_large", comment: "File too large error")
+
+        // Errors
+        static let errorInvalidDocument = NSLocalizedString("attachment.error_invalid_document", comment: "Invalid document error")
+        static let errorUnsupportedFormat = NSLocalizedString("attachment.error_unsupported_format", comment: "Unsupported format error")
+
+        // Format strings
+        static func maxReachedMessage(_ max: Int) -> String {
+            String(format: NSLocalizedString("attachment.max_reached_message", comment: "Max attachments message"), max)
+        }
+
+        static func countFormat(_ count: Int) -> String {
+            String(format: NSLocalizedString("attachment.count_format", comment: "Attachment count format"), count)
+        }
+    }
 }
 
 // MARK: - Prayer Storage Extension for Localization

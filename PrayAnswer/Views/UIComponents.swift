@@ -161,6 +161,18 @@ struct ModernPrayerRow: View {
 
                     CategoryTag(category: prayer.category, size: .small)
 
+                    if prayer.hasAttachments {
+                        HStack(spacing: 2) {
+                            Image(systemName: prayer.imageAttachments.isEmpty ? "doc.fill" : "photo.fill")
+                                .font(.caption2)
+                            if prayer.attachmentCount > 1 {
+                                Text("\(prayer.attachmentCount)")
+                                    .font(.system(size: 9, weight: .bold))
+                            }
+                        }
+                        .foregroundColor(DesignSystem.Colors.secondaryText)
+                    }
+
                     Spacer()
 
                     if let onFavoriteToggle = onFavoriteToggle {
@@ -1267,12 +1279,14 @@ struct VoiceRecordingOverlay: View {
             // 배경 블러
             Color.black.opacity(0.6)
                 .ignoresSafeArea()
+                .contentShape(Rectangle())
                 .onTapGesture {
                     // 배경 탭으로 취소
                     if !speechManager.isRecording && !isAIProcessing {
                         onCancel()
                     }
                 }
+                .zIndex(0)
 
             VStack(spacing: DesignSystem.Spacing.xxl) {
                 // AI 토글 버튼 (시스템이 지원하는 경우에만 표시)
@@ -1286,14 +1300,14 @@ struct VoiceRecordingOverlay: View {
                         }) {
                             HStack(spacing: DesignSystem.Spacing.xs) {
                                 Image(systemName: isAIUserEnabled ? "sparkles" : "sparkles.slash")
-                                    .font(.caption)
+                                    .font(.body)
                                 Text(isAIUserEnabled ? "AI ON" : "AI OFF")
-                                    .font(DesignSystem.Typography.caption)
+                                    .font(DesignSystem.Typography.callout)
                                     .fontWeight(.medium)
                             }
                             .foregroundColor(isAIUserEnabled ? .cyan : .white.opacity(0.5))
-                            .padding(.horizontal, DesignSystem.Spacing.md)
-                            .padding(.vertical, DesignSystem.Spacing.sm)
+                            .padding(.horizontal, DesignSystem.Spacing.lg)
+                            .padding(.vertical, DesignSystem.Spacing.md)
                             .background(
                                 isAIUserEnabled
                                     ? LinearGradient(
@@ -1466,7 +1480,7 @@ struct VoiceRecordingOverlay: View {
                                 .padding(DesignSystem.Spacing.lg)
                         }
                         .frame(maxHeight: 200)
-                        .background(Color.white.opacity(0.1))
+                        .background(Color.black.opacity(0.5))
                         .cornerRadius(DesignSystem.CornerRadius.medium)
                         .padding(.horizontal, DesignSystem.Spacing.xl)
                     }
@@ -1476,6 +1490,25 @@ struct VoiceRecordingOverlay: View {
 
                 // 하단 버튼
                 VStack(spacing: DesignSystem.Spacing.md) {
+                    // 녹음 중일 때 명시적 중지 버튼
+                    if speechManager.isRecording {
+                        Button(action: {
+                            speechManager.stopRecording()
+                        }) {
+                            HStack(spacing: DesignSystem.Spacing.sm) {
+                                Image(systemName: "stop.circle.fill")
+                                Text(L.Voice.stopRecording)
+                            }
+                            .font(DesignSystem.Typography.headline)
+                            .foregroundColor(.red)
+                            .padding(.horizontal, DesignSystem.Spacing.xl)
+                            .padding(.vertical, DesignSystem.Spacing.md)
+                            .background(Color.red.opacity(0.2))
+                            .cornerRadius(DesignSystem.CornerRadius.large)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
+
                     // AI 정리 버튼 (텍스트가 있고 녹음이 완료된 경우에만)
                     if !speechManager.recognizedText.isEmpty && !speechManager.isRecording && isAIAvailable {
                         Button(action: {
@@ -1564,6 +1597,7 @@ struct VoiceRecordingOverlay: View {
                 }
                 .padding(.bottom, DesignSystem.Spacing.xxxl)
             }
+            .zIndex(1)
         }
         .animation(DesignSystem.Animation.standard, value: speechManager.isRecording)
         .animation(DesignSystem.Animation.standard, value: speechManager.recognizedText)

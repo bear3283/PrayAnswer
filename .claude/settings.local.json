@@ -10,7 +10,15 @@
       "Bash(git checkout:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(git merge:*)"
+      "Bash(git merge:*)",
+      "Bash(xcodebuild -list)",
+      "Bash(xcodebuild -target PrayAnswer -configuration Debug -destination 'generic/platform=iOS')",
+      "Bash(xattr:*)",
+      "Bash(OBJROOT=/tmp/PrayAnswerBuild xcodebuild:*)",
+      "Bash(xcodebuild:*)",
+      "Bash(ls:*)",
+      "mcp__context7__query-docs",
+      "Bash(git stash:*)"
     ]
   }
 }

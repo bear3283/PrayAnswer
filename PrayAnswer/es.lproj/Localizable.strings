@@ -218,3 +218,28 @@
 // Accessibility
 "voice.accessibility_microphone" = "Ingrese contenido de oración por voz";
 "voice.accessibility_recording_hint" = "Toque para iniciar o detener la grabación de voz";
+
+// MARK: - Attachments (Múltiples imágenes + PDF)
+// Section
+"attachment.section_title" = "Adjuntos";
+"attachment.add_attachment" = "Agregar imágenes o archivos";
+
+// Buttons
+"attachment.add_image" = "Añadir foto";
+"attachment.add_file" = "Añadir archivo";
+"attachment.remove" = "Eliminar";
+"attachment.extract_all_text" = "Extraer todo el texto";
+
+// Types
+"attachment.type_image" = "Imagen";
+"attachment.type_pdf" = "PDF";
+
+// Limits
+"attachment.max_reached" = "Máximo de adjuntos alcanzado";
+"attachment.max_reached_message" = "Puede adjuntar hasta %d elementos";
+"attachment.file_too_large" = "El tamaño del archivo supera el límite de 20MB";
+"attachment.count_format" = "%d elementos";
+
+// Errors
+"attachment.error_invalid_document" = "Documento no válido";
+"attachment.error_unsupported_format" = "Formato de archivo no compatible";

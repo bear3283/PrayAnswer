@@ -239,19 +239,42 @@ struct OCRResultPreviewView: View {
                             if isAIProcessing {
                                 ProgressView()
                                     .scaleEffect(0.8)
-                                    .tint(DesignSystem.Colors.primary)
+                                    .tint(.purple)
                             } else {
                                 Image(systemName: "sparkles")
                             }
                             Text(isAIProcessing ? L.Image.aiOrganizing : L.Image.aiOrganize)
                         }
-                        .font(DesignSystem.Typography.callout)
+                        .font(DesignSystem.Typography.headline)
                         .fontWeight(.medium)
-                        .foregroundColor(DesignSystem.Colors.primary)
-                        .padding(.horizontal, DesignSystem.Spacing.lg)
+                        .foregroundStyle(
+                            LinearGradient(
+                                colors: [.purple, .blue, .cyan],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .padding(.horizontal, DesignSystem.Spacing.xl)
                         .padding(.vertical, DesignSystem.Spacing.md)
-                        .background(DesignSystem.Colors.primary.opacity(0.1))
+                        .background(
+                            LinearGradient(
+                                colors: [.purple.opacity(0.15), .blue.opacity(0.15), .cyan.opacity(0.15)],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
                         .cornerRadius(DesignSystem.CornerRadius.large)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.large)
+                                .stroke(
+                                    LinearGradient(
+                                        colors: [.purple.opacity(0.5), .blue.opacity(0.5), .cyan.opacity(0.5)],
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    ),
+                                    lineWidth: 1
+                                )
+                        )
                     }
                     .buttonStyle(PlainButtonStyle())
                     .disabled(isAIProcessing || extractedText.isEmpty)

@@ -51,6 +51,10 @@ final class AISummarizationManager {
     4. POLISH sentences to sound natural, reverent, and heartfelt
     5. MAINTAIN the speaker's personal voice and emotional tone
     6. ONLY output the refined prayer text - NO section labels, NO explanations, NO commentary
+    7. PRESERVE all numbers, dates, Bible references, and specific details EXACTLY as they appear
+       - Numbers: "3번", "7일", "100%" → keep unchanged
+       - Dates: "2025년 1월", "3월 15일" → keep unchanged
+       - References: "요한복음 3:16", "시편 23편" → keep unchanged
 
     EXAMPLE INPUT:
     "어... 하나님 감사합니다 음... 오늘 하루도 뭐 지켜주시고 저기 가족들 건강하게 해주세요 그리고 이제 제가 좀 더 열심히 살겠습니다"

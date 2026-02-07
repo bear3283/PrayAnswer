@@ -17,9 +17,11 @@ final class NotificationManager {
     /// 알림 권한 요청
     func requestAuthorization(completion: @escaping (Bool) -> Void) {
         notificationCenter.requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
+            #if DEBUG
             if let error = error {
                 print("알림 권한 요청 오류: \(error.localizedDescription)")
             }
+            #endif
             DispatchQueue.main.async {
                 completion(granted)
             }
@@ -83,11 +85,13 @@ final class NotificationManager {
             let request = UNNotificationRequest(identifier: identifier, content: content, trigger: trigger)
 
             notificationCenter.add(request) { error in
+                #if DEBUG
                 if let error = error {
                     print("알림 스케줄링 오류 (\(identifier)): \(error.localizedDescription)")
                 } else {
                     print("알림 스케줄링 성공: \(identifier)")
                 }
+                #endif
             }
         }
     }
@@ -130,11 +134,13 @@ final class NotificationManager {
             let request = UNNotificationRequest(identifier: identifier, content: content, trigger: trigger)
 
             notificationCenter.add(request) { error in
+                #if DEBUG
                 if let error = error {
                     print("커스텀 알림 스케줄링 오류 (\(identifier)): \(error.localizedDescription)")
                 } else {
                     print("커스텀 알림 스케줄링 성공: \(identifier)")
                 }
+                #endif
             }
         }
 
@@ -204,9 +210,11 @@ final class NotificationManager {
                     let request = UNNotificationRequest(identifier: identifier, content: content, trigger: trigger)
 
                     notificationCenter.add(request) { error in
+                        #if DEBUG
                         if let error = error {
                             print("반복 알림 스케줄링 오류: \(error.localizedDescription)")
                         }
+                        #endif
                     }
 
                     scheduledCount += 1
@@ -218,7 +226,9 @@ final class NotificationManager {
             currentDate = nextDate
         }
 
+        #if DEBUG
         print("반복 알림 \(scheduledCount)개 스케줄링 완료")
+        #endif
     }
 
     /// 반복 알림 내용 생성
@@ -245,7 +255,9 @@ final class NotificationManager {
     func cancelNotifications(for prayer: Prayer) {
         let identifiers = [7, 3, 1, 0].map { notificationIdentifier(for: prayer, daysBefore: $0) }
         notificationCenter.removePendingNotificationRequests(withIdentifiers: identifiers)
+        #if DEBUG
         print("기본 알림 취소: \(identifiers)")
+        #endif
     }
 
     /// 기도에 대한 모든 알림 취소 (기본 + 커스텀 + 반복)
@@ -262,7 +274,9 @@ final class NotificationManager {
 
             if !identifiersToRemove.isEmpty {
                 self?.notificationCenter.removePendingNotificationRequests(withIdentifiers: identifiersToRemove)
+                #if DEBUG
                 print("커스텀/반복 알림 취소: \(identifiersToRemove.count)개")
+                #endif
             }
         }
     }
@@ -270,7 +284,9 @@ final class NotificationManager {
     /// 모든 기도 알림 취소
     func cancelAllNotifications() {
         notificationCenter.removeAllPendingNotificationRequests()
+        #if DEBUG
         print("모든 알림 취소됨")
+        #endif
     }
 
     // MARK: - Private Helpers
@@ -323,12 +339,14 @@ final class NotificationManager {
 
     /// 스케줄된 알림 목록 출력 (디버깅용)
     func printPendingNotifications() {
+        #if DEBUG
         notificationCenter.getPendingNotificationRequests { requests in
             print("스케줄된 알림 (\(requests.count)개):")
             for request in requests {
                 print("  - \(request.identifier): \(request.content.title)")
             }
         }
+        #endif
     }
 }
 

@@ -926,6 +926,10 @@ struct DDayFormSection: View {
                 selectedDate: $tempDate,
                 onSave: {
                     targetDate = tempDate
+                    // 날짜 선택 시 캘린더 권한 미리 요청 (저장 시 바로 추가 가능하도록)
+                    if !CalendarManager.shared.hasCalendarAccess {
+                        CalendarManager.shared.requestAccess { _, _ in }
+                    }
                 },
                 onCancel: {}
             )

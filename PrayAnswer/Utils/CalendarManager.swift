@@ -12,9 +12,15 @@ import EventKit
 final class CalendarManager {
     static let shared = CalendarManager()
 
-    private let eventStore = EKEventStore()
+    /// 권한 요청 후 새로 생성해야 할 수 있으므로 var로 변경
+    private var eventStore = EKEventStore()
 
     private init() {}
+
+    /// eventStore 새로고침 (권한 변경 후 필요)
+    private func refreshEventStore() {
+        eventStore = EKEventStore()
+    }
 
     // MARK: - Permission
 
@@ -40,14 +46,27 @@ final class CalendarManager {
     /// 캘린더 권한 요청
     func requestAccess(completion: @escaping (Bool, Error?) -> Void) {
         if #available(iOS 17.0, *) {
-            eventStore.requestFullAccessToEvents { granted, error in
+            eventStore.requestFullAccessToEvents { [weak self] granted, error in
                 DispatchQueue.main.async {
+                    if granted {
+                        // 권한 획득 후 eventStore 새로고침
+                        self?.refreshEventStore()
+                    }
+                    #if DEBUG
+                    print("📅 캘린더 권한 요청 결과: granted=\(granted), error=\(error?.localizedDescription ?? "nil")")
+                    #endif
                     completion(granted, error)
                 }
             }
         } else {
-            eventStore.requestAccess(to: .event) { granted, error in
+            eventStore.requestAccess(to: .event) { [weak self] granted, error in
                 DispatchQueue.main.async {
+                    if granted {
+                        self?.refreshEventStore()
+                    }
+                    #if DEBUG
+                    print("📅 캘린더 권한 요청 결과: granted=\(granted), error=\(error?.localizedDescription ?? "nil")")
+                    #endif
                     completion(granted, error)
                 }
             }
@@ -68,8 +87,19 @@ final class CalendarManager {
         addReminder: Bool = true,
         completion: @escaping (Result<String, CalendarError>) -> Void
     ) {
+        #if DEBUG
+        print("📅 addDDayEvent 호출: prayer=\(prayer.title), targetDate=\(targetDate)")
+        print("📅 현재 권한 상태: hasCalendarAccess=\(hasCalendarAccess), status=\(authorizationStatus.rawValue)")
+        #endif
+
         guard hasCalendarAccess else {
+            #if DEBUG
+            print("📅 캘린더 권한 없음 - 권한 요청 시작")
+            #endif
             requestAccess { [weak self] granted, error in
+                #if DEBUG
+                print("📅 권한 요청 완료: granted=\(granted)")
+                #endif
                 if granted {
                     self?.addDDayEvent(for: prayer, targetDate: targetDate, addReminder: addReminder, completion: completion)
                 } else {
@@ -95,7 +125,13 @@ final class CalendarManager {
         event.isAllDay = true
 
         // 기본 캘린더 설정 (nil 체크)
+        #if DEBUG
+        print("📅 기본 캘린더 확인: \(eventStore.defaultCalendarForNewEvents?.title ?? "nil")")
+        #endif
         guard let calendar = eventStore.defaultCalendarForNewEvents else {
+            #if DEBUG
+            print("📅 ❌ 기본 캘린더 없음!")
+            #endif
             PrayerLogger.shared.dataOperationFailed("캘린더 이벤트 저장", error: NSError(domain: "CalendarManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "기본 캘린더 없음"]))
             completion(.failure(.unknownError))
             return
@@ -120,9 +156,15 @@ final class CalendarManager {
         // 이벤트 저장
         do {
             try eventStore.save(event, span: .thisEvent)
+            #if DEBUG
+            print("📅 ✅ 캘린더 이벤트 저장 성공: eventId=\(event.eventIdentifier ?? "nil")")
+            #endif
             PrayerLogger.shared.userAction("캘린더에 D-Day 이벤트 추가: \(prayer.title)")
             completion(.success(event.eventIdentifier))
         } catch {
+            #if DEBUG
+            print("📅 ❌ 캘린더 이벤트 저장 실패: \(error.localizedDescription)")
+            #endif
             PrayerLogger.shared.dataOperationFailed("캘린더 이벤트 저장", error: error)
             completion(.failure(.saveFailed(error)))
         }

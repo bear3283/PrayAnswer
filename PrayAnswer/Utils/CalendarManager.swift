@@ -94,8 +94,13 @@ final class CalendarManager {
         event.endDate = Calendar.current.startOfDay(for: targetDate)
         event.isAllDay = true
 
-        // 기본 캘린더 설정
-        event.calendar = eventStore.defaultCalendarForNewEvents
+        // 기본 캘린더 설정 (nil 체크)
+        guard let calendar = eventStore.defaultCalendarForNewEvents else {
+            PrayerLogger.shared.dataOperationFailed("캘린더 이벤트 저장", error: NSError(domain: "CalendarManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "기본 캘린더 없음"]))
+            completion(.failure(.unknownError))
+            return
+        }
+        event.calendar = calendar
 
         // 알림 추가 (D-7, D-3, D-1)
         if addReminder {

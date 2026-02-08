@@ -566,9 +566,17 @@ struct AddPrayerView: View {
 
             // 캘린더 이벤트 추가
             if let date = targetDate {
+                let context = modelContext
                 CalendarManager.shared.addDDayEvent(for: prayer, targetDate: date) { result in
-                    if case .failure(let error) = result {
-                        PrayerLogger.shared.dataOperationFailed("캘린더 이벤트 추가", error: error)
+                    DispatchQueue.main.async {
+                        switch result {
+                        case .success(let eventId):
+                            prayer.updateCalendarEventId(eventId)
+                            try? context.save()
+                            PrayerLogger.shared.userAction("캘린더 이벤트 추가 성공: \(eventId)")
+                        case .failure(let error):
+                            PrayerLogger.shared.dataOperationFailed("캘린더 이벤트 추가", error: error)
+                        }
                     }
                 }
             }

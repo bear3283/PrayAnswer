@@ -37,6 +37,11 @@ struct PrayAnswerApp: App {
                             modelContext: modelContainer.mainContext
                         )
                     }
+
+                    #if DEBUG
+                    // ⚠️ 스크린샷용 더미 데이터 생성 (필요 시 주석 해제)
+                    // generateScreenshotData()
+                    #endif
                 }
         }
         .modelContainer(modelContainer)
@@ -56,6 +61,13 @@ struct PrayAnswerApp: App {
             }
         }
     }
+
+    #if DEBUG
+    /// 스크린샷용 더미 데이터 생성
+    private func generateScreenshotData() {
+        ScreenshotDataGenerator.generateSampleData(in: modelContainer.mainContext)
+    }
+    #endif
 }
 
 // MARK: - App Delegate

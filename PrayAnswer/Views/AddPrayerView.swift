@@ -11,6 +11,7 @@ struct AddPrayerView: View {
     @State private var targetDate: Date? = nil
     @State private var notificationEnabled: Bool = false
     @State private var notificationSettings: NotificationSettings = NotificationSettings()
+    @State private var calendarEnabled: Bool = false  // 캘린더 추가 토글
     @State private var showingAlert = false
     @State private var showingSuccessAlert = false
     @State private var alertMessage = ""
@@ -404,7 +405,8 @@ struct AddPrayerView: View {
                 DDayFormSection(
                     targetDate: $targetDate,
                     notificationEnabled: $notificationEnabled,
-                    notificationSettings: $notificationSettings
+                    notificationSettings: $notificationSettings,
+                    calendarEnabled: $calendarEnabled
                 )
                 .padding(DesignSystem.Spacing.lg)
             }
@@ -564,8 +566,11 @@ struct AddPrayerView: View {
                 NotificationManager.shared.scheduleNotifications(for: prayer, targetDate: date)
             }
 
-            // 캘린더 이벤트 추가
-            if let date = targetDate {
+            // 캘린더 이벤트 추가 (토글이 활성화된 경우에만)
+            if calendarEnabled, let date = targetDate {
+                #if DEBUG
+                print("📅 캘린더 이벤트 추가 시작: date=\(date)")
+                #endif
                 let context = modelContext
                 CalendarManager.shared.addDDayEvent(for: prayer, targetDate: date) { result in
                     DispatchQueue.main.async {
@@ -606,6 +611,7 @@ struct AddPrayerView: View {
         targetDate = nil
         notificationEnabled = false
         notificationSettings = NotificationSettings()
+        calendarEnabled = false  // 캘린더 토글 초기화
 
         // 첨부 파일 상태 초기화 (파일은 이미 저장되었으므로 삭제하지 않음)
         pendingAttachments = []

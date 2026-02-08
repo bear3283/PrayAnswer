@@ -759,6 +759,7 @@ struct DDayFormSection: View {
     @Binding var targetDate: Date?
     @Binding var notificationEnabled: Bool
     @Binding var notificationSettings: NotificationSettings
+    @Binding var calendarEnabled: Bool  // 캘린더 추가 토글
     @Binding var calendarEventId: String?
     var prayer: Prayer?
     @State private var showDatePicker = false
@@ -769,10 +770,11 @@ struct DDayFormSection: View {
     @State private var isCalendarLoading = false
     @State private var tempDate = Date()
 
-    init(targetDate: Binding<Date?>, notificationEnabled: Binding<Bool>, notificationSettings: Binding<NotificationSettings>? = nil, calendarEventId: Binding<String?>? = nil, prayer: Prayer? = nil) {
+    init(targetDate: Binding<Date?>, notificationEnabled: Binding<Bool>, notificationSettings: Binding<NotificationSettings>? = nil, calendarEnabled: Binding<Bool>? = nil, calendarEventId: Binding<String?>? = nil, prayer: Prayer? = nil) {
         self._targetDate = targetDate
         self._notificationEnabled = notificationEnabled
         self._notificationSettings = notificationSettings ?? .constant(NotificationSettings())
+        self._calendarEnabled = calendarEnabled ?? .constant(false)
         self._calendarEventId = calendarEventId ?? .constant(nil)
         self.prayer = prayer
     }
@@ -912,11 +914,45 @@ struct DDayFormSection: View {
                             .foregroundColor(DesignSystem.Colors.tertiaryText)
                             .padding(.horizontal, DesignSystem.Spacing.sm)
                     }
+
+                    // 캘린더 추가 토글 (알림 토글과 동일한 스타일)
+                    Toggle(isOn: Binding(
+                        get: { calendarEnabled },
+                        set: { newValue in
+                            if newValue && !CalendarManager.shared.hasCalendarAccess {
+                                // 권한 요청
+                                CalendarManager.shared.requestAccess { granted, _ in
+                                    if granted {
+                                        calendarEnabled = true
+                                    } else {
+                                        showCalendarPermissionAlert = true
+                                    }
+                                }
+                            } else {
+                                calendarEnabled = newValue
+                            }
+                        }
+                    )) {
+                        HStack(spacing: DesignSystem.Spacing.sm) {
+                            Image(systemName: calendarEnabled ? "calendar.badge.checkmark" : "calendar")
+                                .foregroundColor(calendarEnabled ? DesignSystem.Colors.primary : DesignSystem.Colors.secondaryText)
+
+                            Text(L.Calendar.addToCalendar)
+                                .font(DesignSystem.Typography.body)
+                                .foregroundColor(DesignSystem.Colors.primaryText)
+                        }
+                    }
+                    .tint(DesignSystem.Colors.primary)
+                    .padding(DesignSystem.Spacing.md)
+                    .background(DesignSystem.Colors.secondaryBackground)
+                    .cornerRadius(DesignSystem.CornerRadius.medium)
                 }
                 .transition(.opacity.combined(with: .move(edge: .top)))
 
-                // 캘린더 추가 버튼
-                calendarButton
+                // 기존 캘린더 버튼 (기도 편집/상세 화면에서만 표시)
+                if prayer != nil {
+                    calendarButton
+                }
             }
         }
         .animation(DesignSystem.Animation.quick, value: targetDate != nil)
@@ -926,10 +962,6 @@ struct DDayFormSection: View {
                 selectedDate: $tempDate,
                 onSave: {
                     targetDate = tempDate
-                    // 날짜 선택 시 캘린더 권한 미리 요청 (저장 시 바로 추가 가능하도록)
-                    if !CalendarManager.shared.hasCalendarAccess {
-                        CalendarManager.shared.requestAccess { _, _ in }
-                    }
                 },
                 onCancel: {}
             )

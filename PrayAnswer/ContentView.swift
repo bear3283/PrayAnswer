@@ -125,13 +125,6 @@ struct iPadContentView: View {
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
     @State private var addPrayerRecordedText: String = ""
 
-    // DEBUG: 스크린샷용 데이터 생성
-    #if DEBUG
-    @State private var debugTapCount = 0
-    @State private var showDebugMenu = false
-    @State private var showDebugConfirmation = false
-    #endif
-
     enum iPadSection: String, CaseIterable, Identifiable {
         case prayers = "prayers"
         case people = "people"
@@ -220,30 +213,6 @@ struct iPadContentView: View {
         .scrollContentBackground(.hidden)
         .background(DesignSystem.Colors.background)
         .navigationTitle("Pray")
-        #if DEBUG
-        .toolbar {
-            ToolbarItem(placement: .bottomBar) {
-                Button(action: { showDebugMenu = true }) {
-                    Label("Debug", systemImage: "ladybug").font(.caption)
-                }
-            }
-        }
-        .confirmationDialog("🛠️ 디버그 메뉴", isPresented: $showDebugMenu, titleVisibility: .visible) {
-            Button("📸 스크린샷용 샘플 데이터 생성") { showDebugConfirmation = true }
-            Button("🗑️ 모든 데이터 삭제", role: .destructive) {
-                ScreenshotDataGenerator.clearAllData(in: modelContext)
-            }
-            Button("취소", role: .cancel) { }
-        }
-        .alert("⚠️ 데이터 교체 확인", isPresented: $showDebugConfirmation) {
-            Button("생성", role: .destructive) {
-                ScreenshotDataGenerator.generateSampleData(in: modelContext)
-            }
-            Button("취소", role: .cancel) { }
-        } message: {
-            Text("기존 데이터가 모두 삭제되고 스크린샷용 샘플 데이터로 교체됩니다.")
-        }
-        #endif
     }
 
     // MARK: - Content Column
@@ -1062,13 +1031,6 @@ struct PrayerListView: View {
     @State private var scrollOffset: CGFloat = 0
     @State private var navigationPath = NavigationPath()
 
-    // DEBUG: 스크린샷용 데이터 생성
-    #if DEBUG
-    @State private var debugTapCount = 0
-    @State private var showDebugMenu = false
-    @State private var showDebugConfirmation = false
-    #endif
-
     // 선택된 보관소에 따른 기도 목록 필터링
     private var filteredPrayers: [Prayer] {
         allPrayers.filter { $0.storage == selectedStorage }
@@ -1150,25 +1112,8 @@ struct PrayerListView: View {
 
                 // 고정 헤더 오버레이 (iOS 전화 앱 스타일)
                 VStack(spacing: 0) {
-                    #if DEBUG
-                    InlineHeader(title: L.Nav.prayerList, showFadeGradient: true, fadeOpacity: min(1.0, max(0.0, -scrollOffset / 30.0)))
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            debugTapCount += 1
-                            if debugTapCount >= 5 {
-                                debugTapCount = 0
-                                showDebugMenu = true
-                            }
-                            // 2초 후 탭 카운트 리셋
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                                debugTapCount = 0
-                            }
-                        }
-                        .allowsHitTesting(true)
-                    #else
                     InlineHeader(title: L.Nav.prayerList, showFadeGradient: true, fadeOpacity: min(1.0, max(0.0, -scrollOffset / 30.0)))
                         .allowsHitTesting(false)
-                    #endif
                     Spacer()
                 }
             }
@@ -1177,25 +1122,6 @@ struct PrayerListView: View {
                 PrayerDetailView(prayer: prayer)
             }
             .background(DesignSystem.Colors.background)
-            #if DEBUG
-            .confirmationDialog("🛠️ 디버그 메뉴", isPresented: $showDebugMenu, titleVisibility: .visible) {
-                Button("📸 스크린샷용 샘플 데이터 생성") {
-                    showDebugConfirmation = true
-                }
-                Button("🗑️ 모든 데이터 삭제", role: .destructive) {
-                    ScreenshotDataGenerator.clearAllData(in: modelContext)
-                }
-                Button("취소", role: .cancel) { }
-            }
-            .alert("⚠️ 데이터 교체 확인", isPresented: $showDebugConfirmation) {
-                Button("생성", role: .destructive) {
-                    ScreenshotDataGenerator.generateSampleData(in: modelContext)
-                }
-                Button("취소", role: .cancel) { }
-            } message: {
-                Text("기존 데이터가 모두 삭제되고 스크린샷용 샘플 데이터로 교체됩니다.")
-            }
-            #endif
             .onAppear {
                 if prayerViewModel == nil {
                     prayerViewModel = PrayerViewModel(modelContext: modelContext)

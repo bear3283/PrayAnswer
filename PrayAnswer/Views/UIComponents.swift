@@ -212,6 +212,83 @@ struct ModernPrayerRow: View {
     }
 }
 
+// MARK: - Share Selectable Prayer Row
+
+/// 공유 모드에서 사용하는 선택 가능한 기도 행
+struct ShareSelectablePrayerRow: View {
+    let prayer: Prayer
+    let isSelected: Bool
+    let onToggle: () -> Void
+
+    var body: some View {
+        Button(action: onToggle) {
+            HStack(spacing: DesignSystem.Spacing.md) {
+                // 체크박스
+                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                    .font(.system(size: 24))
+                    .foregroundColor(isSelected ? DesignSystem.Colors.primary : DesignSystem.Colors.tertiaryText)
+
+                // 기도 내용
+                VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+                    HStack(spacing: DesignSystem.Spacing.sm) {
+                        StatusIndicator(storage: prayer.storage, size: .small)
+
+                        if prayer.hasTarget {
+                            Text(prayer.target)
+                                .font(DesignSystem.Typography.headline)
+                                .foregroundColor(DesignSystem.Colors.primaryText)
+                                .lineLimit(1)
+                        } else {
+                            Text(L.Target.myself)
+                                .font(DesignSystem.Typography.headline)
+                                .foregroundColor(DesignSystem.Colors.primary)
+                                .lineLimit(1)
+                        }
+
+                        CategoryTag(category: prayer.category, size: .small)
+
+                        Spacer()
+                    }
+
+                    Text(prayer.content)
+                        .font(DesignSystem.Typography.body)
+                        .foregroundColor(DesignSystem.Colors.primaryText)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.leading)
+                }
+            }
+            .padding(DesignSystem.Spacing.lg)
+            .background(
+                RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.large)
+                    .fill(isSelected ? DesignSystem.Colors.primary.opacity(0.08) : DesignSystem.Colors.cardBackground)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.large)
+                    .stroke(isSelected ? DesignSystem.Colors.primary.opacity(0.3) : Color.clear, lineWidth: 1)
+            )
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+}
+
+// MARK: - Share Sheet (UIKit Wrapper)
+
+/// UIActivityViewController를 SwiftUI에서 사용하기 위한 래퍼
+struct ShareSheet: UIViewControllerRepresentable {
+    let activityItems: [Any]
+    var applicationActivities: [UIActivity]? = nil
+
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        let controller = UIActivityViewController(
+            activityItems: activityItems,
+            applicationActivities: applicationActivities
+        )
+        return controller
+    }
+
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
+}
+
 // 빈 상태 뷰
 struct EmptyStateView: View {
     let storage: PrayerStorage

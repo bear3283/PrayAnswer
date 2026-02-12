@@ -29,6 +29,7 @@ struct AddPrayerView: View {
     @State private var extractedText = ""
     @State private var isExtractingText = false
     @State private var scrollOffset: CGFloat = 0
+    @State private var scrollToTopTrigger: Bool = false  // 스크롤 맨 위로 트리거
 
     // iPad: 외부에서 전달받은 녹음 텍스트 (사이드 패널에서)
     @Binding var externalRecordedText: String
@@ -177,25 +178,33 @@ struct AddPrayerView: View {
         NavigationView {
             ZStack(alignment: .top) {
                 // 메인 스크롤 컨텐츠
-                ScrollView {
-                    VStack(spacing: DesignSystem.Spacing.xl) {
-                        // 헤더 공간 확보 + 스크롤 오프셋 감지
-                        Color.clear.frame(height: 24)
-                            .overlay(alignment: .top) {
-                                ScrollOffsetDetector()
-                            }
+                ScrollViewReader { proxy in
+                    ScrollView {
+                        VStack(spacing: DesignSystem.Spacing.xl) {
+                            // 헤더 공간 확보 + 스크롤 오프셋 감지
+                            Color.clear.frame(height: 24)
+                                .id("top")  // 스크롤 앵커
+                                .overlay(alignment: .top) {
+                                    ScrollOffsetDetector()
+                                }
 
-                        formContent
-                            .padding(.bottom, DesignSystem.Spacing.xxxl)
+                            formContent
+                                .padding(.bottom, DesignSystem.Spacing.xxxl)
+                        }
                     }
-                }
-                .coordinateSpace(name: "scroll")
-                .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
-                    scrollOffset = value
-                }
-                .scrollDismissesKeyboard(.interactively)
-                .onTapGesture {
-                    isContentFieldFocused = false
+                    .coordinateSpace(name: "scroll")
+                    .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
+                        scrollOffset = value
+                    }
+                    .scrollDismissesKeyboard(.interactively)
+                    .onTapGesture {
+                        isContentFieldFocused = false
+                    }
+                    .onChange(of: scrollToTopTrigger) { _, _ in
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            proxy.scrollTo("top", anchor: .top)
+                        }
+                    }
                 }
 
                 // 고정 헤더 오버레이 (iOS 전화 앱 스타일)
@@ -216,6 +225,12 @@ struct AddPrayerView: View {
             }
             .onDisappear {
                 PrayerLogger.shared.viewDidAppear("AddPrayerView - onDisappear")
+            }
+            .onChange(of: selectedTab) { oldValue, newValue in
+                // 기도추가 탭(1)이 선택되면 스크롤을 맨 위로 이동
+                if newValue == 1 && oldValue != 1 {
+                    scrollToTopTrigger.toggle()
+                }
             }
             .alert(L.Alert.notification, isPresented: $showingAlert) {
                 Button(L.Button.confirm) { }

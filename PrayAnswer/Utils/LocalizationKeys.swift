@@ -398,6 +398,21 @@ enum L {
         static let settingsTitle = NSLocalizedString("ai.settings_title", comment: "AI settings title")
         static let enableFeature = NSLocalizedString("ai.enable_feature", comment: "Enable AI feature toggle")
         static let enableFeatureDescription = NSLocalizedString("ai.enable_feature_description", comment: "AI feature description")
+
+        // Setup Guide
+        static let setupGuideTitle = NSLocalizedString("ai.setup_guide_title", comment: "AI setup guide title")
+        static let setupGuideDescription = NSLocalizedString("ai.setup_guide_description", comment: "AI setup guide description")
+        static let setupStep1Title = NSLocalizedString("ai.setup_step1_title", comment: "Setup step 1 title")
+        static let setupStep1Description = NSLocalizedString("ai.setup_step1_description", comment: "Setup step 1 description")
+        static let setupStep2Title = NSLocalizedString("ai.setup_step2_title", comment: "Setup step 2 title")
+        static let setupStep2Description = NSLocalizedString("ai.setup_step2_description", comment: "Setup step 2 description")
+        static let setupStep3Title = NSLocalizedString("ai.setup_step3_title", comment: "Setup step 3 title")
+        static let setupStep3Description = NSLocalizedString("ai.setup_step3_description", comment: "Setup step 3 description")
+        static let setupStep4Title = NSLocalizedString("ai.setup_step4_title", comment: "Setup step 4 title")
+        static let setupStep4Description = NSLocalizedString("ai.setup_step4_description", comment: "Setup step 4 description")
+        static let setupNote = NSLocalizedString("ai.setup_note", comment: "AI setup note")
+        static let openSettings = NSLocalizedString("ai.open_settings", comment: "Open settings button")
+        static let learnMore = NSLocalizedString("ai.learn_more", comment: "Learn more link")
     }
 
     // MARK: - Image Attachment & OCR
@@ -471,6 +486,21 @@ enum L {
         // Accessibility
         static let microphoneButton = NSLocalizedString("voice.accessibility_microphone", comment: "Microphone button accessibility")
         static let recordingHint = NSLocalizedString("voice.accessibility_recording_hint", comment: "Recording hint accessibility")
+    }
+
+    // MARK: - Share
+    enum Share {
+        static let title = NSLocalizedString("share.title", comment: "Share title")
+        static let selectPrayers = NSLocalizedString("share.select_prayers", comment: "Select prayers to share")
+        static let cancel = NSLocalizedString("share.cancel", comment: "Cancel share")
+        static let share = NSLocalizedString("share.share", comment: "Share button")
+        static let selectAll = NSLocalizedString("share.select_all", comment: "Select all")
+        static let deselectAll = NSLocalizedString("share.deselect_all", comment: "Deselect all")
+        static let selectedCount = NSLocalizedString("share.selected_count", comment: "Selected count")
+
+        static func selectedFormat(_ count: Int) -> String {
+            String(format: NSLocalizedString("share.selected_format", comment: "Selected prayers format"), count)
+        }
     }
 
     // MARK: - Attachments (복수 이미지 + PDF)

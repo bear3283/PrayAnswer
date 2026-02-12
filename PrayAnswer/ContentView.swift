@@ -1031,6 +1031,11 @@ struct PrayerListView: View {
     @State private var scrollOffset: CGFloat = 0
     @State private var navigationPath = NavigationPath()
 
+    // 공유 기능
+    @State private var isShareMode: Bool = false
+    @State private var selectedPrayersForShare: Set<String> = []  // Prayer ID
+    @State private var showShareSheet: Bool = false
+
     // 선택된 보관소에 따른 기도 목록 필터링
     private var filteredPrayers: [Prayer] {
         allPrayers.filter { $0.storage == selectedStorage }
@@ -1073,27 +1078,51 @@ struct PrayerListView: View {
                         .listRowSeparator(.hidden)
                         .listRowInsets(EdgeInsets())
 
-                        ForEach(filteredPrayers) { prayer in
-                            ZStack {
-                                // 투명한 NavigationLink로 네비게이션 기능만 유지
-                                NavigationLink(value: prayer) {
-                                    EmptyView()
+                        ForEach(filteredPrayers, id: \Prayer.id) { (prayer: Prayer) in
+                            if isShareMode {
+                                // 공유 모드: 선택 가능한 행
+                                let prayerIdString = String(describing: prayer.id)
+                                ShareSelectablePrayerRow(
+                                    prayer: prayer,
+                                    isSelected: selectedPrayersForShare.contains(prayerIdString)
+                                ) {
+                                    if selectedPrayersForShare.contains(prayerIdString) {
+                                        selectedPrayersForShare.remove(prayerIdString)
+                                    } else {
+                                        selectedPrayersForShare.insert(prayerIdString)
+                                    }
                                 }
-                                .opacity(0)
+                                .listRowBackground(Color.clear)
+                                .listRowSeparator(.hidden)
+                                .listRowInsets(EdgeInsets(
+                                    top: DesignSystem.Spacing.sm,
+                                    leading: DesignSystem.Spacing.md,
+                                    bottom: DesignSystem.Spacing.sm,
+                                    trailing: DesignSystem.Spacing.md
+                                ))
+                            } else {
+                                // 일반 모드: 네비게이션 가능한 행
+                                ZStack {
+                                    // 투명한 NavigationLink로 네비게이션 기능만 유지
+                                    NavigationLink(value: prayer) {
+                                        EmptyView()
+                                    }
+                                    .opacity(0)
 
-                                // 실제 보이는 UI
-                                ModernPrayerRow(prayer: prayer) {
-                                    toggleFavorite(prayer)
+                                    // 실제 보이는 UI
+                                    ModernPrayerRow(prayer: prayer) {
+                                        toggleFavorite(prayer)
+                                    }
                                 }
+                                .listRowBackground(Color.clear)
+                                .listRowSeparator(.hidden)
+                                .listRowInsets(EdgeInsets(
+                                    top: DesignSystem.Spacing.sm,
+                                    leading: DesignSystem.Spacing.md,
+                                    bottom: DesignSystem.Spacing.sm,
+                                    trailing: DesignSystem.Spacing.md
+                                ))
                             }
-                            .listRowBackground(Color.clear)
-                            .listRowSeparator(.hidden)
-                            .listRowInsets(EdgeInsets(
-                                top: DesignSystem.Spacing.sm,
-                                leading: DesignSystem.Spacing.md,
-                                bottom: DesignSystem.Spacing.sm,
-                                trailing: DesignSystem.Spacing.md
-                            ))
                         }
                         .onDelete { indexSet in
                             for index in indexSet {
@@ -1112,8 +1141,78 @@ struct PrayerListView: View {
 
                 // 고정 헤더 오버레이 (iOS 전화 앱 스타일)
                 VStack(spacing: 0) {
-                    InlineHeader(title: L.Nav.prayerList, showFadeGradient: true, fadeOpacity: min(1.0, max(0.0, -scrollOffset / 30.0)))
-                        .allowsHitTesting(false)
+                    HStack {
+                        // 공유 모드 취소 버튼
+                        if isShareMode {
+                            Button(action: {
+                                withAnimation {
+                                    isShareMode = false
+                                    selectedPrayersForShare.removeAll()
+                                }
+                            }) {
+                                Text(L.Share.cancel)
+                                    .font(DesignSystem.Typography.callout)
+                                    .foregroundColor(DesignSystem.Colors.primary)
+                            }
+                            .padding(.leading, DesignSystem.Spacing.lg)
+                        } else {
+                            Color.clear.frame(width: 60)
+                        }
+
+                        Spacer()
+
+                        Text(isShareMode ? L.Share.selectPrayers : L.Nav.prayerList)
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundColor(DesignSystem.Colors.primaryText)
+
+                        Spacer()
+
+                        // 공유 버튼
+                        if isShareMode {
+                            Button(action: {
+                                if !selectedPrayersForShare.isEmpty {
+                                    showShareSheet = true
+                                }
+                            }) {
+                                Text(L.Share.share)
+                                    .font(DesignSystem.Typography.callout)
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(selectedPrayersForShare.isEmpty ? DesignSystem.Colors.tertiaryText : DesignSystem.Colors.primary)
+                            }
+                            .disabled(selectedPrayersForShare.isEmpty)
+                            .padding(.trailing, DesignSystem.Spacing.lg)
+                        } else if !filteredPrayers.isEmpty {
+                            Button(action: {
+                                withAnimation {
+                                    isShareMode = true
+                                }
+                            }) {
+                                Image(systemName: "square.and.arrow.up")
+                                    .font(.system(size: 17))
+                                    .foregroundColor(DesignSystem.Colors.primary)
+                            }
+                            .padding(.trailing, DesignSystem.Spacing.lg)
+                        } else {
+                            Color.clear.frame(width: 60)
+                        }
+                    }
+                    .frame(height: 44)
+                    .background(DesignSystem.Colors.background)
+
+                    // 페이드 그라데이션
+                    LinearGradient(
+                        gradient: Gradient(colors: [
+                            DesignSystem.Colors.background,
+                            DesignSystem.Colors.background.opacity(0.8),
+                            DesignSystem.Colors.background.opacity(0.0)
+                        ]),
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                    .frame(height: 16)
+                    .opacity(min(1.0, max(0.0, -scrollOffset / 30.0)))
+                    .allowsHitTesting(false)
+
                     Spacer()
                 }
             }
@@ -1142,10 +1241,40 @@ struct PrayerListView: View {
             } message: {
                 Text(errorMessage)
             }
+            .sheet(isPresented: $showShareSheet, onDismiss: {
+                // 공유 완료 후 일반 모드로 복귀
+                withAnimation {
+                    isShareMode = false
+                    selectedPrayersForShare.removeAll()
+                }
+            }) {
+                ShareSheet(activityItems: [generateShareText()])
+                    .presentationDetents([.medium, .large])
+            }
         }
         .onChange(of: selectedTab) {
             navigationPath = NavigationPath()
+            // 탭 변경 시 공유 모드 종료
+            if isShareMode {
+                isShareMode = false
+                selectedPrayersForShare.removeAll()
+            }
         }
+    }
+
+    // MARK: - Share Functions
+
+    private func generateShareText() -> String {
+        let selectedPrayers = filteredPrayers.filter { (prayer: Prayer) -> Bool in
+            selectedPrayersForShare.contains(String(describing: prayer.id))
+        }
+
+        let lines = selectedPrayers.map { prayer in
+            let targetName = prayer.target.isEmpty ? L.Target.myself : prayer.target
+            return "\(targetName) - \(prayer.content)"
+        }
+
+        return lines.joined(separator: "\n\n")
     }
 
     private func deletePrayer(_ prayer: Prayer) {

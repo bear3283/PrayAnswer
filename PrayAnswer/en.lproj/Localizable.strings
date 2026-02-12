@@ -221,6 +221,31 @@
 "voice.accessibility_microphone" = "Enter prayer content by voice";
 "voice.accessibility_recording_hint" = "Tap to start or stop voice recording";
 
+// MARK: - Share
+"share.title" = "Share";
+"share.select_prayers" = "Select prayers to share";
+"share.cancel" = "Cancel";
+"share.share" = "Share";
+"share.select_all" = "Select All";
+"share.deselect_all" = "Deselect All";
+"share.selected_count" = "Selected";
+"share.selected_format" = "%d selected";
+
+// Setup Guide
+"ai.setup_guide_title" = "Apple Intelligence Setup";
+"ai.setup_guide_description" = "You need to set up Apple Intelligence to use AI features";
+"ai.setup_step1_title" = "Open Settings";
+"ai.setup_step1_description" = "Open the Settings app";
+"ai.setup_step2_title" = "Find Apple Intelligence";
+"ai.setup_step2_description" = "Tap 'Apple Intelligence & Siri'";
+"ai.setup_step3_title" = "Enable Feature";
+"ai.setup_step3_description" = "Turn on Apple Intelligence";
+"ai.setup_step4_title" = "Download Models";
+"ai.setup_step4_description" = "Required AI models will be downloaded automatically";
+"ai.setup_note" = "Apple Intelligence is available on devices with A17 Pro chip or later";
+"ai.open_settings" = "Open Settings";
+"ai.learn_more" = "Learn More";
+
 // MARK: - Attachments (Multiple Images + PDF)
 // Section
 "attachment.section_title" = "Attachments";

@@ -360,6 +360,31 @@
 "ai.enable_feature" = "AI로 기도문 정리";
 "ai.enable_feature_description" = "음성 녹음 후 Apple Intelligence를 사용하여 기도문을 자동으로 정리합니다";
 
+// Setup Guide
+"ai.setup_guide_title" = "Apple Intelligence 설정";
+"ai.setup_guide_description" = "AI 기능을 사용하려면 Apple Intelligence를 설정해야 합니다";
+"ai.setup_step1_title" = "설정 앱 열기";
+"ai.setup_step1_description" = "설정 앱을 열어주세요";
+"ai.setup_step2_title" = "Apple Intelligence 찾기";
+"ai.setup_step2_description" = "'Apple Intelligence 및 Siri'를 탭하세요";
+"ai.setup_step3_title" = "기능 활성화";
+"ai.setup_step3_description" = "Apple Intelligence를 켜세요";
+"ai.setup_step4_title" = "모델 다운로드";
+"ai.setup_step4_description" = "필요한 AI 모델이 자동으로 다운로드됩니다";
+"ai.setup_note" = "Apple Intelligence는 A17 Pro 이상의 칩이 탑재된 기기에서 사용 가능합니다";
+"ai.open_settings" = "설정 열기";
+"ai.learn_more" = "자세히 알아보기";
+
+// MARK: - Share
+"share.title" = "공유하기";
+"share.select_prayers" = "공유할 기도를 선택하세요";
+"share.cancel" = "취소";
+"share.share" = "공유";
+"share.select_all" = "전체 선택";
+"share.deselect_all" = "전체 해제";
+"share.selected_count" = "선택됨";
+"share.selected_format" = "%d개 선택됨";
+
 // MARK: - Attachments (복수 이미지 + PDF)
 // Section
 "attachment.section_title" = "첨부";

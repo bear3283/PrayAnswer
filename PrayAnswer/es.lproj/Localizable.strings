@@ -219,6 +219,31 @@
 "voice.accessibility_microphone" = "Ingrese contenido de oración por voz";
 "voice.accessibility_recording_hint" = "Toque para iniciar o detener la grabación de voz";
 
+// MARK: - Share
+"share.title" = "Compartir";
+"share.select_prayers" = "Selecciona oraciones para compartir";
+"share.cancel" = "Cancelar";
+"share.share" = "Compartir";
+"share.select_all" = "Seleccionar todo";
+"share.deselect_all" = "Deseleccionar todo";
+"share.selected_count" = "Seleccionado";
+"share.selected_format" = "%d seleccionados";
+
+// Setup Guide
+"ai.setup_guide_title" = "Configuración de Apple Intelligence";
+"ai.setup_guide_description" = "Necesita configurar Apple Intelligence para usar las funciones de IA";
+"ai.setup_step1_title" = "Abrir Configuración";
+"ai.setup_step1_description" = "Abra la aplicación Configuración";
+"ai.setup_step2_title" = "Buscar Apple Intelligence";
+"ai.setup_step2_description" = "Toque 'Apple Intelligence y Siri'";
+"ai.setup_step3_title" = "Activar Función";
+"ai.setup_step3_description" = "Active Apple Intelligence";
+"ai.setup_step4_title" = "Descargar Modelos";
+"ai.setup_step4_description" = "Los modelos de IA necesarios se descargarán automáticamente";
+"ai.setup_note" = "Apple Intelligence está disponible en dispositivos con chip A17 Pro o posterior";
+"ai.open_settings" = "Abrir Configuración";
+"ai.learn_more" = "Más Información";
+
 // MARK: - Attachments (Múltiples imágenes + PDF)
 // Section
 "attachment.section_title" = "Adjuntos";

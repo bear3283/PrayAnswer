@@ -1,9 +1,11 @@
 import SwiftUI
 import SwiftData
+import StoreKit
 
 struct AddPrayerView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.requestReview) private var requestReview
     @Binding var selectedTab: Int
     @State private var content = ""
     @State private var category: PrayerCategory = .personal
@@ -53,6 +55,13 @@ struct AddPrayerView: View {
             } else {
                 // iPhone: 기존 NavigationView 구조
                 iPhoneAddPrayerContent
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .widgetAddPrayerWithCategory)) { notification in
+            if let catRaw = notification.userInfo?["category"] as? String,
+               let requestedCategory = PrayerCategory(rawValue: catRaw) {
+                category = requestedCategory
+                scrollToTopTrigger.toggle()
             }
         }
     }
@@ -611,6 +620,15 @@ struct AddPrayerView: View {
 
             // 성공 메시지 표시
             showingSuccessAlert = true
+
+            // 앱스토어 리뷰 요청 (기도 생성 마일스톤 체크)
+            if ReviewRequestManager.shared.recordPrayerCreated() {
+                // 약간의 딜레이 후 리뷰 요청 (성공 알림이 닫힌 후)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                    requestReview()
+                    ReviewRequestManager.shared.didRequestReview()
+                }
+            }
 
         } catch {
             alertMessage = L.Error.saveFailed

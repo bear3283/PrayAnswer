@@ -11,6 +11,7 @@ import SwiftUI
 @main
 struct PrayerWidgetBundle: WidgetBundle {
     var body: some Widget {
+        AddPrayerWidget()
         ConfigurablePrayerWidget()
         PrayerWidget()
         WaitPrayerWidget()

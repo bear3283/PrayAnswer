@@ -1,11 +1,13 @@
 import SwiftUI
 import SwiftData
+import StoreKit
 
 struct PrayerDetailView: View {
     let prayer: Prayer
     @Environment(\.modelContext) private var modelContext
     @Environment(\.presentationMode) var presentationMode
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.requestReview) private var requestReview
 
     @State private var isEditing = false
     @State private var editedContent = ""
@@ -33,6 +35,11 @@ struct PrayerDetailView: View {
     @State private var showOCRResult = false
     @State private var extractedText = ""
     @State private var isExtractingText = false
+
+    // Voice Recording (편집 모드)
+    @State private var showVoiceRecordingOverlay = false
+    @State private var showVoicePermissionAlert = false
+    private let speechManager = SpeechRecognitionManager.shared
 
     // 기존 기도대상자 목록
     private var existingTargets: [String] {
@@ -192,6 +199,42 @@ struct PrayerDetailView: View {
                     .cornerRadius(DesignSystem.CornerRadius.large)
                 }
             }
+        }
+        .fullScreenCover(isPresented: $showVoiceRecordingOverlay) {
+            VoiceRecordingOverlay(
+                speechManager: speechManager,
+                onUseText: { text in
+                    if editedContent.isEmpty {
+                        editedContent = text
+                    } else {
+                        editedContent += "\n" + text
+                    }
+                    showVoiceRecordingOverlay = false
+                },
+                onCancel: {
+                    showVoiceRecordingOverlay = false
+                }
+            )
+            .background(ClearBackgroundView())
+        }
+        .sheet(isPresented: $showVoicePermissionAlert) {
+            VStack {
+                Spacer()
+                VoicePermissionAlert(
+                    onOpenSettings: {
+                        if let settingsUrl = URL(string: UIApplication.openSettingsURLString) {
+                            UIApplication.shared.open(settingsUrl)
+                        }
+                        showVoicePermissionAlert = false
+                    },
+                    onCancel: {
+                        showVoicePermissionAlert = false
+                    }
+                )
+                Spacer()
+            }
+            .presentationDetents([.medium])
+            .presentationDragIndicator(.visible)
         }
     }
 
@@ -402,14 +445,51 @@ struct PrayerDetailView: View {
             .padding(DesignSystem.Spacing.lg)
         }
 
-        // 내용 편집
+        // 내용 편집 (음성 녹음 버튼 포함)
         ModernCard {
             VStack(spacing: DesignSystem.Spacing.md) {
-                ModernTextEditor(
-                    title: L.Label.prayerContent,
-                    text: $editedContent,
-                    placeholder: L.Placeholder.content
-                )
+                VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+                    HStack {
+                        Text(L.Label.prayerContent)
+                            .font(DesignSystem.Typography.callout)
+                            .foregroundColor(DesignSystem.Colors.primaryText)
+                            .fontWeight(.medium)
+
+                        Spacer()
+
+                        if horizontalSizeClass != .regular {
+                            VoiceRecordingButton(isRecording: speechManager.isRecording) {
+                                startVoiceRecording()
+                            }
+                        }
+                    }
+
+                    ZStack(alignment: .topLeading) {
+                        TextEditor(text: $editedContent)
+                            .font(DesignSystem.Typography.body)
+                            .padding(DesignSystem.Spacing.md)
+                            .scrollContentBackground(.hidden)
+                            .background(DesignSystem.Colors.secondaryBackground)
+                            .frame(height: 200)
+                            .cornerRadius(DesignSystem.CornerRadius.medium)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.medium)
+                                    .stroke(
+                                        editedContent.isEmpty ? Color.clear : DesignSystem.Colors.primary.opacity(0.3),
+                                        lineWidth: 1
+                                    )
+                            )
+
+                        if editedContent.isEmpty {
+                            Text(L.Placeholder.content)
+                                .font(DesignSystem.Typography.body)
+                                .foregroundColor(DesignSystem.Colors.tertiaryText)
+                                .padding(.horizontal, DesignSystem.Spacing.md + 4)
+                                .padding(.vertical, DesignSystem.Spacing.md + 8)
+                                .allowsHitTesting(false)
+                        }
+                    }
+                }
             }
             .padding(DesignSystem.Spacing.lg)
         }
@@ -634,6 +714,16 @@ struct PrayerDetailView: View {
         do {
             try viewModel.movePrayer(prayer, to: newStorage)
             PrayerLogger.shared.userAction("기도 보관소 이동")
+
+            // "응답 받음"으로 이동 시 앱스토어 리뷰 요청 (감사의 순간)
+            if newStorage == .yes {
+                if ReviewRequestManager.shared.recordPrayerAnswered() {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                        requestReview()
+                        ReviewRequestManager.shared.didRequestReview()
+                    }
+                }
+            }
         } catch {
             showError(L.Error.movePrayerFailed)
             PrayerLogger.shared.prayerOperationFailed("이동", error: error)
@@ -757,6 +847,22 @@ struct PrayerDetailView: View {
                 } else {
                     calendarAlertMessage = error.localizedDescription
                     showingCalendarSuccessAlert = true
+                }
+            }
+        }
+    }
+
+    // MARK: - Voice Recording
+
+    private func startVoiceRecording() {
+        if speechManager.checkPermissions() {
+            showVoiceRecordingOverlay = true
+        } else {
+            speechManager.requestAllPermissions { granted in
+                if granted {
+                    showVoiceRecordingOverlay = true
+                } else {
+                    showVoicePermissionAlert = true
                 }
             }
         }

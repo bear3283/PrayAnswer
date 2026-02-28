@@ -15,11 +15,33 @@ struct ContentView: View {
     @State private var selectedTab: Int = 0
 
     var body: some View {
-        if horizontalSizeClass == .regular {
-            iPadContentView()
-        } else {
-            iPhoneContentView(selectedTab: $selectedTab)
+        Group {
+            if horizontalSizeClass == .regular {
+                iPadContentView()
+            } else {
+                iPhoneContentView(selectedTab: $selectedTab)
+            }
         }
+        .onOpenURL { url in
+            handleWidgetURL(url)
+        }
+    }
+
+    private func handleWidgetURL(_ url: URL) {
+        guard url.scheme == "prayanswer", url.host == "add" else { return }
+
+        // 카테고리 파라미터가 있으면 알림으로 전달
+        if let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
+           let categoryValue = components.queryItems?.first(where: { $0.name == "category" })?.value {
+            NotificationCenter.default.post(
+                name: .widgetAddPrayerWithCategory,
+                object: nil,
+                userInfo: ["category": categoryValue]
+            )
+        }
+
+        // 기도 추가 탭(1)으로 이동
+        selectedTab = 1
     }
 
     private func setupTabBarAppearance() {
@@ -111,6 +133,12 @@ struct iPhoneContentView: View {
         UITabBar.appearance().standardAppearance = appearance
         UITabBar.appearance().scrollEdgeAppearance = appearance
     }
+}
+
+// MARK: - Widget Notification
+
+extension Notification.Name {
+    static let widgetAddPrayerWithCategory = Notification.Name("WidgetAddPrayerWithCategory")
 }
 
 // MARK: - iPad Content View (NavigationSplitView-based)

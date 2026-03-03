@@ -1,38 +1,44 @@
 import WidgetKit
 import SwiftUI
+import AppIntents
 
 // MARK: - Entry & Provider
 
 struct AddPrayerEntry: TimelineEntry {
     let date: Date
+    let mainAction: QuickActionAppEnum
 }
 
-struct AddPrayerProvider: TimelineProvider {
-    func placeholder(in context: Context) -> AddPrayerEntry { AddPrayerEntry(date: Date()) }
-    func getSnapshot(in context: Context, completion: @escaping (AddPrayerEntry) -> Void) {
-        completion(AddPrayerEntry(date: Date()))
+struct AddPrayerProvider: AppIntentTimelineProvider {
+    typealias Entry = AddPrayerEntry
+    typealias Intent = AddPrayerWidgetIntent
+
+    func placeholder(in context: Context) -> AddPrayerEntry {
+        AddPrayerEntry(date: Date(), mainAction: .addPrayer)
     }
-    func getTimeline(in context: Context, completion: @escaping (Timeline<AddPrayerEntry>) -> Void) {
-        completion(Timeline(entries: [AddPrayerEntry(date: Date())], policy: .never))
+
+    func snapshot(for configuration: AddPrayerWidgetIntent, in context: Context) async -> AddPrayerEntry {
+        AddPrayerEntry(date: Date(), mainAction: configuration.mainAction)
+    }
+
+    func timeline(for configuration: AddPrayerWidgetIntent, in context: Context) async -> Timeline<AddPrayerEntry> {
+        let entry = AddPrayerEntry(date: Date(), mainAction: configuration.mainAction)
+        return Timeline(entries: [entry], policy: .never)
     }
 }
 
 // MARK: - Design Tokens (Gemini 스타일)
 
 private extension Color {
-    /// 위젯 전체 배경 - 거의 검정에 가까운 다크 그레이
     static let widgetBackground = Color(red: 0.13, green: 0.13, blue: 0.14)
-    /// 일반 원형 버튼 배경
     static let circleNormal = Color(white: 0.21)
-    /// 메인 원형 버튼 배경 (좌상단)
     static let circleMain = Color(white: 0.26)
-    /// 메인 원형 테두리
     static let circleBorder = Color(white: 0.38)
 }
 
-// MARK: - Gemini Style Circle Button
+// MARK: - Gemini Style Circle
 
-private struct GeminiIconCircle: View {
+private struct GeminiCircle: View {
     let icon: String
     let isMain: Bool
 
@@ -47,92 +53,110 @@ private struct GeminiIconCircle: View {
                 }
 
             Image(systemName: icon)
-                .font(.system(size: isMain ? 28 : 22, weight: isMain ? .semibold : .medium))
+                .font(.system(size: isMain ? 26 : 20, weight: isMain ? .semibold : .medium))
                 .foregroundColor(.white)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 
-// MARK: - Small Widget (2×2 Gemini 스타일)
-// 소형 위젯: 4개의 동일한 원형 아이콘 버튼 → 전체 탭 시 기도 추가 화면으로 이동
-
+// MARK: - Small Widget (2×2 Gemini — 메인 버튼 설정 가능)
+// 소형: widgetURL 하나로 전체 탭 처리, 메인 액션으로 이동
 struct SmallAddPrayerWidgetView: View {
-    private let spacing: CGFloat = 9
-    private let padding: CGFloat = 11
+    let mainAction: QuickActionAppEnum
+    private let spacing: CGFloat = 8
+    private let padding: CGFloat = 10
+
+    // 메인 액션 외 3개의 빠른 액션 (고정)
+    private let quickActions: [(icon: String, action: QuickActionAppEnum)] = [
+        ("person.fill", .waitStorage),
+        ("heart.fill", .favorites),
+        ("chart.bar.xaxis", .statistics)
+    ]
 
     var body: some View {
         VStack(spacing: spacing) {
             HStack(spacing: spacing) {
-                // 좌상단: 앱 메인 아이콘 (Gemini처럼 강조)
-                GeminiIconCircle(icon: "hands.clap.fill", isMain: true)
-                // 우상단: 기도 추가
-                GeminiIconCircle(icon: "square.and.pencil", isMain: false)
+                // 좌상단: 설정된 메인 액션 (강조)
+                GeminiCircle(icon: mainAction.icon, isMain: true)
+                // 우상단: Wait 보관소
+                GeminiCircle(icon: quickActions[0].icon, isMain: false)
             }
             .frame(maxHeight: .infinity)
 
             HStack(spacing: spacing) {
-                // 좌하단: 개인 기도
-                GeminiIconCircle(icon: "person.fill", isMain: false)
-                // 우하단: 가족 기도
-                GeminiIconCircle(icon: "house.fill", isMain: false)
+                // 좌하단: 즐겨찾기
+                GeminiCircle(icon: quickActions[1].icon, isMain: false)
+                // 우하단: 통계
+                GeminiCircle(icon: quickActions[2].icon, isMain: false)
             }
             .frame(maxHeight: .infinity)
         }
         .padding(padding)
-        .containerBackground(for: .widget) {
-            Color.widgetBackground
-        }
-        .widgetURL(URL(string: "prayanswer://add")!)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .containerBackground(for: .widget) { Color.widgetBackground }
+        .widgetURL(URL(string: mainAction.urlString)!)
     }
 }
 
-// MARK: - Medium Widget (4×2 Gemini 스타일)
-// 중형 위젯: 왼쪽 큰 메인 원 + 오른쪽 2×2 카테고리 그리드
+// MARK: - Medium Widget (메인 큰 원 + 2×3 그리드)
+// 중형: 왼쪽 메인 Link + 오른쪽 3×2 빠른 액션 Link 그리드
 
-private struct MediumCategoryCircle: View {
+private struct MediumQuickCircle: View {
     let icon: String
-    let category: String
+    let urlString: String
 
     var body: some View {
-        Link(destination: URL(string: "prayanswer://add?category=\(category)")!) {
-            GeminiIconCircle(icon: icon, isMain: false)
+        Link(destination: URL(string: urlString)!) {
+            GeminiCircle(icon: icon, isMain: false)
         }
     }
 }
 
 struct MediumAddPrayerWidgetView: View {
-    private let spacing: CGFloat = 9
-    private let padding: CGFloat = 11
+    let mainAction: QuickActionAppEnum
+    private let spacing: CGFloat = 8
+    private let padding: CGFloat = 10
+
+    // 메인 외 6개 빠른 액션
+    private let rightActions: [(icon: String, url: String)] = [
+        ("person.fill", "prayanswer://add?category=personal"),
+        ("house.fill", "prayanswer://add?category=family"),
+        ("heart.fill", "prayanswer://add?category=health"),
+        ("briefcase.fill", "prayanswer://add?category=work"),
+        ("clock.fill", "prayanswer://storage?type=wait"),
+        ("chart.bar.xaxis", "prayanswer://stats")
+    ]
 
     var body: some View {
         HStack(spacing: spacing) {
-            // 왼쪽: 큰 메인 원 (앱 아이콘)
-            Link(destination: URL(string: "prayanswer://add")!) {
-                GeminiIconCircle(icon: "hands.clap.fill", isMain: true)
+            // 왼쪽: 메인 액션 (설정 가능)
+            Link(destination: URL(string: mainAction.urlString)!) {
+                GeminiCircle(icon: mainAction.icon, isMain: true)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-            // 오른쪽: 2×2 카테고리 그리드
+            // 오른쪽: 3×2 그리드
             VStack(spacing: spacing) {
                 HStack(spacing: spacing) {
-                    MediumCategoryCircle(icon: "person.fill", category: "personal")
-                    MediumCategoryCircle(icon: "house.fill", category: "family")
+                    MediumQuickCircle(icon: rightActions[0].icon, urlString: rightActions[0].url)
+                    MediumQuickCircle(icon: rightActions[1].icon, urlString: rightActions[1].url)
+                    MediumQuickCircle(icon: rightActions[2].icon, urlString: rightActions[2].url)
                 }
                 .frame(maxHeight: .infinity)
 
                 HStack(spacing: spacing) {
-                    MediumCategoryCircle(icon: "heart.fill", category: "health")
-                    MediumCategoryCircle(icon: "briefcase.fill", category: "work")
+                    MediumQuickCircle(icon: rightActions[3].icon, urlString: rightActions[3].url)
+                    MediumQuickCircle(icon: rightActions[4].icon, urlString: rightActions[4].url)
+                    MediumQuickCircle(icon: rightActions[5].icon, urlString: rightActions[5].url)
                 }
                 .frame(maxHeight: .infinity)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .padding(padding)
-        .containerBackground(for: .widget) {
-            Color.widgetBackground
-        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .containerBackground(for: .widget) { Color.widgetBackground }
     }
 }
 
@@ -145,11 +169,11 @@ struct AddPrayerWidgetEntryView: View {
     var body: some View {
         switch family {
         case .systemSmall:
-            SmallAddPrayerWidgetView()
+            SmallAddPrayerWidgetView(mainAction: entry.mainAction)
         case .systemMedium:
-            MediumAddPrayerWidgetView()
+            MediumAddPrayerWidgetView(mainAction: entry.mainAction)
         default:
-            SmallAddPrayerWidgetView()
+            SmallAddPrayerWidgetView(mainAction: entry.mainAction)
         }
     }
 }
@@ -160,11 +184,11 @@ struct AddPrayerWidget: Widget {
     let kind: String = "AddPrayerWidget"
 
     var body: some WidgetConfiguration {
-        StaticConfiguration(kind: kind, provider: AddPrayerProvider()) { entry in
+        AppIntentConfiguration(kind: kind, intent: AddPrayerWidgetIntent.self, provider: AddPrayerProvider()) { entry in
             AddPrayerWidgetEntryView(entry: entry)
         }
         .configurationDisplayName("기도 추가")
-        .description("홈 화면에서 바로 새 기도를 추가하세요.")
+        .description("홈 화면에서 바로 새 기도를 추가하거나 원하는 화면으로 이동하세요.")
         .supportedFamilies([.systemSmall, .systemMedium])
     }
 }

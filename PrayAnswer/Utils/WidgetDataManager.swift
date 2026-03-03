@@ -89,6 +89,19 @@ class WidgetDataManager {
         return prayers
     }
     
+    // 전체 보관소 즐겨찾기 기도 로드 (최신순 정렬)
+    func loadAllFavorites() -> [PrayerWidgetData] {
+        var all: [PrayerWidgetData] = []
+        for storage in PrayerStorage.allCases {
+            let key = "\(favoritePrayersKey)_\(storage.rawValue)"
+            if let data = userDefaults?.data(forKey: key),
+               let prayers = try? JSONDecoder().decode([PrayerWidgetData].self, from: data) {
+                all.append(contentsOf: prayers)
+            }
+        }
+        return all.sorted { $0.createdDate > $1.createdDate }
+    }
+
     // 위젯 업데이트 요청
     func requestWidgetUpdate() {
         WidgetCenter.shared.reloadAllTimelines()

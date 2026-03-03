@@ -28,20 +28,45 @@ struct ContentView: View {
     }
 
     private func handleWidgetURL(_ url: URL) {
-        guard url.scheme == "prayanswer", url.host == "add" else { return }
+        guard url.scheme == "prayanswer" else { return }
 
-        // 카테고리 파라미터가 있으면 알림으로 전달
-        if let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
-           let categoryValue = components.queryItems?.first(where: { $0.name == "category" })?.value {
-            NotificationCenter.default.post(
-                name: .widgetAddPrayerWithCategory,
-                object: nil,
-                userInfo: ["category": categoryValue]
-            )
+        switch url.host {
+        case "add":
+            // 카테고리 파라미터가 있으면 알림으로 전달
+            if let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
+               let categoryValue = components.queryItems?.first(where: { $0.name == "category" })?.value {
+                NotificationCenter.default.post(
+                    name: .widgetAddPrayerWithCategory,
+                    object: nil,
+                    userInfo: ["category": categoryValue]
+                )
+            }
+            selectedTab = 1
+
+        case "storage":
+            // prayanswer://storage?type=wait|yes|no → 기도 목록 탭
+            if let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
+               let storageType = components.queryItems?.first(where: { $0.name == "type" })?.value {
+                NotificationCenter.default.post(
+                    name: .widgetOpenStorage,
+                    object: nil,
+                    userInfo: ["storage": storageType]
+                )
+            }
+            selectedTab = 0
+
+        case "favorites":
+            // prayanswer://favorites → 기도 목록 탭 (즐겨찾기 필터)
+            NotificationCenter.default.post(name: .widgetOpenFavorites, object: nil)
+            selectedTab = 0
+
+        case "stats":
+            // prayanswer://stats → 통계 탭
+            selectedTab = 3
+
+        default:
+            break
         }
-
-        // 기도 추가 탭(1)으로 이동
-        selectedTab = 1
     }
 
     private func setupTabBarAppearance() {
@@ -102,6 +127,14 @@ struct iPhoneContentView: View {
                     Text(L.Tab.people)
                 }
                 .tag(2)
+
+            // 통계 탭 (네 번째 화면)
+            StatisticsView()
+                .tabItem {
+                    Image(systemName: "chart.bar.xaxis")
+                    Text(L.Tab.statistics)
+                }
+                .tag(3)
         }
         .tint(DesignSystem.Colors.primary)
         .onAppear {
@@ -139,6 +172,8 @@ struct iPhoneContentView: View {
 
 extension Notification.Name {
     static let widgetAddPrayerWithCategory = Notification.Name("WidgetAddPrayerWithCategory")
+    static let widgetOpenStorage = Notification.Name("WidgetOpenStorage")
+    static let widgetOpenFavorites = Notification.Name("WidgetOpenFavorites")
 }
 
 // MARK: - iPad Content View (NavigationSplitView-based)
@@ -157,6 +192,7 @@ struct iPadContentView: View {
         case prayers = "prayers"
         case people = "people"
         case addPrayer = "addPrayer"
+        case statistics = "statistics"
 
         var id: String { rawValue }
 
@@ -165,6 +201,7 @@ struct iPadContentView: View {
             case .prayers: return L.Tab.prayerList
             case .people: return L.Tab.people
             case .addPrayer: return L.Tab.addPrayer
+            case .statistics: return L.Tab.statistics
             }
         }
 
@@ -173,6 +210,7 @@ struct iPadContentView: View {
             case .prayers: return "list.bullet.rectangle.portrait"
             case .people: return "person.2"
             case .addPrayer: return "hands.clap"
+            case .statistics: return "chart.bar.xaxis"
             }
         }
     }
@@ -261,6 +299,8 @@ struct iPadContentView: View {
             )
         case .addPrayer:
             iPadAddPrayerSidePanel(recordedText: $addPrayerRecordedText)
+        case .statistics:
+            StatisticsView()
         }
     }
 
@@ -275,6 +315,12 @@ struct iPadContentView: View {
             peopleDetailContent
         case .addPrayer:
             iPadAddPrayerDetailView(recordedText: $addPrayerRecordedText)
+        case .statistics:
+            iPadEmptyDetailView(
+                icon: "chart.bar.xaxis",
+                title: L.Stats.title,
+                description: L.Stats.emptyDescription
+            )
         }
     }
 

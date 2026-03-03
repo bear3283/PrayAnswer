@@ -16,6 +16,7 @@ enum L {
         static let prayerList = NSLocalizedString("tab.prayer_list", comment: "Prayer List tab title")
         static let addPrayer = NSLocalizedString("tab.add_prayer", comment: "Add Prayer tab title")
         static let people = NSLocalizedString("tab.people", comment: "People tab title")
+        static let statistics = NSLocalizedString("tab.statistics", value: "통계", comment: "Statistics tab title")
     }
 
     // MARK: - Navigation Titles
@@ -486,6 +487,25 @@ enum L {
         // Accessibility
         static let microphoneButton = NSLocalizedString("voice.accessibility_microphone", comment: "Microphone button accessibility")
         static let recordingHint = NSLocalizedString("voice.accessibility_recording_hint", comment: "Recording hint accessibility")
+    }
+
+    // MARK: - Statistics
+    enum Stats {
+        static let title = NSLocalizedString("stats.title", value: "통계", comment: "Statistics screen title")
+        static let totalPrayers = NSLocalizedString("stats.total_prayers", value: "전체 기도", comment: "Total prayers label")
+        static let answerRate = NSLocalizedString("stats.answer_rate", value: "응답률", comment: "Answer rate label")
+        static let favorites = NSLocalizedString("stats.favorites", value: "즐겨찾기", comment: "Favorites label")
+        static let storageDistribution = NSLocalizedString("stats.storage_distribution", value: "보관소 분포", comment: "Storage distribution section title")
+        static let monthlyActivity = NSLocalizedString("stats.monthly_activity", value: "월별 기도 추이", comment: "Monthly activity section title")
+        static let categoryDistribution = NSLocalizedString("stats.category_distribution", value: "카테고리 분포", comment: "Category distribution section title")
+        static let topTargets = NSLocalizedString("stats.top_targets", value: "기도 대상자 TOP 5", comment: "Top prayer targets section title")
+        static let total = NSLocalizedString("stats.total", value: "전체", comment: "Total label (center of donut chart)")
+        static let emptyTitle = NSLocalizedString("stats.empty_title", value: "아직 기록이 없어요", comment: "Empty statistics title")
+        static let emptyDescription = NSLocalizedString("stats.empty_description", value: "기도를 기록하면\n통계를 볼 수 있어요", comment: "Empty statistics description")
+
+        static func last6MonthsTotal(_ count: Int) -> String {
+            String(format: NSLocalizedString("stats.last6months_total", value: "최근 6개월 총 %d개", comment: "Last 6 months total format"), count)
+        }
     }
 
     // MARK: - Share

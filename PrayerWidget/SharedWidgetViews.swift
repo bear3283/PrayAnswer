@@ -12,7 +12,7 @@ extension PrayerStorage {
         case .no: return Color.red.opacity(0.8)
         }
     }
-    
+
     var widgetBackgroundColor: Color {
         switch self {
         case .wait: return Color.orange.opacity(0.1)
@@ -20,12 +20,20 @@ extension PrayerStorage {
         case .no: return Color.red.opacity(0.1)
         }
     }
-    
+
     var simpleDisplayName: String {
         switch self {
         case .wait: return "Wait"
         case .yes: return "Yes"
         case .no: return "No"
+        }
+    }
+
+    var deepLinkURL: URL {
+        switch self {
+        case .wait: return URL(string: "prayanswer://storage?type=wait")!
+        case .yes: return URL(string: "prayanswer://storage?type=yes")!
+        case .no: return URL(string: "prayanswer://storage?type=no")!
         }
     }
 }
@@ -37,18 +45,18 @@ struct WidgetHeader: View {
     let storage: PrayerStorage
     let prayerCount: Int
     let headerSize: HeaderSize
-    
+
     enum HeaderSize {
         case small, medium, large
-        
+
         var iconSize: CGFloat {
             switch self {
-            case .small: return 16
-            case .medium: return 20
-            case .large: return 24
+            case .small: return 14
+            case .medium: return 18
+            case .large: return 22
             }
         }
-        
+
         var titleFont: Font {
             switch self {
             case .small: return .caption
@@ -56,7 +64,7 @@ struct WidgetHeader: View {
             case .large: return .headline
             }
         }
-        
+
         var countFont: Font {
             switch self {
             case .small: return .caption2
@@ -65,31 +73,28 @@ struct WidgetHeader: View {
             }
         }
     }
-    
+
     var body: some View {
-        HStack {
-            // 아이콘
+        HStack(spacing: 5) {
             Image(systemName: storage.iconName)
                 .font(.system(size: headerSize.iconSize, weight: .semibold))
                 .foregroundColor(.white)
-                .frame(width: headerSize.iconSize + 4, height: headerSize.iconSize + 4)
+                .frame(width: headerSize.iconSize + 6, height: headerSize.iconSize + 6)
                 .background(storage.widgetColor)
                 .clipShape(Circle())
-            
-            // 타이틀
+
             Text(storage.simpleDisplayName)
                 .font(headerSize.titleFont)
                 .fontWeight(.bold)
                 .foregroundColor(.primary)
-            
+
             Spacer()
-            
-            // 개수 표시
-            HStack(spacing: 3) {
+
+            HStack(spacing: 2) {
                 Image(systemName: "heart.fill")
                     .font(headerSize.countFont)
                     .foregroundColor(storage.widgetColor)
-                
+
                 Text("\(prayerCount)")
                     .font(headerSize.countFont)
                     .fontWeight(.semibold)
@@ -99,15 +104,44 @@ struct WidgetHeader: View {
     }
 }
 
-// 공통 기도 행 컴포넌트
+// 즐겨찾기 전체 헤더 (보관소별 색상 없음)
+struct FavoritesWidgetHeader: View {
+    let prayerCount: Int
+    let headerSize: WidgetHeader.HeaderSize
+
+    var body: some View {
+        HStack(spacing: 5) {
+            Image(systemName: "heart.fill")
+                .font(.system(size: headerSize.iconSize, weight: .semibold))
+                .foregroundColor(.white)
+                .frame(width: headerSize.iconSize + 6, height: headerSize.iconSize + 6)
+                .background(Color.pink.opacity(0.8))
+                .clipShape(Circle())
+
+            Text("즐겨찾기")
+                .font(headerSize.titleFont)
+                .fontWeight(.bold)
+                .foregroundColor(.primary)
+
+            Spacer()
+
+            Text("\(prayerCount)")
+                .font(headerSize.countFont)
+                .fontWeight(.semibold)
+                .foregroundColor(.secondary)
+        }
+    }
+}
+
+// 공통 기도 행 컴포넌트 (storage별 색상)
 struct WidgetPrayerRow: View {
     let prayer: PrayerWidgetData
     let storage: PrayerStorage
     let rowSize: RowSize
-    
+
     enum RowSize {
         case small, medium, large
-        
+
         var titleFont: Font {
             switch self {
             case .small: return .caption
@@ -115,86 +149,117 @@ struct WidgetPrayerRow: View {
             case .large: return .subheadline
             }
         }
-        
+
         var contentFont: Font {
             switch self {
             case .small: return .caption2
-            case .medium: return .caption
+            case .medium: return .caption2
             case .large: return .caption
             }
         }
-        
+
         var dotSize: CGFloat {
             switch self {
-            case .small: return 4
+            case .small: return 5
             case .medium: return 6
             case .large: return 8
             }
         }
-        
-        var spacing: CGFloat {
+
+        var verticalPadding: CGFloat {
             switch self {
             case .small: return 4
-            case .medium: return 6
+            case .medium: return 5
             case .large: return 8
             }
         }
-        
-        var showContent: Bool {
-            return self == .large
-        }
+
+        var showContent: Bool { self == .large }
     }
-    
+
     var body: some View {
-        HStack(alignment: .top, spacing: rowSize.spacing) {
-            // 상태 인디케이터
+        HStack(alignment: .top, spacing: 6) {
             Circle()
                 .fill(storage.widgetColor)
                 .frame(width: rowSize.dotSize, height: rowSize.dotSize)
-                .padding(.top, rowSize == .large ? 6 : 2)
-            
+                .padding(.top, rowSize == .large ? 6 : 3)
+
             VStack(alignment: .leading, spacing: 2) {
-                // 제목
                 Text(prayer.title)
                     .font(rowSize.titleFont)
                     .fontWeight(.medium)
                     .lineLimit(1)
                     .foregroundColor(.primary)
-                
-                // 내용 (Large 사이즈에만 표시)
-                if rowSize.showContent {
+
+                if rowSize.showContent && !prayer.content.isEmpty {
                     Text(prayer.content)
                         .font(rowSize.contentFont)
                         .lineLimit(2)
                         .foregroundColor(.secondary)
                 }
             }
-            
-            Spacer()
+
+            Spacer(minLength: 0)
         }
-        .padding(.vertical, rowSize == .large ? 8 : 4)
-        .padding(.horizontal, rowSize == .large ? 12 : 8)
+        .padding(.vertical, rowSize.verticalPadding)
+        .padding(.horizontal, rowSize == .large ? 10 : 7)
+        .frame(maxWidth: .infinity)
         .background(storage.widgetBackgroundColor)
-        .cornerRadius(8)
+        .cornerRadius(7)
+    }
+}
+
+// 즐겨찾기 전체 기도 행 (각 기도의 storage 색상 사용)
+struct FavoritesWidgetPrayerRow: View {
+    let prayer: PrayerWidgetData
+    let rowSize: WidgetPrayerRow.RowSize
+
+    private var storage: PrayerStorage { prayer.prayerStorage }
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 6) {
+            Circle()
+                .fill(storage.widgetColor)
+                .frame(width: rowSize.dotSize, height: rowSize.dotSize)
+                .padding(.top, 3)
+
+            Text(prayer.title)
+                .font(rowSize.titleFont)
+                .fontWeight(.medium)
+                .lineLimit(1)
+                .foregroundColor(.primary)
+
+            Spacer(minLength: 0)
+        }
+        .padding(.vertical, rowSize.verticalPadding)
+        .padding(.horizontal, 7)
+        .frame(maxWidth: .infinity)
+        .background(storage.widgetBackgroundColor)
+        .cornerRadius(7)
     }
 }
 
 // 빈 상태 컴포넌트
 struct WidgetEmptyState: View {
-    let storage: PrayerStorage
+    let storage: PrayerStorage?
     let size: EmptyStateSize
-    
+
+    init(storage: PrayerStorage? = nil, size: EmptyStateSize) {
+        self.storage = storage
+        self.size = size
+    }
+
     enum EmptyStateSize {
         case small, medium, large
-        
+
         var iconSize: CGFloat {
             switch self {
-            case .small: return 20
-            case .medium: return 28
-            case .large: return 36
+            case .small: return 18
+            case .medium: return 26
+            case .large: return 34
             }
         }
-        
+
         var titleFont: Font {
             switch self {
             case .small: return .caption2
@@ -203,139 +268,101 @@ struct WidgetEmptyState: View {
             }
         }
     }
-    
+
     var body: some View {
-        VStack(spacing: 6) {
+        VStack(spacing: 5) {
             Image(systemName: "heart.slash")
                 .font(.system(size: size.iconSize))
                 .foregroundColor(.secondary)
-            
+
             Text("기도가 없습니다")
                 .font(size.titleFont)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
-            
-            Spacer()
         }
-        .frame(maxWidth: .infinity, alignment: .top)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 
-// MARK: - Size-specific Widgets
+// MARK: - Storage-specific Prayer Widgets
 
 // MARK: - Small Widget (4개 표시)
 struct SmallPrayerWidget: View {
     let prayers: [PrayerWidgetData]
     let storage: PrayerStorage
-    
+
     private let maxItems = 4
-    
+
     var body: some View {
-        Spacer()
         VStack(alignment: .leading, spacing: 4) {
-            // 헤더
-            WidgetHeader(
-                storage: storage,
-                prayerCount: prayers.count,
-                headerSize: .small
-            )
-            
-            // 컨텐츠
+            WidgetHeader(storage: storage, prayerCount: prayers.count, headerSize: .small)
+
             if prayers.isEmpty {
                 WidgetEmptyState(storage: storage, size: .small)
             } else {
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: 3) {
                     ForEach(prayers.prefix(maxItems), id: \.id) { prayer in
-                        WidgetPrayerRow(
-                            prayer: prayer,
-                            storage: storage,
-                            rowSize: .small
-                        )
+                        WidgetPrayerRow(prayer: prayer, storage: storage, rowSize: .small)
                     }
-                    
                     if prayers.count > maxItems {
-                        HStack {
-                            Spacer()
-                            Text("외 \(prayers.count - maxItems)개")
-                                .font(.caption2)
-                                .foregroundColor(.secondary)
-//                            Spacer()
-                        }
+                        Text("외 \(prayers.count - maxItems)개")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .trailing)
                     }
                 }
-                
-                Spacer()
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             }
         }
-        .padding(2)
-        .containerBackground(.fill, for: .widget)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .padding(10)
+        .containerBackground(for: .widget) { Color(.systemBackground) }
     }
 }
 
-// MARK: - Medium Widget (6개 표시, 왼쪽3개+오른쪽2개 레이아웃)
+// MARK: - Medium Widget (5개 표시, 왼쪽3개+오른쪽2개 레이아웃)
 struct MediumPrayerWidget: View {
     let prayers: [PrayerWidgetData]
     let storage: PrayerStorage
-    
+
     private let leftColumnItems = 3
     private let rightColumnItems = 2
-    private let totalDisplayItems = 5  // 실제 표시되는 기도 개수
-    
+    private let totalDisplayItems = 5
+
     var body: some View {
-        Spacer()
-        VStack(alignment: .leading, spacing: 10) {
-            // 헤더
-            WidgetHeader(
-                storage: storage,
-                prayerCount: prayers.count,
-                headerSize: .medium
-            )
-            
-            // 컨텐츠
+        VStack(alignment: .leading, spacing: 8) {
+            WidgetHeader(storage: storage, prayerCount: prayers.count, headerSize: .medium)
+
             if prayers.isEmpty {
                 WidgetEmptyState(storage: storage, size: .medium)
             } else {
-                HStack(alignment: .top, spacing: 12) {
-                    // 왼쪽 열 (3개)
-                    VStack(alignment: .leading, spacing: 8) {
+                HStack(alignment: .top, spacing: 8) {
+                    VStack(alignment: .leading, spacing: 5) {
                         ForEach(prayers.prefix(leftColumnItems), id: \.id) { prayer in
-                            WidgetPrayerRow(
-                                prayer: prayer,
-                                storage: storage,
-                                rowSize: .medium
-                            )
+                            WidgetPrayerRow(prayer: prayer, storage: storage, rowSize: .medium)
                         }
                     }
-                    
-                    // 오른쪽 열 (2개 + 추가 개수)
-                    VStack(alignment: .leading, spacing: 8) {
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+
+                    VStack(alignment: .leading, spacing: 5) {
                         ForEach(prayers.dropFirst(leftColumnItems).prefix(rightColumnItems), id: \.id) { prayer in
-                            WidgetPrayerRow(
-                                prayer: prayer,
-                                storage: storage,
-                                rowSize: .medium
-                            )
+                            WidgetPrayerRow(prayer: prayer, storage: storage, rowSize: .medium)
                         }
-                        
-                        // 추가 기도 개수 표시 (오른쪽 열 하단, 중앙정렬)
                         if prayers.count > totalDisplayItems {
-                            HStack {
-                                Spacer()
-                                Text("외 \(prayers.count - totalDisplayItems)개의 기도")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-//                                Spacer()
-                            }
-                            .padding(.top, 4)
+                            Text("외 \(prayers.count - totalDisplayItems)개")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                                .frame(maxWidth: .infinity, alignment: .trailing)
                         }
                     }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                 }
-                
-                Spacer()
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             }
         }
-        .padding(4)
-        .containerBackground(.fill, for: .widget)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .padding(10)
+        .containerBackground(for: .widget) { Color(.systemBackground) }
     }
 }
 
@@ -343,68 +370,186 @@ struct MediumPrayerWidget: View {
 struct LargePrayerWidget: View {
     let prayers: [PrayerWidgetData]
     let storage: PrayerStorage
-    
+
     private let maxItems = 5
-    
+
     var body: some View {
-        Spacer()
         VStack(alignment: .leading, spacing: 8) {
-            // 헤더
-            WidgetHeader(
-                storage: storage,
-                prayerCount: prayers.count,
-                headerSize: .large
-            )
-            
-            // 컨텐츠
+            WidgetHeader(storage: storage, prayerCount: prayers.count, headerSize: .large)
+
             if prayers.isEmpty {
                 WidgetEmptyState(storage: storage, size: .large)
             } else {
-                VStack(alignment: .leading, spacing: 6) {
+                VStack(alignment: .leading, spacing: 5) {
                     ForEach(prayers.prefix(maxItems), id: \.id) { prayer in
-                        WidgetPrayerRow(
-                            prayer: prayer,
-                            storage: storage,
-                            rowSize: .large
-                        )
+                        WidgetPrayerRow(prayer: prayer, storage: storage, rowSize: .large)
                     }
-                    
                     if prayers.count > maxItems {
-                        HStack {
-                            Spacer()
-                            Text("외 \(prayers.count - maxItems)개의 기도")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-//                            Spacer()
-                        }
-                        .padding(.top, 2)
+                        Text("외 \(prayers.count - maxItems)개의 기도")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .trailing)
                     }
                 }
-                
-                Spacer()
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             }
         }
-        .padding(6)
-        .containerBackground(.fill, for: .widget)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .padding(12)
+        .containerBackground(for: .widget) { Color(.systemBackground) }
     }
 }
 
-// MARK: - Shared Widget Entry View
+// MARK: - Favorites Prayer Widgets (즐겨찾기 전체)
+
+struct SmallFavoritesWidget: View {
+    let prayers: [PrayerWidgetData]
+    private let maxItems = 4
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            FavoritesWidgetHeader(prayerCount: prayers.count, headerSize: .small)
+
+            if prayers.isEmpty {
+                WidgetEmptyState(size: .small)
+            } else {
+                VStack(alignment: .leading, spacing: 3) {
+                    ForEach(prayers.prefix(maxItems), id: \.id) { prayer in
+                        FavoritesWidgetPrayerRow(prayer: prayer, rowSize: .small)
+                    }
+                    if prayers.count > maxItems {
+                        Text("외 \(prayers.count - maxItems)개")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .trailing)
+                    }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .padding(10)
+        .containerBackground(for: .widget) { Color(.systemBackground) }
+    }
+}
+
+struct MediumFavoritesWidget: View {
+    let prayers: [PrayerWidgetData]
+    private let leftColumnItems = 3
+    private let rightColumnItems = 2
+    private let totalDisplayItems = 5
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            FavoritesWidgetHeader(prayerCount: prayers.count, headerSize: .medium)
+
+            if prayers.isEmpty {
+                WidgetEmptyState(size: .medium)
+            } else {
+                HStack(alignment: .top, spacing: 8) {
+                    VStack(alignment: .leading, spacing: 5) {
+                        ForEach(prayers.prefix(leftColumnItems), id: \.id) { prayer in
+                            FavoritesWidgetPrayerRow(prayer: prayer, rowSize: .medium)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+
+                    VStack(alignment: .leading, spacing: 5) {
+                        ForEach(prayers.dropFirst(leftColumnItems).prefix(rightColumnItems), id: \.id) { prayer in
+                            FavoritesWidgetPrayerRow(prayer: prayer, rowSize: .medium)
+                        }
+                        if prayers.count > totalDisplayItems {
+                            Text("외 \(prayers.count - totalDisplayItems)개")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                                .frame(maxWidth: .infinity, alignment: .trailing)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .padding(10)
+        .containerBackground(for: .widget) { Color(.systemBackground) }
+    }
+}
+
+struct LargeFavoritesWidget: View {
+    let prayers: [PrayerWidgetData]
+    private let maxItems = 5
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            FavoritesWidgetHeader(prayerCount: prayers.count, headerSize: .large)
+
+            if prayers.isEmpty {
+                WidgetEmptyState(size: .large)
+            } else {
+                VStack(alignment: .leading, spacing: 5) {
+                    ForEach(prayers.prefix(maxItems), id: \.id) { prayer in
+                        FavoritesWidgetPrayerRow(prayer: prayer, rowSize: .large)
+                    }
+                    if prayers.count > maxItems {
+                        Text("외 \(prayers.count - maxItems)개의 기도")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .trailing)
+                    }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .padding(12)
+        .containerBackground(for: .widget) { Color(.systemBackground) }
+    }
+}
+
+// MARK: - Shared Widget Entry Views
+
 struct SharedWidgetEntryView: View {
     let prayers: [PrayerWidgetData]
     let storage: PrayerStorage
     @Environment(\.widgetFamily) var family
-    
+
     var body: some View {
         switch family {
         case .systemSmall:
             SmallPrayerWidget(prayers: prayers, storage: storage)
+                .widgetURL(storage.deepLinkURL)
         case .systemMedium:
             MediumPrayerWidget(prayers: prayers, storage: storage)
+                .widgetURL(storage.deepLinkURL)
         case .systemLarge:
             LargePrayerWidget(prayers: prayers, storage: storage)
+                .widgetURL(storage.deepLinkURL)
         default:
             SmallPrayerWidget(prayers: prayers, storage: storage)
+                .widgetURL(storage.deepLinkURL)
         }
     }
-} 
+}
+
+struct FavoritesWidgetEntryView: View {
+    let prayers: [PrayerWidgetData]
+    @Environment(\.widgetFamily) var family
+
+    var body: some View {
+        switch family {
+        case .systemSmall:
+            SmallFavoritesWidget(prayers: prayers)
+                .widgetURL(URL(string: "prayanswer://favorites")!)
+        case .systemMedium:
+            MediumFavoritesWidget(prayers: prayers)
+                .widgetURL(URL(string: "prayanswer://favorites")!)
+        case .systemLarge:
+            LargeFavoritesWidget(prayers: prayers)
+                .widgetURL(URL(string: "prayanswer://favorites")!)
+        default:
+            SmallFavoritesWidget(prayers: prayers)
+                .widgetURL(URL(string: "prayanswer://favorites")!)
+        }
+    }
+}

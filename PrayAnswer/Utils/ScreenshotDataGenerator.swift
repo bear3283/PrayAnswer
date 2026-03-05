@@ -254,18 +254,16 @@ enum ScreenshotDataGenerator {
         return prayers
     }
 
-    /// 생성 날짜를 다양하게 조정
+    /// 생성 날짜를 6개월에 걸쳐 분산 (통계 차트용)
     private static func adjustCreatedDates(_ prayers: [Prayer]) {
         let calendar = Calendar.current
-        let daysAgo = [-30, -21, -14, -10, -7, -5, -3, -2, -1, 0, -25, -18, -12, -8, -4]
+        // 6개월치 고르게 분산: 월별 2-3개씩
+        let daysAgo = [-168, -150, -130, -112, -95, -80, -65, -50, -38, -25, -14, -7, -4, -2, 0]
 
         for (index, prayer) in prayers.enumerated() {
-            if index < daysAgo.count {
-                if let newDate = calendar.date(byAdding: .day, value: daysAgo[index], to: Date()) {
-                    // createdDate는 init에서만 설정되므로, 직접 접근 필요
-                    // SwiftData에서는 insert 후 변경해야 함
-                    prayer.createdDate = newDate
-                }
+            let offset = index < daysAgo.count ? daysAgo[index] : -(index * 5)
+            if let newDate = calendar.date(byAdding: .day, value: offset, to: Date()) {
+                prayer.createdDate = newDate
             }
         }
     }

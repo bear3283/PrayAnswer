@@ -186,7 +186,7 @@ struct iPadContentView: View {
     @State private var selectedPrayer: Prayer?
     @State private var selectedPerson: String?
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
-    @State private var addPrayerRecordedText: String = ""
+    @State private var dummyAddPrayerTab: Int = 0
 
     enum iPadSection: String, CaseIterable, Identifiable {
         case prayers = "prayers"
@@ -216,10 +216,9 @@ struct iPadContentView: View {
     }
 
     var body: some View {
+        // 2-column: sidebar는 항상 표시, detail이 나머지 전체 공간 사용
         NavigationSplitView(columnVisibility: $columnVisibility) {
             sidebarContent
-        } content: {
-            contentColumn
         } detail: {
             detailColumn
         }
@@ -236,9 +235,6 @@ struct iPadContentView: View {
                 ForEach(iPadSection.allCases) { section in
                     Button {
                         selectedSection = section
-                        withAnimation {
-                            columnVisibility = .all
-                        }
                     } label: {
                         HStack {
                             Label(section.title, systemImage: section.icon)
@@ -281,46 +277,43 @@ struct iPadContentView: View {
         .navigationTitle("Pray")
     }
 
-    // MARK: - Content Column
-
-    @ViewBuilder
-    private var contentColumn: some View {
-        switch selectedSection {
-        case .prayers:
-            iPadPrayerListContentView(
-                selectedStorage: $selectedStorage,
-                selectedPrayer: $selectedPrayer,
-                allPrayers: allPrayers
-            )
-        case .people:
-            iPadPeopleListContentView(
-                selectedPerson: $selectedPerson,
-                allPrayers: allPrayers
-            )
-        case .addPrayer:
-            iPadAddPrayerSidePanel(recordedText: $addPrayerRecordedText)
-        case .statistics:
-            StatisticsView()
-        }
-    }
-
     // MARK: - Detail Column
+    // 기도 목록/기도대상자: 목록 + 세부화면을 HStack으로 분할
+    // 기도 추가/통계: 전체 화면 사용
 
     @ViewBuilder
     private var detailColumn: some View {
         switch selectedSection {
         case .prayers:
-            prayerDetailContent
+            HStack(spacing: 0) {
+                iPadPrayerListContentView(
+                    selectedStorage: $selectedStorage,
+                    selectedPrayer: $selectedPrayer,
+                    allPrayers: allPrayers
+                )
+                .frame(minWidth: 300, maxWidth: 420)
+                Divider()
+                prayerDetailContent
+                    .frame(maxWidth: .infinity)
+            }
+
         case .people:
-            peopleDetailContent
+            HStack(spacing: 0) {
+                iPadPeopleListContentView(
+                    selectedPerson: $selectedPerson,
+                    allPrayers: allPrayers
+                )
+                .frame(minWidth: 300, maxWidth: 420)
+                Divider()
+                peopleDetailContent
+                    .frame(maxWidth: .infinity)
+            }
+
         case .addPrayer:
-            iPadAddPrayerDetailView(recordedText: $addPrayerRecordedText)
+            AddPrayerView(selectedTab: $dummyAddPrayerTab)
+
         case .statistics:
-            iPadEmptyDetailView(
-                icon: "chart.bar.xaxis",
-                title: L.Stats.title,
-                description: L.Stats.emptyDescription
-            )
+            StatisticsView()
         }
     }
 

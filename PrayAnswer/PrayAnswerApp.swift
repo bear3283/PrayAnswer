@@ -65,7 +65,7 @@ struct PrayAnswerApp: App {
     #if DEBUG
     /// 스크린샷용 더미 데이터 1회 자동 생성 (UserDefaults로 중복 실행 방지)
     private func generateScreenshotDataOnce() {
-        let key = "ScreenshotDataGenerated_v1.7"
+        let key = "ScreenshotDataGenerated_v1.10"
         guard !UserDefaults.standard.bool(forKey: key) else {
             print("📸 스크린샷 데이터 이미 생성됨 - 건너뜀")
             return

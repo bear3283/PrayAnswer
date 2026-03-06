@@ -60,6 +60,10 @@ struct ContentView: View {
             NotificationCenter.default.post(name: .widgetOpenFavorites, object: nil)
             selectedTab = 0
 
+        case "people":
+            // prayanswer://people → 기도대상자 탭
+            selectedTab = 2
+
         case "stats":
             // prayanswer://stats → 통계 탭
             selectedTab = 3

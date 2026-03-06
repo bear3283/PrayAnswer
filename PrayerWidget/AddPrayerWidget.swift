@@ -6,7 +6,8 @@ import AppIntents
 
 struct AddPrayerEntry: TimelineEntry {
     let date: Date
-    let mainAction: QuickActionAppEnum
+    let prayers: [PrayerWidgetData]
+    let selectedStorage: PrayerStorageAppEnum
 }
 
 struct AddPrayerProvider: AppIntentTimelineProvider {
@@ -14,16 +15,22 @@ struct AddPrayerProvider: AppIntentTimelineProvider {
     typealias Intent = AddPrayerWidgetIntent
 
     func placeholder(in context: Context) -> AddPrayerEntry {
-        AddPrayerEntry(date: Date(), mainAction: .addPrayer)
+        AddPrayerEntry(date: Date(), prayers: [], selectedStorage: .wait)
     }
 
     func snapshot(for configuration: AddPrayerWidgetIntent, in context: Context) async -> AddPrayerEntry {
-        AddPrayerEntry(date: Date(), mainAction: configuration.mainAction)
+        AddPrayerEntry(date: Date(), prayers: [], selectedStorage: configuration.storage)
     }
 
     func timeline(for configuration: AddPrayerWidgetIntent, in context: Context) async -> Timeline<AddPrayerEntry> {
-        let entry = AddPrayerEntry(date: Date(), mainAction: configuration.mainAction)
-        return Timeline(entries: [entry], policy: .never)
+        let prayers: [PrayerWidgetData]
+        if configuration.storage.isFavorites {
+            prayers = WidgetDataManager.shared.loadAllFavorites()
+        } else {
+            prayers = WidgetDataManager.shared.loadFavoritePrayersForStorage(configuration.storage.toPrayerStorage)
+        }
+        let entry = AddPrayerEntry(date: Date(), prayers: prayers, selectedStorage: configuration.storage)
+        return Timeline(entries: [entry], policy: .after(Date().addingTimeInterval(3600)))
     }
 }
 
@@ -32,131 +39,196 @@ struct AddPrayerProvider: AppIntentTimelineProvider {
 private extension Color {
     static let widgetBackground = Color(red: 0.13, green: 0.13, blue: 0.14)
     static let circleNormal = Color(white: 0.21)
-    static let circleMain = Color(white: 0.26)
-    static let circleBorder = Color(white: 0.38)
 }
 
-// MARK: - Gemini Style Circle
+// MARK: - 공통: 노드 원형 (Small & Medium 공유)
 
-private struct GeminiCircle: View {
+private struct NodeCircle: View {
     let icon: String
-    let isMain: Bool
 
     var body: some View {
         ZStack {
             Circle()
-                .fill(isMain ? Color.circleMain : Color.circleNormal)
-                .overlay {
-                    if isMain {
-                        Circle().strokeBorder(Color.circleBorder, lineWidth: 0.6)
-                    }
-                }
-
+                .fill(Color.circleNormal)
             Image(systemName: icon)
-                .font(.system(size: isMain ? 26 : 20, weight: isMain ? .semibold : .medium))
+                .font(.system(size: 24, weight: .medium))
                 .foregroundColor(.white)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 
-// MARK: - Small Widget (2×2 Gemini — 메인 버튼 설정 가능)
-// 소형: widgetURL 하나로 전체 탭 처리, 메인 액션으로 이동
-struct SmallAddPrayerWidgetView: View {
-    let mainAction: QuickActionAppEnum
-    private let spacing: CGFloat = 8
-    private let padding: CGFloat = 10
+// MARK: - Small Widget (4개 고정 노드, 최대 크기)
+// Small은 단일 widgetURL → 기도추가로 이동
 
-    // 메인 액션 외 3개의 빠른 액션 (고정)
-    private let quickActions: [(icon: String, action: QuickActionAppEnum)] = [
-        ("person.fill", .waitStorage),
-        ("heart.fill", .favorites),
-        ("chart.bar.xaxis", .statistics)
-    ]
+struct SmallAddPrayerWidgetView: View {
+    private let padding: CGFloat = 4
+    private let spacing: CGFloat = 4
 
     var body: some View {
         VStack(spacing: spacing) {
             HStack(spacing: spacing) {
-                // 좌상단: 설정된 메인 액션 (강조)
-                GeminiCircle(icon: mainAction.icon, isMain: true)
-                // 우상단: Wait 보관소
-                GeminiCircle(icon: quickActions[0].icon, isMain: false)
+                NodeCircle(icon: "hands.clap.fill")
+                NodeCircle(icon: "chart.bar.xaxis")
             }
-            .frame(maxHeight: .infinity)
-
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
             HStack(spacing: spacing) {
-                // 좌하단: 즐겨찾기
-                GeminiCircle(icon: quickActions[1].icon, isMain: false)
-                // 우하단: 통계
-                GeminiCircle(icon: quickActions[2].icon, isMain: false)
+                NodeCircle(icon: "person.2.fill")
+                NodeCircle(icon: "list.bullet")
             }
-            .frame(maxHeight: .infinity)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .padding(padding)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .containerBackground(for: .widget) { Color.widgetBackground }
-        .widgetURL(URL(string: mainAction.urlString)!)
+        .widgetURL(URL(string: "prayanswer://add")!)
     }
 }
 
-// MARK: - Medium Widget (메인 큰 원 + 2×3 그리드)
-// 중형: 왼쪽 메인 Link + 오른쪽 3×2 빠른 액션 Link 그리드
-
-private struct MediumQuickCircle: View {
-    let icon: String
-    let urlString: String
-
-    var body: some View {
-        Link(destination: URL(string: urlString)!) {
-            GeminiCircle(icon: icon, isMain: false)
-        }
-    }
-}
+// MARK: - Medium Widget (좌: 2×2 노드 / 우: 보관소 기도 목록 넓게)
 
 struct MediumAddPrayerWidgetView: View {
-    let mainAction: QuickActionAppEnum
-    private let spacing: CGFloat = 8
-    private let padding: CGFloat = 10
+    let prayers: [PrayerWidgetData]
+    let selectedStorage: PrayerStorageAppEnum
 
-    // 메인 외 6개 빠른 액션
-    private let rightActions: [(icon: String, url: String)] = [
-        ("person.fill", "prayanswer://add?category=personal"),
-        ("house.fill", "prayanswer://add?category=family"),
-        ("heart.fill", "prayanswer://add?category=health"),
-        ("briefcase.fill", "prayanswer://add?category=work"),
-        ("clock.fill", "prayanswer://storage?type=wait"),
-        ("chart.bar.xaxis", "prayanswer://stats")
-    ]
+    // Small과 동일한 간격
+    private let nodeSpacing: CGFloat = 4
+    private let outerPadding: CGFloat = 4
+    private let dividerSpacing: CGFloat = 8
+
+    // 노드 영역 너비: Small 위젯 크기(~155pt)와 맞춤
+    private let nodeAreaWidth: CGFloat = 140
+
+    private var nodeItems: [(icon: String, url: String)] {
+        [
+            ("hands.clap.fill", "prayanswer://add"),
+            ("chart.bar.xaxis", "prayanswer://stats"),
+            ("person.2.fill",   "prayanswer://people"),
+            ("list.bullet",     selectedStorage.deepLinkURL.absoluteString)
+        ]
+    }
 
     var body: some View {
-        HStack(spacing: spacing) {
-            // 왼쪽: 메인 액션 (설정 가능)
-            Link(destination: URL(string: mainAction.urlString)!) {
-                GeminiCircle(icon: mainAction.icon, isMain: true)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-
-            // 오른쪽: 3×2 그리드
-            VStack(spacing: spacing) {
-                HStack(spacing: spacing) {
-                    MediumQuickCircle(icon: rightActions[0].icon, urlString: rightActions[0].url)
-                    MediumQuickCircle(icon: rightActions[1].icon, urlString: rightActions[1].url)
-                    MediumQuickCircle(icon: rightActions[2].icon, urlString: rightActions[2].url)
+        HStack(spacing: dividerSpacing) {
+            // 좌: 2×2 노드 (Small과 동일한 크기/간격)
+            VStack(spacing: nodeSpacing) {
+                HStack(spacing: nodeSpacing) {
+                    nodeLink(nodeItems[0])
+                    nodeLink(nodeItems[1])
                 }
                 .frame(maxHeight: .infinity)
-
-                HStack(spacing: spacing) {
-                    MediumQuickCircle(icon: rightActions[3].icon, urlString: rightActions[3].url)
-                    MediumQuickCircle(icon: rightActions[4].icon, urlString: rightActions[4].url)
-                    MediumQuickCircle(icon: rightActions[5].icon, urlString: rightActions[5].url)
+                HStack(spacing: nodeSpacing) {
+                    nodeLink(nodeItems[2])
+                    nodeLink(nodeItems[3])
                 }
                 .frame(maxHeight: .infinity)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .frame(width: nodeAreaWidth)
+            .frame(maxHeight: .infinity)
+
+            // 구분선
+            Rectangle()
+                .fill(Color(white: 0.30))
+                .frame(width: 0.5)
+
+            // 우: 보관소 기도 목록 (넓게)
+            prayerListSection
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
-        .padding(padding)
+        .padding(outerPadding)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .containerBackground(for: .widget) { Color.widgetBackground }
+    }
+
+    private func nodeLink(_ item: (icon: String, url: String)) -> some View {
+        Link(destination: URL(string: item.url)!) {
+            NodeCircle(icon: item.icon)
+        }
+    }
+
+    // MARK: Prayer List (우측)
+
+    private var prayerListSection: some View {
+        VStack(alignment: .leading, spacing: 5) {
+            storageHeaderView
+            if prayers.isEmpty {
+                Spacer()
+                Text("기도가 없습니다")
+                    .font(.caption)
+                    .foregroundColor(.white.opacity(0.35))
+                    .frame(maxWidth: .infinity, alignment: .center)
+                Spacer()
+            } else {
+                VStack(alignment: .leading, spacing: 4) {
+                    ForEach(prayers.prefix(4), id: \.id) { prayer in
+                        Link(destination: selectedStorage.deepLinkURL) {
+                            HStack(spacing: 6) {
+                                Circle()
+                                    .fill(storageAccentColor)
+                                    .frame(width: 5, height: 5)
+                                Text(prayer.title)
+                                    .font(.caption)
+                                    .fontWeight(.medium)
+                                    .lineLimit(1)
+                                    .foregroundColor(.white.opacity(0.9))
+                                Spacer(minLength: 0)
+                            }
+                            .padding(.vertical, 4)
+                            .padding(.horizontal, 7)
+                            .background(storageAccentColor.opacity(0.13))
+                            .cornerRadius(6)
+                        }
+                    }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            }
+        }
+    }
+
+    private var storageHeaderView: some View {
+        HStack(spacing: 5) {
+            Image(systemName: storageIcon)
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundColor(.white)
+                .frame(width: 18, height: 18)
+                .background(storageAccentColor)
+                .clipShape(Circle())
+            Text(storageLabel)
+                .font(.caption)
+                .fontWeight(.bold)
+                .foregroundColor(.white)
+            Spacer()
+            Text("\(prayers.count)개")
+                .font(.caption2)
+                .foregroundColor(.white.opacity(0.45))
+        }
+    }
+
+    private var storageIcon: String {
+        switch selectedStorage {
+        case .wait:      return "clock.fill"
+        case .yes:       return "checkmark.circle.fill"
+        case .no:        return "xmark.circle.fill"
+        case .favorites: return "heart.fill"
+        }
+    }
+
+    private var storageAccentColor: Color {
+        switch selectedStorage {
+        case .wait:      return .orange
+        case .yes:       return .green
+        case .no:        return .red
+        case .favorites: return .pink
+        }
+    }
+
+    private var storageLabel: String {
+        switch selectedStorage {
+        case .wait:      return "Wait"
+        case .yes:       return "Yes"
+        case .no:        return "No"
+        case .favorites: return "즐겨찾기"
+        }
     }
 }
 
@@ -169,11 +241,11 @@ struct AddPrayerWidgetEntryView: View {
     var body: some View {
         switch family {
         case .systemSmall:
-            SmallAddPrayerWidgetView(mainAction: entry.mainAction)
+            SmallAddPrayerWidgetView()
         case .systemMedium:
-            MediumAddPrayerWidgetView(mainAction: entry.mainAction)
+            MediumAddPrayerWidgetView(prayers: entry.prayers, selectedStorage: entry.selectedStorage)
         default:
-            SmallAddPrayerWidgetView(mainAction: entry.mainAction)
+            SmallAddPrayerWidgetView()
         }
     }
 }
@@ -187,8 +259,8 @@ struct AddPrayerWidget: Widget {
         AppIntentConfiguration(kind: kind, intent: AddPrayerWidgetIntent.self, provider: AddPrayerProvider()) { entry in
             AddPrayerWidgetEntryView(entry: entry)
         }
-        .configurationDisplayName("기도 추가")
-        .description("홈 화면에서 바로 새 기도를 추가하거나 원하는 화면으로 이동하세요.")
+        .configurationDisplayName("기도 위젯")
+        .description("기도를 추가하고 보관소의 기도를 확인하세요.")
         .supportedFamilies([.systemSmall, .systemMedium])
     }
 }

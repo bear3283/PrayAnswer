@@ -52,55 +52,11 @@ extension PrayerStorageAppEnum {
     }
 }
 
-// MARK: - Quick Action App Enum (기도 추가 위젯 메인 버튼용)
-enum QuickActionAppEnum: String, AppEnum {
-    case addPrayer = "add"
-    case waitStorage = "wait"
-    case yesStorage = "yes"
-    case noStorage = "no"
-    case favorites = "favorites"
-    case statistics = "stats"
-
-    static var typeDisplayRepresentation: TypeDisplayRepresentation = "빠른 액션"
-    static var caseDisplayRepresentations: [QuickActionAppEnum: DisplayRepresentation] = [
-        .addPrayer: "기도 추가",
-        .waitStorage: "Wait 보관소",
-        .yesStorage: "Yes 보관소",
-        .noStorage: "No 보관소",
-        .favorites: "즐겨찾기",
-        .statistics: "통계"
-    ]
-
-    var urlString: String {
-        switch self {
-        case .addPrayer: return "prayanswer://add"
-        case .waitStorage: return "prayanswer://storage?type=wait"
-        case .yesStorage: return "prayanswer://storage?type=yes"
-        case .noStorage: return "prayanswer://storage?type=no"
-        case .favorites: return "prayanswer://favorites"
-        case .statistics: return "prayanswer://stats"
-        }
-    }
-
-    var icon: String {
-        switch self {
-        case .addPrayer: return "hands.clap.fill"
-        case .waitStorage: return "clock.fill"
-        case .yesStorage: return "checkmark.circle.fill"
-        case .noStorage: return "xmark.circle.fill"
-        case .favorites: return "heart.fill"
-        case .statistics: return "chart.bar.xaxis"
-        }
-    }
-
-    var isMain: Bool { self == .addPrayer }
-}
-
-// MARK: - Add Prayer Widget Intent (기도 추가 위젯 설정용)
+// MARK: - Add Prayer Widget Intent (기도 위젯 설정용)
 struct AddPrayerWidgetIntent: WidgetConfigurationIntent {
-    static var title: LocalizedStringResource = "기도 추가 위젯 설정"
-    static var description = IntentDescription("메인 버튼의 동작을 설정하세요.")
+    static var title: LocalizedStringResource = "기도 위젯 설정"
+    static var description = IntentDescription("Medium 위젯에 표시할 기도 보관소를 선택하세요.")
 
-    @Parameter(title: "메인 버튼", default: .addPrayer)
-    var mainAction: QuickActionAppEnum
+    @Parameter(title: "보관소", default: .wait)
+    var storage: PrayerStorageAppEnum
 }

@@ -17,10 +17,19 @@ struct PrayAnswerApp: App {
     let modelContainer: ModelContainer
 
     init() {
+        let schema = Schema([Prayer.self, Attachment.self])
+        let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
         do {
-            modelContainer = try ModelContainer(for: Prayer.self, Attachment.self)
+            modelContainer = try ModelContainer(for: schema, configurations: config)
         } catch {
-            fatalError("Failed to create ModelContainer: \(error)")
+            // 스키마 마이그레이션 실패 시: 기존 저장소를 유지한 채 재시도
+            // (데이터 삭제 없이 앱을 안전하게 구동)
+            print("⚠️ ModelContainer 초기화 실패, 재시도: \(error)")
+            do {
+                modelContainer = try ModelContainer(for: schema)
+            } catch {
+                fatalError("ModelContainer 복구 실패: \(error)")
+            }
         }
     }
 
@@ -37,11 +46,6 @@ struct PrayAnswerApp: App {
                             modelContext: modelContainer.mainContext
                         )
                     }
-
-                    #if DEBUG
-                    // 스크린샷용 더미 데이터 1회 자동 생성
-                    generateScreenshotDataOnce()
-                    #endif
                 }
         }
         .modelContainer(modelContainer)

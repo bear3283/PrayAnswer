@@ -66,26 +66,6 @@ struct PrayAnswerApp: App {
         }
     }
 
-    #if DEBUG
-    /// 스크린샷용 더미 데이터 1회 자동 생성 (UserDefaults로 중복 실행 방지)
-    private func generateScreenshotDataOnce() {
-        let key = "ScreenshotDataGenerated_v1.10"
-        guard !UserDefaults.standard.bool(forKey: key) else {
-            print("📸 스크린샷 데이터 이미 생성됨 - 건너뜀")
-            return
-        }
-
-        ScreenshotDataGenerator.generateSampleData(in: modelContainer.mainContext)
-        UserDefaults.standard.set(true, forKey: key)
-        print("📸 스크린샷 데이터 1회 생성 완료")
-    }
-
-    /// 더미 데이터 재생성이 필요할 때 호출 (디버그용)
-    private func resetScreenshotDataFlag() {
-        UserDefaults.standard.removeObject(forKey: "ScreenshotDataGenerated_v1.7")
-        print("📸 스크린샷 데이터 플래그 초기화됨")
-    }
-    #endif
 }
 
 // MARK: - App Delegate

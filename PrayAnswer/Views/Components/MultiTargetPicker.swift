@@ -174,8 +174,10 @@ struct MultiTargetPicker: View {
             return
         }
 
-        // 새 entry 추가 (색상 인덱스는 현재 entries 수 기준)
-        let newColorIndex = entries.count
+        // 새 entry 추가 (사용 중이지 않은 색상 중 랜덤 선택)
+        let usedIndices = Set(entries.map { $0.colorIndex })
+        let available = (1..<PrayerDraftEntry.palette.count).filter { !usedIndices.contains($0) }
+        let newColorIndex = available.randomElement() ?? Int.random(in: 1..<PrayerDraftEntry.palette.count)
         let newEntry = PrayerDraftEntry(target: trimmed, colorIndex: newColorIndex)
         withAnimation(DesignSystem.Animation.quick) {
             entries.append(newEntry)

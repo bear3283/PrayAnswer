@@ -410,12 +410,7 @@ struct AddPrayerView: View {
                                 .focused($isContentFieldFocused)
                                 .overlay(
                                     RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.medium)
-                                        .stroke(
-                                            draftEntries[idx].content.isEmpty
-                                                ? Color.clear
-                                                : accentColor.opacity(0.7),
-                                            lineWidth: 2
-                                        )
+                                        .stroke(Color.clear, lineWidth: 0)
                                 )
 
                             if draftEntries[idx].content.isEmpty {
@@ -485,14 +480,14 @@ struct AddPrayerView: View {
             // 생성될 기도 제목 미리보기
             if !draftEntries[idx].content.isEmpty {
                 ModernCard(
-                    backgroundColor: accentColor.opacity(0.05),
+                    backgroundColor: DesignSystem.Colors.primary.opacity(0.05),
                     cornerRadius: DesignSystem.CornerRadius.medium,
                     shadowStyle: DesignSystem.Shadow.small
                 ) {
                     HStack(spacing: DesignSystem.Spacing.md) {
                         Image(systemName: "text.quote")
                             .font(.title3)
-                            .foregroundColor(accentColor)
+                            .foregroundColor(DesignSystem.Colors.primary)
 
                         VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
                             Text(L.Label.title)

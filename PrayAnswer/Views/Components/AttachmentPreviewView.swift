@@ -88,8 +88,9 @@ struct AttachmentContentView: View {
                 return
             }
             isLoading = true
+            let fileName = attachment.fileName
             image = await Task.detached(priority: .userInitiated) {
-                AttachmentStorageManager.shared.loadImage(fileName: attachment.fileName)
+                AttachmentStorageManager.shared.loadImage(fileName: fileName)
             }.value
             isLoading = false
         }

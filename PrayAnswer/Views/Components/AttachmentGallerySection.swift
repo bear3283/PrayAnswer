@@ -324,7 +324,7 @@ struct AttachmentGallerySection: View {
 
                             let pending = PendingAttachment(
                                 type: .image,
-                                thumbnail: thumbnail ?? uiImage,
+                                thumbnail: thumbnail,   // 썸네일 없으면 nil (전체 해상도 이미지 메모리에 보관 방지)
                                 fileName: saveResult.fileName,
                                 originalName: saveResult.originalName,
                                 fileSize: saveResult.fileSize

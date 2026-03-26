@@ -73,33 +73,6 @@ struct ContentView: View {
         }
     }
 
-    private func setupTabBarAppearance() {
-        let appearance = UITabBarAppearance()
-        appearance.configureWithOpaqueBackground()
-        appearance.backgroundColor = UIColor.systemBackground
-
-        // 선택되지 않은 탭 아이템
-        appearance.stackedLayoutAppearance.normal.iconColor = UIColor.systemGray
-        appearance.stackedLayoutAppearance.normal.titleTextAttributes = [
-            .foregroundColor: UIColor.systemGray,
-            .font: UIFont.systemFont(ofSize: 10, weight: .medium)
-        ]
-        appearance.stackedLayoutAppearance.normal.titlePositionAdjustment = UIOffset(horizontal: 0, vertical: 4)
-
-        // 선택된 탭 아이템
-        appearance.stackedLayoutAppearance.selected.iconColor = UIColor(DesignSystem.Colors.primary)
-        appearance.stackedLayoutAppearance.selected.titleTextAttributes = [
-            .foregroundColor: UIColor(DesignSystem.Colors.primary),
-            .font: UIFont.systemFont(ofSize: 10, weight: .semibold)
-        ]
-        appearance.stackedLayoutAppearance.selected.titlePositionAdjustment = UIOffset(horizontal: 0, vertical: 4)
-
-        // 부드러운 shadow 적용
-        appearance.shadowColor = UIColor.systemGray5
-
-        UITabBar.appearance().standardAppearance = appearance
-        UITabBar.appearance().scrollEdgeAppearance = appearance
-    }
 }
 
 // MARK: - iPhone Content View (TabView-based)

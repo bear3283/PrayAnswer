@@ -923,76 +923,71 @@ struct DDayFormSection: View {
             }
             .buttonStyle(PlainButtonStyle())
 
-            // 알림 토글 (날짜가 설정된 경우에만 표시)
+            // 알림 토글 (항상 표시, D-Day 미설정 시 비활성화)
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+                Toggle(isOn: Binding(
+                    get: { notificationEnabled },
+                    set: { newValue in
+                        notificationEnabled = newValue
+                        notificationSettings.isEnabled = newValue
+                    }
+                )) {
+                    HStack(spacing: DesignSystem.Spacing.sm) {
+                        Image(systemName: notificationEnabled ? "bell.fill" : "bell")
+                            .foregroundColor(notificationEnabled ? DesignSystem.Colors.primary : DesignSystem.Colors.secondaryText)
+
+                        Text(L.DDay.enableNotification)
+                            .font(DesignSystem.Typography.body)
+                            .foregroundColor(DesignSystem.Colors.primaryText)
+                    }
+                }
+                .tint(DesignSystem.Colors.primary)
+                .padding(DesignSystem.Spacing.md)
+                .background(DesignSystem.Colors.secondaryBackground)
+                .cornerRadius(DesignSystem.CornerRadius.medium)
+
+                // 알림 세부설정 버튼 (알림이 활성화된 경우에만 표시)
+                if notificationEnabled {
+                    Button(action: {
+                        showNotificationSettings = true
+                    }) {
+                        HStack {
+                            Image(systemName: "gearshape")
+                                .foregroundColor(DesignSystem.Colors.primary)
+
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(L.Notification.advancedSettings)
+                                    .font(DesignSystem.Typography.callout)
+                                    .foregroundColor(DesignSystem.Colors.primaryText)
+
+                                Text(notificationSettingsSummary)
+                                    .font(DesignSystem.Typography.caption2)
+                                    .foregroundColor(DesignSystem.Colors.secondaryText)
+                                    .lineLimit(1)
+                            }
+
+                            Spacer()
+
+                            Image(systemName: "chevron.right")
+                                .font(.caption)
+                                .foregroundColor(DesignSystem.Colors.tertiaryText)
+                        }
+                        .padding(DesignSystem.Spacing.md)
+                        .background(DesignSystem.Colors.primary.opacity(0.05))
+                        .cornerRadius(DesignSystem.CornerRadius.medium)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.medium)
+                                .stroke(DesignSystem.Colors.primary.opacity(0.2), lineWidth: 1)
+                        )
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+                }
+            }
+
+            // 캘린더 추가 토글 (D-day가 설정된 경우에만 표시)
             if targetDate != nil {
                 VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-                    Toggle(isOn: Binding(
-                        get: { notificationEnabled },
-                        set: { newValue in
-                            notificationEnabled = newValue
-                            notificationSettings.isEnabled = newValue
-                        }
-                    )) {
-                        HStack(spacing: DesignSystem.Spacing.sm) {
-                            Image(systemName: notificationEnabled ? "bell.fill" : "bell")
-                                .foregroundColor(notificationEnabled ? DesignSystem.Colors.primary : DesignSystem.Colors.secondaryText)
-
-                            Text(L.DDay.enableNotification)
-                                .font(DesignSystem.Typography.body)
-                                .foregroundColor(DesignSystem.Colors.primaryText)
-                        }
-                    }
-                    .tint(DesignSystem.Colors.primary)
-                    .padding(DesignSystem.Spacing.md)
-                    .background(DesignSystem.Colors.secondaryBackground)
-                    .cornerRadius(DesignSystem.CornerRadius.medium)
-
-                    // 알림 세부설정 버튼 (알림이 활성화된 경우에만 표시)
-                    if notificationEnabled {
-                        Button(action: {
-                            showNotificationSettings = true
-                        }) {
-                            HStack {
-                                Image(systemName: "gearshape")
-                                    .foregroundColor(DesignSystem.Colors.primary)
-
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(L.Notification.advancedSettings)
-                                        .font(DesignSystem.Typography.callout)
-                                        .foregroundColor(DesignSystem.Colors.primaryText)
-
-                                    Text(notificationSettingsSummary)
-                                        .font(DesignSystem.Typography.caption2)
-                                        .foregroundColor(DesignSystem.Colors.secondaryText)
-                                        .lineLimit(1)
-                                }
-
-                                Spacer()
-
-                                Image(systemName: "chevron.right")
-                                    .font(.caption)
-                                    .foregroundColor(DesignSystem.Colors.tertiaryText)
-                            }
-                            .padding(DesignSystem.Spacing.md)
-                            .background(DesignSystem.Colors.primary.opacity(0.05))
-                            .cornerRadius(DesignSystem.CornerRadius.medium)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.medium)
-                                    .stroke(DesignSystem.Colors.primary.opacity(0.2), lineWidth: 1)
-                            )
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                        .transition(.opacity.combined(with: .move(edge: .top)))
-                    }
-
-                    if notificationEnabled && !notificationSettings.isEnabled {
-                        Text(L.DDay.notificationDescription)
-                            .font(DesignSystem.Typography.caption2)
-                            .foregroundColor(DesignSystem.Colors.tertiaryText)
-                            .padding(.horizontal, DesignSystem.Spacing.sm)
-                    }
-
-                    // 캘린더 추가 토글 (알림 토글과 동일한 스타일)
                     Toggle(isOn: Binding(
                         get: { calendarEnabled },
                         set: { newValue in
@@ -1023,13 +1018,13 @@ struct DDayFormSection: View {
                     .padding(DesignSystem.Spacing.md)
                     .background(DesignSystem.Colors.secondaryBackground)
                     .cornerRadius(DesignSystem.CornerRadius.medium)
+
+                    // 기존 캘린더 버튼 (기도 편집/상세 화면에서만 표시)
+                    if prayer != nil {
+                        calendarButton
+                    }
                 }
                 .transition(.opacity.combined(with: .move(edge: .top)))
-
-                // 기존 캘린더 버튼 (기도 편집/상세 화면에서만 표시)
-                if prayer != nil {
-                    calendarButton
-                }
             }
         }
         .animation(DesignSystem.Animation.quick, value: targetDate != nil)
@@ -1044,7 +1039,7 @@ struct DDayFormSection: View {
             )
         }
         .sheet(isPresented: $showNotificationSettings) {
-            NotificationSettingsView(settings: $notificationSettings)
+            NotificationSettingsView(settings: $notificationSettings, hasTargetDate: targetDate != nil)
         }
         .alert(L.Calendar.permissionRequired, isPresented: $showCalendarPermissionAlert) {
             Button(L.Calendar.openSettings) {

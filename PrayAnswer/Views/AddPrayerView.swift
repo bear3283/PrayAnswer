@@ -7,13 +7,11 @@ struct AddPrayerView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.requestReview) private var requestReview
     @Binding var selectedTab: Int
-    @State private var content = ""
-    @State private var category: PrayerCategory = .personal
-    @State private var target = ""
-    @State private var targetDate: Date? = nil
-    @State private var notificationEnabled: Bool = false
-    @State private var notificationSettings: NotificationSettings = NotificationSettings()
-    @State private var calendarEnabled: Bool = false  // 캘린더 추가 토글
+
+    // MARK: - 다인원 기도 초안 상태
+    @State private var draftEntries: [PrayerDraftEntry] = [PrayerDraftEntry(target: "", colorIndex: 0)]
+    @State private var activeEntryIndex: Int = 0
+
     @State private var showingAlert = false
     @State private var showingSuccessAlert = false
     @State private var alertMessage = ""
@@ -25,13 +23,12 @@ struct AddPrayerView: View {
     @State private var showVoicePermissionAlert = false
     private var speechManager: SpeechRecognitionManager
 
-    // Attachments (복수 이미지 + PDF)
-    @State private var pendingAttachments: [PendingAttachment] = []
+    // Attachments: active entry에서 직접 관리 (OCR 팝업용 임시 상태)
     @State private var showOCRResult = false
     @State private var extractedText = ""
     @State private var isExtractingText = false
     @State private var scrollOffset: CGFloat = 0
-    @State private var scrollToTopTrigger: Bool = false  // 스크롤 맨 위로 트리거
+    @State private var scrollToTopTrigger: Bool = false
 
     // iPad: 외부에서 전달받은 녹음 텍스트 (사이드 패널에서)
     @Binding var externalRecordedText: String
@@ -47,6 +44,31 @@ struct AddPrayerView: View {
         prayerViewModel?.allTargets() ?? []
     }
 
+    // MARK: - Active Entry 헬퍼
+
+    /// 항상 유효한 범위 내의 안전한 인덱스
+    private var safeIdx: Int {
+        guard !draftEntries.isEmpty else { return 0 }
+        return min(activeEntryIndex, draftEntries.count - 1)
+    }
+
+    private var activeEntry: PrayerDraftEntry {
+        guard !draftEntries.isEmpty else { return PrayerDraftEntry() }
+        return draftEntries[safeIdx]
+    }
+
+    private var isMultiEntryMode: Bool { draftEntries.count > 1 }
+
+    private var saveableCount: Int { draftEntries.filter { $0.hasContent }.count }
+
+    private var saveButtonTitle: String {
+        saveableCount > 1 ? "\(saveableCount)명의 기도제목 저장" : L.Button.savePrayer
+    }
+
+    private var generatedTitle: String {
+        Prayer.generateTitle(from: activeEntry.target, category: activeEntry.category)
+    }
+
     var body: some View {
         Group {
             if horizontalSizeClass == .regular {
@@ -60,7 +82,8 @@ struct AddPrayerView: View {
         .onReceive(NotificationCenter.default.publisher(for: .widgetAddPrayerWithCategory)) { notification in
             if let catRaw = notification.userInfo?["category"] as? String,
                let requestedCategory = PrayerCategory(rawValue: catRaw) {
-                category = requestedCategory
+                guard !draftEntries.isEmpty else { return }
+                draftEntries[safeIdx].category = requestedCategory
                 scrollToTopTrigger.toggle()
             }
         }
@@ -81,14 +104,14 @@ struct AddPrayerView: View {
         .scrollDismissesKeyboard(.interactively)
         .background(DesignSystem.Colors.background)
         .onChange(of: externalRecordedText) { oldValue, newValue in
-            // 사이드 패널에서 녹음된 텍스트를 content에 추가
+            // 사이드 패널에서 녹음된 텍스트를 활성 entry의 content에 추가
             if !newValue.isEmpty {
-                if content.isEmpty {
-                    content = newValue
+                guard !draftEntries.isEmpty else { return }
+                if draftEntries[safeIdx].content.isEmpty {
+                    draftEntries[safeIdx].content = newValue
                 } else {
-                    content += "\n" + newValue
+                    draftEntries[safeIdx].content += "\n" + newValue
                 }
-                // 텍스트 사용 후 초기화
                 externalRecordedText = ""
             }
         }
@@ -96,6 +119,7 @@ struct AddPrayerView: View {
             if prayerViewModel == nil {
                 prayerViewModel = PrayerViewModel(modelContext: modelContext)
             }
+            initializeDraftIfNeeded()
             PrayerLogger.shared.viewDidAppear("AddPrayerView")
             PrayerLogger.shared.logMemoryUsage()
         }
@@ -113,10 +137,11 @@ struct AddPrayerView: View {
             VoiceRecordingOverlay(
                 speechManager: speechManager,
                 onUseText: { text in
-                    if content.isEmpty {
-                        content = text
+                    guard !draftEntries.isEmpty else { return }
+                    if draftEntries[safeIdx].content.isEmpty {
+                        draftEntries[safeIdx].content = text
                     } else {
-                        content += "\n" + text
+                        draftEntries[safeIdx].content += "\n" + text
                     }
                     showVoiceRecordingOverlay = false
                 },
@@ -229,6 +254,7 @@ struct AddPrayerView: View {
                 if prayerViewModel == nil {
                     prayerViewModel = PrayerViewModel(modelContext: modelContext)
                 }
+                initializeDraftIfNeeded()
                 PrayerLogger.shared.viewDidAppear("AddPrayerView")
                 PrayerLogger.shared.logMemoryUsage()
             }
@@ -259,10 +285,11 @@ struct AddPrayerView: View {
                 VoiceRecordingOverlay(
                     speechManager: speechManager,
                     onUseText: { text in
-                        if content.isEmpty {
-                            content = text
+                        guard !draftEntries.isEmpty else { return }
+                        if draftEntries[safeIdx].content.isEmpty {
+                            draftEntries[safeIdx].content = text
                         } else {
-                            content += "\n" + text
+                            draftEntries[safeIdx].content += "\n" + text
                         }
                         showVoiceRecordingOverlay = false
                     },
@@ -331,11 +358,15 @@ struct AddPrayerView: View {
 
     @ViewBuilder
     private var formContent: some View {
+        let accentColor = isMultiEntryMode ? activeEntry.color : DesignSystem.Colors.primary
+        let idx = safeIdx
+
         VStack(spacing: DesignSystem.Spacing.lg) {
-            // 기도대상자 선택
+            // 기도대상자 선택 (다인원 지원)
             ModernCard {
-                TargetPicker(
-                    selectedTarget: $target,
+                MultiTargetPicker(
+                    entries: $draftEntries,
+                    activeEntryIndex: $activeEntryIndex,
                     existingTargets: existingTargets
                 )
                 .padding(DesignSystem.Spacing.lg)
@@ -353,7 +384,6 @@ struct AddPrayerView: View {
 
                             Spacer()
 
-                            // iPad에서는 사이드 패널에서 녹음하므로 안내 표시
                             if horizontalSizeClass == .regular {
                                 HStack(spacing: DesignSystem.Spacing.xs) {
                                     Image(systemName: "arrow.left")
@@ -370,7 +400,7 @@ struct AddPrayerView: View {
                         }
 
                         ZStack(alignment: .topLeading) {
-                            TextEditor(text: $content)
+                            TextEditor(text: $draftEntries[idx].content)
                                 .font(DesignSystem.Typography.body)
                                 .padding(DesignSystem.Spacing.md)
                                 .scrollContentBackground(.hidden)
@@ -381,12 +411,14 @@ struct AddPrayerView: View {
                                 .overlay(
                                     RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.medium)
                                         .stroke(
-                                            content.isEmpty ? Color.clear : DesignSystem.Colors.primary.opacity(0.3),
-                                            lineWidth: 1
+                                            draftEntries[idx].content.isEmpty
+                                                ? Color.clear
+                                                : accentColor.opacity(0.7),
+                                            lineWidth: 2
                                         )
                                 )
 
-                            if content.isEmpty {
+                            if draftEntries[idx].content.isEmpty {
                                 Text(L.Placeholder.content)
                                     .font(DesignSystem.Typography.body)
                                     .foregroundColor(DesignSystem.Colors.tertiaryText)
@@ -395,15 +427,19 @@ struct AddPrayerView: View {
                                     .allowsHitTesting(false)
                             }
                         }
-                        .animation(DesignSystem.Animation.quick, value: content.isEmpty)
+                        .animation(DesignSystem.Animation.quick, value: draftEntries[idx].content.isEmpty)
                     }
                 }
                 .padding(DesignSystem.Spacing.lg)
             }
+            .overlay(
+                RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.large)
+                    .stroke(isMultiEntryMode ? accentColor.opacity(0.55) : Color.clear, lineWidth: 3)
+            )
 
-            // 첨부 파일 섹션 (복수 이미지 + PDF)
+            // 첨부 파일 섹션
             AttachmentGallerySection(
-                pendingAttachments: $pendingAttachments,
+                pendingAttachments: $draftEntries[idx].pendingAttachments,
                 readOnly: false,
                 maxAttachments: 10,
                 onExtractText: { image in
@@ -413,39 +449,50 @@ struct AddPrayerView: View {
                     extractTextFromAllImages()
                 }
             )
+            .overlay(
+                RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.large)
+                    .stroke(isMultiEntryMode ? accentColor.opacity(0.55) : Color.clear, lineWidth: 3)
+            )
 
             // 분류 섹션
-            ModernFormSection(title: L.Label.classification) {
-                VStack(spacing: DesignSystem.Spacing.md) {
-                    ModernCategoryPicker(
-                        title: L.Label.category,
-                        selection: $category
-                    )
-                }
+            ModernCard {
+                ModernCategoryPicker(
+                    title: L.Label.category,
+                    selection: $draftEntries[idx].category
+                )
+                .padding(DesignSystem.Spacing.lg)
             }
+            .overlay(
+                RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.large)
+                    .stroke(isMultiEntryMode ? accentColor.opacity(0.55) : Color.clear, lineWidth: 3)
+            )
 
             // D-Day 섹션
             ModernCard {
                 DDayFormSection(
-                    targetDate: $targetDate,
-                    notificationEnabled: $notificationEnabled,
-                    notificationSettings: $notificationSettings,
-                    calendarEnabled: $calendarEnabled
+                    targetDate: $draftEntries[idx].targetDate,
+                    notificationEnabled: $draftEntries[idx].notificationEnabled,
+                    notificationSettings: $draftEntries[idx].notificationSettings,
+                    calendarEnabled: $draftEntries[idx].calendarEnabled
                 )
                 .padding(DesignSystem.Spacing.lg)
             }
+            .overlay(
+                RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.large)
+                    .stroke(isMultiEntryMode ? accentColor.opacity(0.55) : Color.clear, lineWidth: 3)
+            )
 
             // 생성될 기도 제목 미리보기
-            if !content.isEmpty {
+            if !draftEntries[idx].content.isEmpty {
                 ModernCard(
-                    backgroundColor: DesignSystem.Colors.primary.opacity(0.05),
+                    backgroundColor: accentColor.opacity(0.05),
                     cornerRadius: DesignSystem.CornerRadius.medium,
                     shadowStyle: DesignSystem.Shadow.small
                 ) {
                     HStack(spacing: DesignSystem.Spacing.md) {
                         Image(systemName: "text.quote")
                             .font(.title3)
-                            .foregroundColor(DesignSystem.Colors.primary)
+                            .foregroundColor(accentColor)
 
                         VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
                             Text(L.Label.title)
@@ -491,15 +538,15 @@ struct AddPrayerView: View {
 
             // 저장 버튼
             ModernButton(
-                title: L.Button.savePrayer,
+                title: saveButtonTitle,
                 style: .primary,
                 size: .large
             ) {
-                savePrayer()
+                savePrayers()
             }
-            .disabled(content.isEmpty)
-            .opacity(content.isEmpty ? 0.6 : 1.0)
-            .animation(.easeInOut(duration: 0.2), value: content.isEmpty)
+            .disabled(saveableCount == 0)
+            .opacity(saveableCount == 0 ? 0.6 : 1.0)
+            .animation(.easeInOut(duration: 0.2), value: saveableCount)
         }
         .padding(.horizontal, DesignSystem.Spacing.xl)
     }
@@ -523,107 +570,112 @@ struct AddPrayerView: View {
         }
     }
 
-    // 자동 생성된 제목
-    private var generatedTitle: String {
-        Prayer.generateTitle(from: target, category: category)
+    // MARK: - 초기화
+
+    private func initializeDraftIfNeeded() {
+        guard draftEntries.isEmpty else { return }
+        draftEntries = [PrayerDraftEntry(target: "", colorIndex: 0)]
+        activeEntryIndex = 0
     }
 
-    private func savePrayer() {
-        // 입력 검증
-        guard !content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+    // MARK: - 저장
+
+    private func savePrayers() {
+        let entriesToSave = draftEntries.filter { $0.hasContent }
+
+        guard !entriesToSave.isEmpty else {
             alertMessage = L.Validation.contentRequired
             showingAlert = true
             return
         }
 
-        // 길이 검증
-        if content.count > 2000 {
-            alertMessage = L.Error.contentTooLong
-            showingAlert = true
-            return
-        }
-
-        // PrayerViewModel을 사용하여 기도 저장
-        guard let viewModel = prayerViewModel else {
-            alertMessage = L.Error.generic
-            showingAlert = true
-            return
+        for entry in entriesToSave {
+            if entry.content.count > 2000 {
+                alertMessage = L.Error.contentTooLong
+                showingAlert = true
+                return
+            }
         }
 
         do {
-            // 알림 설정 동기화
-            var finalSettings = notificationSettings
-            finalSettings.isEnabled = notificationEnabled
+            let context = modelContext
 
-            // 기도 저장 (제목은 자동 생성)
-            // 첫 번째 이미지 파일명을 레거시 호환용으로 저장
-            let firstImageFileName = pendingAttachments.first(where: { $0.type == .image })?.fileName
+            // 1단계: 모든 Prayer와 Attachment를 context에 insert (save 없음)
+            var insertedPairs: [(Prayer, PrayerDraftEntry)] = []
 
-            let prayer = try viewModel.addPrayer(
-                title: generatedTitle,
-                content: content.trimmingCharacters(in: .whitespacesAndNewlines),
-                category: category,
-                target: target.trimmingCharacters(in: .whitespacesAndNewlines),
-                targetDate: targetDate,
-                notificationEnabled: notificationEnabled,
-                notificationSettings: finalSettings,
-                imageFileName: firstImageFileName
-            )
+            for entry in entriesToSave {
+                let title = Prayer.generateTitle(from: entry.target, category: entry.category)
+                let firstImageFileName = entry.pendingAttachments.first(where: { $0.type == .image })?.fileName
 
-            // 첨부 파일 추가 (Attachment 모델로 변환)
-            for (index, pending) in pendingAttachments.enumerated() {
-                let attachment = Attachment(
-                    fileName: pending.fileName,
-                    originalName: pending.originalName,
-                    type: pending.type,
-                    fileSize: pending.fileSize,
-                    order: index
+                var finalSettings = entry.notificationSettings
+                finalSettings.isEnabled = entry.notificationEnabled
+
+                let prayer = Prayer(
+                    title: title,
+                    content: entry.content.trimmingCharacters(in: .whitespacesAndNewlines),
+                    category: entry.category,
+                    target: entry.target.trimmingCharacters(in: .whitespacesAndNewlines),
+                    targetDate: entry.targetDate,
+                    notificationEnabled: entry.notificationEnabled,
+                    notificationSettings: finalSettings,
+                    imageFileName: firstImageFileName
                 )
-                prayer.addAttachment(attachment)
+                modelContext.insert(prayer)
+
+                for (index, pending) in entry.pendingAttachments.enumerated() {
+                    let attachment = Attachment(
+                        fileName: pending.fileName,
+                        originalName: pending.originalName,
+                        type: pending.type,
+                        fileSize: pending.fileSize,
+                        order: index
+                    )
+                    prayer.addAttachment(attachment)
+                }
+
+                insertedPairs.append((prayer, entry))
             }
 
-            // 변경사항 저장
+            // 2단계: 모든 항목을 한 번에 저장
             try modelContext.save()
 
-            // D-Day 알림 스케줄링
-            if notificationEnabled, let date = targetDate {
-                NotificationManager.shared.scheduleNotifications(for: prayer, targetDate: date)
-            }
+            // 3단계: 저장 완료 후 알림/캘린더/로그 처리
+            for (prayer, entry) in insertedPairs {
+                PrayerLogger.shared.prayerCreated(title: prayer.title)
 
-            // 캘린더 이벤트 추가 (토글이 활성화된 경우에만)
-            if calendarEnabled, let date = targetDate {
-                #if DEBUG
-                print("📅 캘린더 이벤트 추가 시작: date=\(date)")
-                #endif
-                let context = modelContext
-                CalendarManager.shared.addDDayEvent(for: prayer, targetDate: date) { result in
-                    DispatchQueue.main.async {
-                        switch result {
-                        case .success(let eventId):
-                            prayer.updateCalendarEventId(eventId)
-                            try? context.save()
-                            PrayerLogger.shared.userAction("캘린더 이벤트 추가 성공: \(eventId)")
-                        case .failure(let error):
-                            PrayerLogger.shared.dataOperationFailed("캘린더 이벤트 추가", error: error)
+                if entry.notificationEnabled {
+                    if let date = entry.targetDate {
+                        NotificationManager.shared.scheduleNotifications(for: prayer, targetDate: date)
+                    } else {
+                        NotificationManager.shared.scheduleRecurringNotifications(for: prayer, settings: prayer.notificationSettings)
+                    }
+                }
+
+                if entry.calendarEnabled, let date = entry.targetDate {
+                    #if DEBUG
+                    print("📅 캘린더 이벤트 추가 시작: date=\(date)")
+                    #endif
+                    CalendarManager.shared.addDDayEvent(for: prayer, targetDate: date) { result in
+                        DispatchQueue.main.async {
+                            switch result {
+                            case .success(let eventId):
+                                prayer.updateCalendarEventId(eventId)
+                                try? context.save()
+                                PrayerLogger.shared.userAction("캘린더 이벤트 추가 성공: \(eventId)")
+                            case .failure(let error):
+                                PrayerLogger.shared.dataOperationFailed("캘린더 이벤트 추가", error: error)
+                            }
                         }
                     }
                 }
             }
 
-            PrayerLogger.shared.userAction("기도 저장")
-
-            // 위젯 데이터 업데이트
+            PrayerLogger.shared.userAction("기도 저장 (\(insertedPairs.count)명)")
             updateWidgetData()
-
-            // 폼 초기화
             resetForm()
-
-            // 성공 메시지 표시
             showingSuccessAlert = true
 
-            // 앱스토어 리뷰 요청 (기도 생성 마일스톤 체크)
             if ReviewRequestManager.shared.recordPrayerCreated() {
-                // 약간의 딜레이 후 리뷰 요청 (성공 알림이 닫힌 후)
                 DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
                     requestReview()
                     ReviewRequestManager.shared.didRequestReview()
@@ -638,19 +690,10 @@ struct AddPrayerView: View {
     }
 
     private func resetForm() {
-        content = ""
-        category = .personal
-        target = ""
-        targetDate = nil
-        notificationEnabled = false
-        notificationSettings = NotificationSettings()
-        calendarEnabled = false  // 캘린더 토글 초기화
-
-        // 첨부 파일 상태 초기화 (파일은 이미 저장되었으므로 삭제하지 않음)
-        pendingAttachments = []
+        draftEntries = [PrayerDraftEntry(target: "", colorIndex: 0)]
+        activeEntryIndex = 0
         extractedText = ""
 
-        // 폼 초기화 후 내용 필드에 다시 포커스
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
             isContentFieldFocused = true
         }
@@ -691,18 +734,20 @@ struct AddPrayerView: View {
     }
 
     private func applyExtractedText(_ text: String) {
-        if content.isEmpty {
-            content = text
+        guard !draftEntries.isEmpty else { return }
+        let idx = safeIdx
+        if draftEntries[idx].content.isEmpty {
+            draftEntries[idx].content = text
         } else {
-            content += "\n\n" + text
+            draftEntries[idx].content += "\n\n" + text
         }
     }
 
     // MARK: - Batch OCR
 
     private func extractTextFromAllImages() {
-        // 모든 이미지 첨부 파일에서 이미지 로드
-        let images = pendingAttachments
+        guard !draftEntries.isEmpty else { return }
+        let images = draftEntries[safeIdx].pendingAttachments
             .filter { $0.type == .image }
             .compactMap { AttachmentStorageManager.shared.loadImage(fileName: $0.fileName) }
 

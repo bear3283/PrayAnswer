@@ -5,7 +5,7 @@ import StoreKit
 struct PrayerDetailView: View {
     let prayer: Prayer
     @Environment(\.modelContext) private var modelContext
-    @Environment(\.presentationMode) var presentationMode
+    @Environment(\.dismiss) private var dismiss
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.requestReview) private var requestReview
 
@@ -698,7 +698,7 @@ struct PrayerDetailView: View {
         do {
             try viewModel.deletePrayer(prayer)
             PrayerLogger.shared.userAction("기도 삭제")
-            presentationMode.wrappedValue.dismiss()
+            dismiss()
         } catch {
             showError(L.Error.deletePrayerFailed)
             PrayerLogger.shared.prayerOperationFailed("삭제", error: error)

@@ -144,8 +144,9 @@ final class SpeechRecognitionManager: NSObject {
             }
         }
 
-        // 오디오 입력 노드 설정
+        // 오디오 입력 노드 설정 (기존 탭이 있으면 먼저 제거 - 빠른 재시작 시 크래시 방지)
         let inputNode = audioEngine.inputNode
+        inputNode.removeTap(onBus: 0)
         let recordingFormat = inputNode.outputFormat(forBus: 0)
 
         inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { [weak self] buffer, _ in

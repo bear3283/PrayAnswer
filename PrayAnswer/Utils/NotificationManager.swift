@@ -335,6 +335,60 @@ final class NotificationManager {
         return UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: false)
     }
 
+    // MARK: - Recurring Notifications (D-Day 없는 경우)
+
+    /// D-Day 없이 시간+반복 설정만으로 무기한 반복 알림 스케줄링
+    func scheduleRecurringNotifications(for prayer: Prayer, settings: NotificationSettings) {
+        cancelAllNotifications(for: prayer)
+        guard settings.isEnabled else { return }
+
+        let weekdaysToNotify: [Int]
+        switch settings.repeatType {
+        case .none, .daily:
+            weekdaysToNotify = [1, 2, 3, 4, 5, 6, 7]
+        case .weekdays:
+            weekdaysToNotify = [2, 3, 4, 5, 6]
+        case .weekly:
+            let currentWeekday = Calendar.current.component(.weekday, from: Date())
+            weekdaysToNotify = [currentWeekday]
+        case .custom:
+            weekdaysToNotify = settings.customWeekdays.selectedDays
+        }
+
+        guard !weekdaysToNotify.isEmpty else { return }
+
+        for weekday in weekdaysToNotify {
+            var components = DateComponents()
+            components.weekday = weekday
+            components.hour = settings.notificationHour
+            components.minute = settings.notificationMinute
+
+            let identifier = "prayer_\(prayer.persistentModelID.hashValue)_recurring_wd\(weekday)"
+            let content = createDailyNotificationContent(for: prayer)
+            let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: true)
+            let request = UNNotificationRequest(identifier: identifier, content: content, trigger: trigger)
+
+            notificationCenter.add(request) { error in
+                #if DEBUG
+                if let error = error {
+                    print("반복 알림 등록 오류 (wd\(weekday)): \(error.localizedDescription)")
+                } else {
+                    print("반복 알림 등록 성공: \(identifier)")
+                }
+                #endif
+            }
+        }
+    }
+
+    private func createDailyNotificationContent(for prayer: Prayer) -> UNMutableNotificationContent {
+        let content = UNMutableNotificationContent()
+        let targetName = prayer.target.isEmpty ? L.Target.myself : prayer.target
+        content.title = L.DDay.notificationTitle
+        content.body = "\(targetName)을(를) 위해 기도할 시간입니다 🙏"
+        content.sound = .default
+        return content
+    }
+
     // MARK: - Debugging
 
     /// 스케줄된 알림 목록 출력 (디버깅용)
@@ -353,12 +407,16 @@ final class NotificationManager {
 // MARK: - Prayer Extension for Notifications
 
 extension Prayer {
-    /// D-Day 알림 스케줄링/취소 업데이트
+    /// 알림 스케줄링/취소 업데이트 (D-Day 유무에 따라 방식 선택)
     func updateNotificationSchedule() {
-        if notificationEnabled, let targetDate = targetDate {
-            NotificationManager.shared.scheduleNotifications(for: self, targetDate: targetDate)
+        if notificationEnabled {
+            if let targetDate = targetDate {
+                NotificationManager.shared.scheduleNotifications(for: self, targetDate: targetDate)
+            } else {
+                NotificationManager.shared.scheduleRecurringNotifications(for: self, settings: notificationSettings)
+            }
         } else {
-            NotificationManager.shared.cancelNotifications(for: self)
+            NotificationManager.shared.cancelAllNotifications(for: self)
         }
     }
 }

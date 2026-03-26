@@ -314,20 +314,12 @@ final class PrayerViewModel: ObservableObject {
     
     // MARK: - Widget Data Update
     
-    // 위젯 데이터 업데이트 (백그라운드 큐에서 실행하여 성능 최적화)
+    // 위젯 데이터 업데이트 (ModelContext는 메인 스레드에서만 접근)
     private func updateWidgetData() {
-        DispatchQueue.global(qos: .utility).async { [weak self] in
-            guard let self = self, self.checkIfValid() else { return }
-            
-            // 모든 즐겨찾기 기도들을 가져와서 보관소별로 분류
-            let allFavorites = self.favoritePrayers()
-            let favoritesByStorage = Dictionary(grouping: allFavorites) { $0.storage }
-            
-            // 메인 큐로 돌아와서 UI 업데이트
-            DispatchQueue.main.async {
-                // 위젯 데이터 매니저를 통해 데이터 공유
-                WidgetDataManager.shared.shareFavoritePrayersByStorage(favoritesByStorage)
-            }
-        }
+        guard checkIfValid() else { return }
+
+        let allFavorites = favoritePrayers()
+        let favoritesByStorage = Dictionary(grouping: allFavorites) { $0.storage }
+        WidgetDataManager.shared.shareFavoritePrayersByStorage(favoritesByStorage)
     }
 }

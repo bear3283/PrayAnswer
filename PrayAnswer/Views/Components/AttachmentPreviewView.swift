@@ -82,6 +82,17 @@ struct AttachmentContentView: View {
                 pdfContentView
             }
         }
+        .task(id: attachment.fileName) {
+            guard attachment.isImage else {
+                isLoading = false
+                return
+            }
+            isLoading = true
+            image = await Task.detached(priority: .userInitiated) {
+                AttachmentStorageManager.shared.loadImage(fileName: attachment.fileName)
+            }.value
+            isLoading = false
+        }
     }
 
     // MARK: - Image Content
@@ -100,6 +111,7 @@ struct AttachmentContentView: View {
     }
 
     // MARK: - PDF Content
+
 
     private var pdfContentView: some View {
         PDFKitView(fileName: attachment.fileName)

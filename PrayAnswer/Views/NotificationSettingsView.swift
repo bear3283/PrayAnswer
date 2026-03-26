@@ -3,32 +3,34 @@ import SwiftUI
 /// 알림 세부설정 화면
 struct NotificationSettingsView: View {
     @Binding var settings: NotificationSettings
+    /// D-Day(목표 날짜)가 설정되어 있는지 여부
+    let hasTargetDate: Bool
     @Environment(\.presentationMode) var presentationMode
 
     @State private var showTimePicker = false
-    @State private var showWeekdayPicker = false
     @State private var tempTime = Date()
+
+    init(settings: Binding<NotificationSettings>, hasTargetDate: Bool = false) {
+        self._settings = settings
+        self.hasTargetDate = hasTargetDate
+    }
 
     var body: some View {
         NavigationView {
             ScrollView {
                 VStack(spacing: DesignSystem.Spacing.xl) {
-                    // 알림 활성화 토글
-                    enableToggleSection
-
-                    if settings.isEnabled {
-                        // 알림 시간 설정
-                        timeSettingsSection
-
-                        // D-Day 알림 일정
+                    if hasTargetDate {
+                        // D-Day 있을 때: 일정설정 → 시간설정 → 반복설정
                         reminderDaysSection
-
-                        // 반복 설정
+                        timeSettingsSection
                         repeatSettingsSection
-
-                        // 미리보기
-                        previewSection
+                    } else {
+                        // D-Day 없을 때: 시간설정 → 반복설정
+                        timeSettingsSection
+                        repeatSettingsSection
                     }
+
+                    previewSection
                 }
                 .padding(.horizontal, DesignSystem.Spacing.xl)
                 .padding(.vertical, DesignSystem.Spacing.lg)
@@ -37,13 +39,6 @@ struct NotificationSettingsView: View {
             .navigationTitle(L.Notification.settings)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button(L.Button.cancel) {
-                        presentationMode.wrappedValue.dismiss()
-                    }
-                    .foregroundColor(DesignSystem.Colors.secondaryText)
-                }
-
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(L.Button.done) {
                         presentationMode.wrappedValue.dismiss()
@@ -53,34 +48,6 @@ struct NotificationSettingsView: View {
                 }
             }
         }
-    }
-
-    // MARK: - Enable Toggle Section
-
-    private var enableToggleSection: some View {
-        ModernCard {
-            Toggle(isOn: $settings.isEnabled) {
-                HStack(spacing: DesignSystem.Spacing.md) {
-                    Image(systemName: settings.isEnabled ? "bell.fill" : "bell.slash")
-                        .font(.title2)
-                        .foregroundColor(settings.isEnabled ? DesignSystem.Colors.primary : DesignSystem.Colors.secondaryText)
-                        .frame(width: 32)
-
-                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
-                        Text(L.DDay.enableNotification)
-                            .font(DesignSystem.Typography.headline)
-                            .foregroundColor(DesignSystem.Colors.primaryText)
-
-                        Text(settings.isEnabled ? L.Notification.preview : L.DDay.notificationDescription)
-                            .font(DesignSystem.Typography.caption)
-                            .foregroundColor(DesignSystem.Colors.secondaryText)
-                    }
-                }
-            }
-            .tint(DesignSystem.Colors.primary)
-            .padding(DesignSystem.Spacing.lg)
-        }
-        .animation(DesignSystem.Animation.standard, value: settings.isEnabled)
     }
 
     // MARK: - Time Settings Section
@@ -270,12 +237,14 @@ struct NotificationSettingsView: View {
                         value: settings.timeDisplayText
                     )
 
-                    // 일정 미리보기
-                    PreviewRow(
-                        icon: "calendar",
-                        title: L.Notification.reminderDays,
-                        value: settings.reminderDaysDisplayText
-                    )
+                    // 일정 미리보기 (D-Day 있을 때만)
+                    if hasTargetDate {
+                        PreviewRow(
+                            icon: "calendar",
+                            title: L.Notification.reminderDays,
+                            value: settings.reminderDaysDisplayText
+                        )
+                    }
 
                     // 반복 미리보기
                     PreviewRow(

@@ -63,6 +63,9 @@ final class Prayer {
     /// 첨부 파일 목록 (이미지, PDF)
     @Relationship(deleteRule: .cascade) var attachments: [Attachment] = []
 
+    /// 속한 컬렉션 (폴더). nil이면 미분류
+    var collection: PrayerCollection?
+
     // 기본 이니셜라이저 (위젯에서도 사용 가능)
     init(title: String, content: String, category: PrayerCategory = .personal, target: String = "", storage: PrayerStorage = .wait, isFavorite: Bool = false, targetDate: Date? = nil, notificationEnabled: Bool = false, notificationSettingsData: Data? = nil, imageFileName: String? = nil) {
         self.title = title

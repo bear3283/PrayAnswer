@@ -17,7 +17,7 @@ struct PrayAnswerApp: App {
     let modelContainer: ModelContainer
 
     init() {
-        let schema = Schema([Prayer.self, Attachment.self])
+        let schema = Schema([Prayer.self, Attachment.self, PrayerCollection.self, PrayerHabit.self, PrayerHabitLog.self])
         let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
         do {
             modelContainer = try ModelContainer(for: schema, configurations: config)

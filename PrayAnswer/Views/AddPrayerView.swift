@@ -12,6 +12,11 @@ struct AddPrayerView: View {
     @State private var draftEntries: [PrayerDraftEntry] = [PrayerDraftEntry(target: "", colorIndex: 0)]
     @State private var activeEntryIndex: Int = 0
 
+    // 컬렉션 (모든 entry에 공통 적용)
+    @Query(sort: \PrayerCollection.sortOrder) private var collections: [PrayerCollection]
+    @State private var selectedCollection: PrayerCollection? = nil
+    @State private var showCollectionPicker = false
+
     @State private var showingAlert = false
     @State private var showingSuccessAlert = false
     @State private var alertMessage = ""
@@ -477,6 +482,51 @@ struct AddPrayerView: View {
                     .stroke(isMultiEntryMode ? accentColor.opacity(0.55) : Color.clear, lineWidth: 3)
             )
 
+            // 컬렉션 선택 섹션
+            if !collections.isEmpty {
+                ModernCard {
+                    Button {
+                        showCollectionPicker = true
+                    } label: {
+                        HStack(spacing: DesignSystem.Spacing.md) {
+                            if let col = selectedCollection {
+                                ZStack {
+                                    Circle()
+                                        .fill(col.color.opacity(0.2))
+                                        .frame(width: 32, height: 32)
+                                    Image(systemName: col.icon)
+                                        .font(.system(size: 14))
+                                        .foregroundColor(col.color)
+                                }
+                                Text(col.name)
+                                    .font(DesignSystem.Typography.callout)
+                                    .foregroundColor(DesignSystem.Colors.primaryText)
+                            } else {
+                                Image(systemName: "folder")
+                                    .font(.system(size: 16))
+                                    .foregroundColor(DesignSystem.Colors.tertiaryText)
+                                    .frame(width: 32)
+                                Text(L.Collection.none)
+                                    .font(DesignSystem.Typography.callout)
+                                    .foregroundColor(DesignSystem.Colors.tertiaryText)
+                            }
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.caption)
+                                .foregroundColor(DesignSystem.Colors.tertiaryText)
+                        }
+                        .padding(DesignSystem.Spacing.md)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
+                .sheet(isPresented: $showCollectionPicker) {
+                    CollectionPickerSheet(
+                        collections: collections,
+                        selected: $selectedCollection
+                    )
+                }
+            }
+
             // 생성될 기도 제목 미리보기
             if !draftEntries[idx].content.isEmpty {
                 ModernCard(
@@ -615,6 +665,7 @@ struct AddPrayerView: View {
                     notificationSettings: finalSettings,
                     imageFileName: firstImageFileName
                 )
+                prayer.collection = selectedCollection
                 modelContext.insert(prayer)
 
                 for (index, pending) in entry.pendingAttachments.enumerated() {
@@ -687,6 +738,7 @@ struct AddPrayerView: View {
     private func resetForm() {
         draftEntries = [PrayerDraftEntry(target: "", colorIndex: 0)]
         activeEntryIndex = 0
+        selectedCollection = nil
         extractedText = ""
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {

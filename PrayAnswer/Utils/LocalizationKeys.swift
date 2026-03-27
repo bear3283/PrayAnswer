@@ -556,6 +556,63 @@ enum L {
             String(format: NSLocalizedString("attachment.count_format", comment: "Attachment count format"), count)
         }
     }
+
+    // MARK: - Collection (폴더)
+    enum Collection {
+        static let navTitle = NSLocalizedString("collection.nav_title", value: "컬렉션", comment: "Collection nav title")
+        static let newCollection = NSLocalizedString("collection.new", value: "새 컬렉션", comment: "New collection button")
+        static let editCollection = NSLocalizedString("collection.edit", value: "컬렉션 편집", comment: "Edit collection")
+        static let namePlaceholder = NSLocalizedString("collection.name_placeholder", value: "컬렉션 이름", comment: "Collection name placeholder")
+        static let iconLabel = NSLocalizedString("collection.icon_label", value: "아이콘", comment: "Icon label")
+        static let colorLabel = NSLocalizedString("collection.color_label", value: "색상", comment: "Color label")
+        static let none = NSLocalizedString("collection.none", value: "컬렉션 없음", comment: "No collection")
+        static let selectCollection = NSLocalizedString("collection.select", value: "컬렉션 선택", comment: "Select collection")
+        static let deleteConfirm = NSLocalizedString("collection.delete_confirm", value: "컬렉션을 삭제하시겠습니까? 기도제목은 삭제되지 않습니다.", comment: "Delete collection confirmation")
+        static let emptyTitle = NSLocalizedString("collection.empty_title", value: "컬렉션이 없어요", comment: "Empty collections title")
+        static let emptyDescription = NSLocalizedString("collection.empty_description", value: "기도제목을 폴더처럼 묶어\n관리할 수 있어요", comment: "Empty collections description")
+
+        static func prayerCount(_ count: Int) -> String {
+            String(format: NSLocalizedString("collection.prayer_count", value: "%d개의 기도", comment: "Prayer count in collection"), count)
+        }
+    }
+
+    // MARK: - Habit (기도 습관)
+    enum Habit {
+        static let navTitle = NSLocalizedString("habit.nav_title", value: "기도 습관", comment: "Habit nav title")
+        static let newHabit = NSLocalizedString("habit.new", value: "새 습관", comment: "New habit button")
+        static let editHabit = NSLocalizedString("habit.edit", value: "습관 편집", comment: "Edit habit")
+        static let labelPlaceholder = NSLocalizedString("habit.label_placeholder", value: "예: 아침 기도, 저녁 기도", comment: "Habit label placeholder")
+        static let timeSectionTitle = NSLocalizedString("habit.time_section", value: "기도 시간", comment: "Time section title")
+        static let daysSectionTitle = NSLocalizedString("habit.days_section", value: "반복 요일", comment: "Days section title")
+        static let notificationLabel = NSLocalizedString("habit.notification", value: "알림", comment: "Notification toggle label")
+        static let checkInButton = NSLocalizedString("habit.check_in", value: "기도 완료", comment: "Check-in button title")
+        static let checkedIn = NSLocalizedString("habit.checked_in", value: "완료됨", comment: "Checked in status")
+        static let streakLabel = NSLocalizedString("habit.streak", value: "연속", comment: "Streak label")
+        static let streakDays = NSLocalizedString("habit.streak_days", value: "일", comment: "Streak days suffix")
+        static let totalCount = NSLocalizedString("habit.total_count", value: "총 완료", comment: "Total count label")
+        static let thisWeek = NSLocalizedString("habit.this_week", value: "이번 주", comment: "This week label")
+        static let todaySection = NSLocalizedString("habit.today_section", value: "오늘의 기도 시간", comment: "Today section title")
+        static let allHabits = NSLocalizedString("habit.all_habits", value: "전체 습관", comment: "All habits section title")
+        static let emptyTitle = NSLocalizedString("habit.empty_title", value: "기도 습관을 만들어보세요", comment: "Empty habits title")
+        static let emptyDescription = NSLocalizedString("habit.empty_description", value: "규칙적인 기도 시간을 정하고\n알림을 받을 수 있어요", comment: "Empty habits description")
+        static let deleteConfirm = NSLocalizedString("habit.delete_confirm", value: "습관을 삭제하시겠습니까? 기록도 함께 삭제됩니다.", comment: "Delete habit confirmation")
+        static let notScheduledToday = NSLocalizedString("habit.not_scheduled_today", value: "오늘은 없어요", comment: "Not scheduled today")
+        static let notificationTitle = NSLocalizedString("habit.notification_title", value: "🙏 기도 시간이에요", comment: "Habit notification title")
+        static let notificationBody = NSLocalizedString("habit.notification_body", value: "기도할 시간입니다", comment: "Habit notification body")
+
+        static func tabTitle() -> String { "습관" }
+    }
+
+    // MARK: - Siri / App Intents
+    enum Siri {
+        static let addPrayerTitle = NSLocalizedString("siri.add_prayer_title", value: "기도제목 추가", comment: "Siri add prayer intent title")
+        static let addPrayerDescription = NSLocalizedString("siri.add_prayer_description", value: "새 기도제목을 추가합니다", comment: "Siri add prayer description")
+        static let checkInHabitTitle = NSLocalizedString("siri.checkin_title", value: "기도 완료 체크", comment: "Siri check-in intent title")
+        static let contentParam = NSLocalizedString("siri.content_param", value: "기도 내용", comment: "Content parameter")
+        static let targetParam = NSLocalizedString("siri.target_param", value: "기도 대상", comment: "Target parameter")
+        static let addedConfirmation = NSLocalizedString("siri.added_confirmation", value: "기도제목이 추가되었습니다", comment: "Added confirmation")
+        static let checkInConfirmation = NSLocalizedString("siri.checkin_confirmation", value: "기도를 완료했습니다", comment: "Check-in confirmation")
+    }
 }
 
 // MARK: - Prayer Storage Extension for Localization

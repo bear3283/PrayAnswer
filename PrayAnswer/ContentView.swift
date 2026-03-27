@@ -112,6 +112,14 @@ struct iPhoneContentView: View {
                     Text(L.Tab.statistics)
                 }
                 .tag(3)
+
+            // 기도 습관 탭 (다섯 번째 화면)
+            HabitView()
+                .tabItem {
+                    Image(systemName: "clock.badge.checkmark")
+                    Text("습관")
+                }
+                .tag(4)
         }
         .tint(DesignSystem.Colors.primary)
         .onAppear {
@@ -170,6 +178,7 @@ struct iPadContentView: View {
         case people = "people"
         case addPrayer = "addPrayer"
         case statistics = "statistics"
+        case habit = "habit"
 
         var id: String { rawValue }
 
@@ -179,6 +188,7 @@ struct iPadContentView: View {
             case .people: return L.Tab.people
             case .addPrayer: return L.Tab.addPrayer
             case .statistics: return L.Tab.statistics
+            case .habit: return L.Habit.navTitle
             }
         }
 
@@ -188,6 +198,7 @@ struct iPadContentView: View {
             case .people: return "person.2"
             case .addPrayer: return "hands.clap"
             case .statistics: return "chart.bar.xaxis"
+            case .habit: return "clock.badge.checkmark"
             }
         }
     }
@@ -291,6 +302,9 @@ struct iPadContentView: View {
 
         case .statistics:
             StatisticsView()
+
+        case .habit:
+            HabitView()
         }
     }
 

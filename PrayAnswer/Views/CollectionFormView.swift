@@ -291,6 +291,246 @@ struct CollectionPickerSheet: View {
     }
 }
 
+// MARK: - 컬렉션 필터 바 (기도 목록에서 사용)
+
+struct CollectionFilterBar: View {
+    let collections: [PrayerCollection]
+    @Binding var selectedCollection: PrayerCollection?
+    let onManage: () -> Void
+
+    var body: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: DesignSystem.Spacing.sm) {
+                // 전체 칩
+                collectionChip(
+                    name: "전체",
+                    icon: "tray.2",
+                    color: DesignSystem.Colors.primary,
+                    isSelected: selectedCollection == nil
+                ) {
+                    withAnimation(DesignSystem.Animation.quick) {
+                        selectedCollection = nil
+                    }
+                }
+
+                // 컬렉션 칩 목록
+                ForEach(collections) { collection in
+                    collectionChip(
+                        name: collection.name,
+                        icon: collection.icon,
+                        color: collection.color,
+                        isSelected: selectedCollection?.persistentModelID == collection.persistentModelID
+                    ) {
+                        withAnimation(DesignSystem.Animation.quick) {
+                            if selectedCollection?.persistentModelID == collection.persistentModelID {
+                                selectedCollection = nil
+                            } else {
+                                selectedCollection = collection
+                            }
+                        }
+                    }
+                }
+
+                // 관리 버튼
+                Button(action: onManage) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "folder.badge.gear")
+                            .font(.system(size: 12, weight: .medium))
+                    }
+                    .foregroundColor(DesignSystem.Colors.secondaryText)
+                    .padding(.horizontal, DesignSystem.Spacing.sm)
+                    .padding(.vertical, 7)
+                    .background(DesignSystem.Colors.secondaryBackground)
+                    .clipShape(Capsule())
+                }
+                .buttonStyle(PlainButtonStyle())
+            }
+            .padding(.horizontal, DesignSystem.Spacing.lg)
+            .padding(.vertical, DesignSystem.Spacing.xs)
+        }
+    }
+
+    @ViewBuilder
+    private func collectionChip(
+        name: String,
+        icon: String,
+        color: Color,
+        isSelected: Bool,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            HStack(spacing: 5) {
+                Image(systemName: icon)
+                    .font(.system(size: 11, weight: .medium))
+                Text(name)
+                    .font(.system(size: 13, weight: isSelected ? .semibold : .regular))
+            }
+            .foregroundColor(isSelected ? .white : DesignSystem.Colors.secondaryText)
+            .padding(.horizontal, DesignSystem.Spacing.md)
+            .padding(.vertical, 7)
+            .background(isSelected ? color : DesignSystem.Colors.secondaryBackground)
+            .clipShape(Capsule())
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+}
+
+// MARK: - 컬렉션 관리 뷰
+
+struct CollectionManagerView: View {
+    @Environment(\.modelContext) private var modelContext
+    @Environment(\.dismiss) private var dismiss
+    @Query(sort: \PrayerCollection.sortOrder) private var collections: [PrayerCollection]
+
+    @State private var editingCollection: PrayerCollection? = nil
+    @State private var showAddForm = false
+    @State private var showDeleteConfirm = false
+    @State private var deleteTarget: PrayerCollection? = nil
+
+    var body: some View {
+        NavigationView {
+            Group {
+                if collections.isEmpty {
+                    VStack(spacing: DesignSystem.Spacing.lg) {
+                        Image(systemName: "folder.badge.plus")
+                            .font(.system(size: 48))
+                            .foregroundColor(DesignSystem.Colors.tertiaryText)
+
+                        VStack(spacing: DesignSystem.Spacing.xs) {
+                            Text(L.Collection.emptyTitle)
+                                .font(DesignSystem.Typography.headline)
+                                .fontWeight(.semibold)
+                                .foregroundColor(DesignSystem.Colors.primaryText)
+
+                            Text(L.Collection.emptyDescription)
+                                .font(DesignSystem.Typography.callout)
+                                .foregroundColor(DesignSystem.Colors.secondaryText)
+                                .multilineTextAlignment(.center)
+                        }
+
+                        Button {
+                            showAddForm = true
+                        } label: {
+                            Label(L.Collection.newCollection, systemImage: "plus")
+                                .font(DesignSystem.Typography.callout)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.white)
+                                .padding(.horizontal, DesignSystem.Spacing.xl)
+                                .padding(.vertical, DesignSystem.Spacing.md)
+                                .background(DesignSystem.Colors.primary)
+                                .cornerRadius(DesignSystem.CornerRadius.large)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    List {
+                        ForEach(collections) { collection in
+                            collectionRow(collection)
+                                .contentShape(Rectangle())
+                                .onTapGesture {
+                                    editingCollection = collection
+                                }
+                        }
+                        .onMove(perform: reorderCollections)
+                        .onDelete { indexSet in
+                            if let index = indexSet.first {
+                                deleteTarget = collections[index]
+                                showDeleteConfirm = true
+                            }
+                        }
+                    }
+                    .listStyle(.insetGrouped)
+                    .environment(\.editMode, .constant(.active))
+                }
+            }
+            .navigationTitle(L.Collection.navTitle)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(L.Button.done) { dismiss() }
+                        .foregroundColor(DesignSystem.Colors.primary)
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button {
+                        showAddForm = true
+                    } label: {
+                        Image(systemName: "plus")
+                            .fontWeight(.medium)
+                    }
+                    .foregroundColor(DesignSystem.Colors.primary)
+                }
+            }
+            .sheet(isPresented: $showAddForm) {
+                CollectionFormView()
+            }
+            .sheet(item: $editingCollection) { collection in
+                CollectionFormView(editTarget: collection)
+            }
+            .confirmationDialog(
+                L.Collection.deleteConfirm,
+                isPresented: $showDeleteConfirm,
+                titleVisibility: .visible
+            ) {
+                Button(L.Button.delete, role: .destructive) {
+                    if let target = deleteTarget {
+                        deleteCollection(target)
+                    }
+                }
+                Button(L.Button.cancel, role: .cancel) { }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func collectionRow(_ collection: PrayerCollection) -> some View {
+        HStack(spacing: DesignSystem.Spacing.md) {
+            ZStack {
+                Circle()
+                    .fill(collection.color.opacity(0.2))
+                    .frame(width: 40, height: 40)
+                Image(systemName: collection.icon)
+                    .font(.system(size: 18))
+                    .foregroundColor(collection.color)
+            }
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(collection.name)
+                    .font(DesignSystem.Typography.callout)
+                    .fontWeight(.medium)
+                    .foregroundColor(DesignSystem.Colors.primaryText)
+                Text(L.Collection.prayerCount(collection.prayers.count))
+                    .font(DesignSystem.Typography.caption2)
+                    .foregroundColor(DesignSystem.Colors.secondaryText)
+            }
+
+            Spacer()
+
+            Image(systemName: "chevron.right")
+                .font(.caption)
+                .foregroundColor(DesignSystem.Colors.tertiaryText)
+        }
+        .padding(.vertical, DesignSystem.Spacing.xs)
+    }
+
+    private func reorderCollections(from source: IndexSet, to destination: Int) {
+        var reordered = collections
+        reordered.move(fromOffsets: source, toOffset: destination)
+        for (index, collection) in reordered.enumerated() {
+            collection.sortOrder = index
+        }
+        try? modelContext.save()
+    }
+
+    private func deleteCollection(_ collection: PrayerCollection) {
+        // prayers의 collection 참조 해제 (nullify)
+        for prayer in collection.prayers {
+            prayer.collection = nil
+        }
+        modelContext.delete(collection)
+        try? modelContext.save()
+    }
+}
+
 #Preview {
     CollectionFormView()
         .modelContainer(for: [PrayerCollection.self, Prayer.self], inMemory: true)

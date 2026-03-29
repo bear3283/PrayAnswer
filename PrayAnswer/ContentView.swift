@@ -1082,7 +1082,10 @@ struct PrayerListView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Query private var allPrayers: [Prayer]
+    @Query(sort: \PrayerCollection.sortOrder) private var collections: [PrayerCollection]
     @State private var selectedStorage: PrayerStorage = .wait
+    @State private var selectedCollection: PrayerCollection? = nil
+    @State private var showCollectionManager = false
     @State private var showingErrorAlert = false
     @State private var errorMessage = ""
     @State private var prayerViewModel: PrayerViewModel?
@@ -1094,10 +1097,13 @@ struct PrayerListView: View {
     @State private var selectedPrayersForShare: Set<String> = []  // Prayer ID
     @State private var showShareSheet: Bool = false
 
-    // 선택된 보관소에 따른 기도 목록 필터링
+    // 선택된 보관소 + 컬렉션 필터링
     private var filteredPrayers: [Prayer] {
-        allPrayers.filter { $0.storage == selectedStorage }
-            .sorted { $0.createdDate > $1.createdDate }
+        var result = allPrayers.filter { $0.storage == selectedStorage }
+        if let col = selectedCollection {
+            result = result.filter { $0.collection?.persistentModelID == col.persistentModelID }
+        }
+        return result.sorted { $0.createdDate > $1.createdDate }
     }
 
     var body: some View {
@@ -1111,6 +1117,15 @@ struct PrayerListView: View {
 
                         // 보관소 선택 섹션
                         ModernStorageSelector(selectedStorage: $selectedStorage, allPrayers: allPrayers)
+
+                        // 컬렉션 필터 바
+                        if !collections.isEmpty {
+                            CollectionFilterBar(
+                                collections: collections,
+                                selectedCollection: $selectedCollection,
+                                onManage: { showCollectionManager = true }
+                            )
+                        }
 
                         EmptyStateView(storage: selectedStorage)
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -1135,6 +1150,20 @@ struct PrayerListView: View {
                         .listRowBackground(Color.clear)
                         .listRowSeparator(.hidden)
                         .listRowInsets(EdgeInsets())
+
+                        // 컬렉션 필터 바
+                        if !collections.isEmpty {
+                            Section {
+                                CollectionFilterBar(
+                                    collections: collections,
+                                    selectedCollection: $selectedCollection,
+                                    onManage: { showCollectionManager = true }
+                                )
+                            }
+                            .listRowBackground(Color.clear)
+                            .listRowSeparator(.hidden)
+                            .listRowInsets(EdgeInsets())
+                        }
 
                         ForEach(filteredPrayers, id: \Prayer.id) { (prayer: Prayer) in
                             if isShareMode {
@@ -1309,6 +1338,9 @@ struct PrayerListView: View {
                 ShareSheet(activityItems: [generateShareText()])
                     .presentationDetents([.medium, .large])
             }
+            .sheet(isPresented: $showCollectionManager) {
+                CollectionManagerView()
+            }
         }
         .onChange(of: selectedTab) {
             navigationPath = NavigationPath()
@@ -1316,6 +1348,13 @@ struct PrayerListView: View {
             if isShareMode {
                 isShareMode = false
                 selectedPrayersForShare.removeAll()
+            }
+        }
+        .onChange(of: collections) { _, newCollections in
+            // 선택된 컬렉션이 삭제됐을 때 초기화
+            if let sel = selectedCollection,
+               !newCollections.contains(where: { $0.persistentModelID == sel.persistentModelID }) {
+                selectedCollection = nil
             }
         }
     }

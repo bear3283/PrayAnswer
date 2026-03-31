@@ -149,7 +149,8 @@ extension NotificationManager {
             let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: true)
             let request = UNNotificationRequest(identifier: identifier, content: content, trigger: trigger)
 
-            notificationCenter.add(request) { error in
+            let center = UNUserNotificationCenter.current()
+            center.add(request) { error in
                 #if DEBUG
                 if let error { print("습관 알림 등록 오류 (\(identifier)): \(error)") }
                 else { print("습관 알림 등록 성공: \(identifier)") }
@@ -160,11 +161,12 @@ extension NotificationManager {
 
     /// 습관 알림 전체 취소
     func cancelHabitNotifications(for habit: PrayerHabit) {
-        notificationCenter.getPendingNotificationRequests { [weak self] requests in
+        let center = UNUserNotificationCenter.current()
+        center.getPendingNotificationRequests { requests in
             let prefix = habit.notificationIdentifierPrefix
             let ids = requests.map { $0.identifier }.filter { $0.hasPrefix(prefix) }
             if !ids.isEmpty {
-                self?.notificationCenter.removePendingNotificationRequests(withIdentifiers: ids)
+                center.removePendingNotificationRequests(withIdentifiers: ids)
             }
         }
     }

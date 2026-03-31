@@ -92,6 +92,18 @@ struct AddPrayerView: View {
                 scrollToTopTrigger.toggle()
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: .sharedPrayerTextReceived)) { notification in
+            guard let text = notification.userInfo?["text"] as? String, !text.isEmpty else { return }
+            guard !draftEntries.isEmpty else { return }
+            // 공유된 텍스트를 현재 활성 entry의 content에 설정
+            if draftEntries[safeIdx].content.isEmpty {
+                draftEntries[safeIdx].content = text
+            } else {
+                draftEntries[safeIdx].content += "\n\n" + text
+            }
+            scrollToTopTrigger.toggle()
+            isContentFieldFocused = true
+        }
     }
 
     // MARK: - iPad Content

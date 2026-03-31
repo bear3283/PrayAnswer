@@ -159,6 +159,8 @@ extension Notification.Name {
     static let widgetAddPrayerWithCategory = Notification.Name("WidgetAddPrayerWithCategory")
     static let widgetOpenStorage = Notification.Name("WidgetOpenStorage")
     static let widgetOpenFavorites = Notification.Name("WidgetOpenFavorites")
+    /// Share Extension에서 텍스트를 공유했을 때 발송
+    static let sharedPrayerTextReceived = Notification.Name("SharedPrayerTextReceived")
 }
 
 // MARK: - iPad Content View (NavigationSplitView-based)

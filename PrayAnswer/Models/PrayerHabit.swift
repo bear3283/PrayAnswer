@@ -121,13 +121,15 @@ final class PrayerHabitLog {
 // MARK: - 습관 알림 관리 (NotificationManager 확장)
 
 extension NotificationManager {
-    /// 습관 알림 스케줄링
+    /// 습관 알림 스케줄링 (인용구 포함)
     func scheduleHabitNotifications(for habit: PrayerHabit) {
         cancelHabitNotifications(for: habit)
         guard habit.notificationEnabled && habit.isActive else { return }
 
         let calendar = Calendar.current
         let timeComponents = calendar.dateComponents([.hour, .minute], from: habit.time)
+        let habitIDHash = abs(habit.notificationIdentifierPrefix.hashValue)
+        let quote = PrayerQuoteManager.shared.quoteForNotification(habitID: habitIDHash)
 
         for weekday in habit.weekdays.selectedDays {
             var components = DateComponents()
@@ -138,8 +140,9 @@ extension NotificationManager {
             let identifier = "\(habit.notificationIdentifierPrefix)_wd\(weekday)"
 
             let content = UNMutableNotificationContent()
-            content.title = L.Habit.notificationTitle
-            content.body = habit.label.isEmpty ? L.Habit.notificationBody : habit.label
+            content.title = habit.label.isEmpty ? L.Habit.notificationTitle : "🙏 \(habit.label)"
+            content.subtitle = quote.notificationLine
+            content.body = L.Habit.notificationBody
             content.sound = .default
             content.userInfo = ["habitAction": "checkin"]
 

@@ -350,7 +350,7 @@ struct WeekdaySelector: View {
     ]
 
     var body: some View {
-        HStack(spacing: DesignSystem.Spacing.xs) {
+        HStack(spacing: 6) {
             ForEach(0..<7, id: \.self) { index in
                 let weekday = weekdays[index]
                 WeekdayButton(
@@ -360,8 +360,10 @@ struct WeekdaySelector: View {
                         selection[keyPath: weekday.keyPath].toggle()
                     }
                 )
+                .frame(maxWidth: .infinity)
             }
         }
+        .frame(maxWidth: .infinity)
     }
 }
 
@@ -377,9 +379,9 @@ struct WeekdayButton: View {
                 .font(DesignSystem.Typography.caption2)
                 .fontWeight(isSelected ? .bold : .regular)
                 .foregroundColor(isSelected ? .white : DesignSystem.Colors.primaryText)
-                .frame(width: 36, height: 36)
+                .frame(maxWidth: .infinity, minHeight: 36)
                 .background(
-                    Circle()
+                    RoundedRectangle(cornerRadius: 8)
                         .fill(isSelected ? DesignSystem.Colors.primary : DesignSystem.Colors.secondaryBackground)
                 )
         }

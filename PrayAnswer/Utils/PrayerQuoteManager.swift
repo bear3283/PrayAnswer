@@ -15,7 +15,7 @@ struct PrayerQuote {
     }
 
     var notificationLine: String {
-        ""\(text)" — \(author)"
+        "\"\(text)\" — \(author)"
     }
 }
 

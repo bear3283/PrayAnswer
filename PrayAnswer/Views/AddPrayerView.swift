@@ -292,7 +292,7 @@ struct AddPrayerView: View {
             .alert(L.Alert.saveComplete, isPresented: $showingSuccessAlert) {
                 Button(L.Button.confirm) {
                     withAnimation(.easeInOut(duration: 0.3)) {
-                        selectedTab = 0
+                        selectedTab = 2
                     }
                 }
             } message: {

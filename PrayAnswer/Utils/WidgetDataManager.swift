@@ -37,32 +37,32 @@ class WidgetDataManager {
         }
     }
     
-    // 보관소별 즐겨찾기 기도 데이터를 위젯과 공유 (성능 최적화: 백그라운드 처리)
+    // 보관소별 즐겨찾기 기도 데이터를 위젯과 공유
     func shareFavoritePrayersByStorage(_ prayersByStorage: [PrayerStorage: [Prayer]]) {
+        // SwiftData @Model은 non-Sendable → 메인 스레드에서 먼저 값 타입으로 변환
+        let extracted: [(String, [PrayerWidgetData])] = prayersByStorage.map { (storage, prayers) in
+            let prayerData = prayers.prefix(5).map { prayer in
+                PrayerWidgetData(
+                    title: String(prayer.title.prefix(50)),
+                    content: String(prayer.content.prefix(100)),
+                    category: prayer.category.rawValue,
+                    target: prayer.target,
+                    storage: prayer.storage.rawValue,
+                    createdDate: prayer.createdDate
+                )
+            }
+            return ("\(favoritePrayersKey)_\(storage.rawValue)", Array(prayerData))
+        }
+
         DispatchQueue.global(qos: .utility).async { [weak self] in
             guard let self = self else { return }
-            
-            for (storage, prayers) in prayersByStorage {
-                // 최대 5개의 최신 기도만 위젯에 전달 (메모리 최적화)
-                let limitedPrayers = prayers.prefix(5)
-                let prayerData = limitedPrayers.map { prayer in
-                    PrayerWidgetData(
-                        title: String(prayer.title.prefix(50)), // 제목 길이 제한
-                        content: String(prayer.content.prefix(100)), // 내용 길이 제한
-                        category: prayer.category.rawValue,
-                        target: prayer.target,
-                        storage: prayer.storage.rawValue,
-                        createdDate: prayer.createdDate
-                    )
-                }
-                
+
+            for (key, prayerData) in extracted {
                 if let encoded = try? JSONEncoder().encode(prayerData) {
-                    let key = "\(self.favoritePrayersKey)_\(storage.rawValue)"
                     self.userDefaults?.set(encoded, forKey: key)
                 }
             }
-            
-            // 메인 큐에서 위젯 리로드 요청
+
             DispatchQueue.main.async {
                 WidgetCenter.shared.reloadAllTimelines()
             }

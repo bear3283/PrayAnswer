@@ -759,14 +759,16 @@ struct AddPrayerView: View {
     }
 
     private func updateWidgetData() {
-        // 위젯 데이터 업데이트를 위해 모든 즐겨찾기 기도 다시 로드
         guard let viewModel = prayerViewModel else { return }
 
+        // fetch 직후 즉시 값 타입 변환 (Prayer @Model 참조를 외부로 전달 금지)
         let allFavorites = viewModel.favoritePrayers()
-        let favoritesByStorage = Dictionary(grouping: allFavorites) { $0.storage }
-
-        // 위젯 데이터 매니저를 통해 데이터 공유
-        WidgetDataManager.shared.shareFavoritePrayersByStorage(favoritesByStorage)
+        var dataByStorage: [PrayerStorage: [PrayerWidgetData]] = [:]
+        for prayer in allFavorites {
+            let storage = prayer.storage
+            dataByStorage[storage, default: []].append(prayer.toWidgetData())
+        }
+        WidgetDataManager.shared.shareFavoritePrayersByStorage(dataByStorage)
     }
 
     // MARK: - Image OCR

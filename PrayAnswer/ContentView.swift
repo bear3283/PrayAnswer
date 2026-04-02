@@ -1412,12 +1412,14 @@ struct PrayerListView: View {
     }
 
     private func updateWidgetDataOnAppear() {
-        // 모든 즐겨찾기 기도들을 가져와서 보관소별로 분류
+        // fetch 직후 즉시 값 타입 변환 (Prayer @Model 참조를 외부로 전달 금지)
         let allFavorites = allPrayers.filter { $0.isFavorite }
-        let favoritesByStorage = Dictionary(grouping: allFavorites) { $0.storage }
-
-        // 위젯 데이터 매니저를 통해 데이터 공유
-        WidgetDataManager.shared.shareFavoritePrayersByStorage(favoritesByStorage)
+        var dataByStorage: [PrayerStorage: [PrayerWidgetData]] = [:]
+        for prayer in allFavorites {
+            let storage = prayer.storage
+            dataByStorage[storage, default: []].append(prayer.toWidgetData())
+        }
+        WidgetDataManager.shared.shareFavoritePrayersByStorage(dataByStorage)
     }
 }
 

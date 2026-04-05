@@ -23,18 +23,20 @@ struct PrayAnswerApp: App {
     }
 
     private static func makeModelContainer(schema: Schema) -> ModelContainer {
-        // 1차: CloudKit 동기화 활성화 (iCloud 로그인 + 컨테이너 정상일 때)
-        if let container = try? ModelContainer(
-            for: schema,
-            configurations: ModelConfiguration(schema: schema, cloudKitDatabase: .automatic)
-        ) {
-            print("✅ ModelContainer(CloudKit) 초기화 성공")
-            return container
-        }
-        print("⚠️ CloudKit 초기화 실패, 로컬 전용으로 재시도")
+        // CloudKit 컨테이너가 Apple 서버에 초기화된 후 아래 주석을 해제하세요.
+        // CloudKit Dashboard(Xcode → Signing & Capabilities → CloudKit Dashboard)에서
+        // iCloud.com.restart.PrayAnswer 컨테이너 스키마가 Deploy 된 이후 활성화합니다.
+        //
+        // if let container = try? ModelContainer(
+        //     for: schema,
+        //     configurations: ModelConfiguration(schema: schema, cloudKitDatabase: .automatic)
+        // ) {
+        //     print("✅ ModelContainer(CloudKit) 초기화 성공")
+        //     return container
+        // }
+        // print("⚠️ CloudKit 초기화 실패, 로컬 전용으로 재시도")
 
-        // 2차: 로컬 전용 — cloudKitDatabase: .none 명시 필수
-        // (entitlements에 CloudKit 키가 있으면 명시하지 않을 경우 .automatic이 기본값이 되어 계속 실패)
+        // 로컬 전용 — cloudKitDatabase: .none 명시로 entitlements의 CloudKit 키 무시
         let localConfig = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false, cloudKitDatabase: .none)
         if let container = try? ModelContainer(for: schema, configurations: localConfig) {
             print("✅ ModelContainer(로컬) 초기화 성공")
@@ -42,10 +44,9 @@ struct PrayAnswerApp: App {
         }
         print("⚠️ 로컬 초기화 실패, 저장소 재생성 시도")
 
-        // 3차: 기존 저장소 파일 삭제 후 재생성 (최후 수단 — 데이터 손실 발생)
+        // 최후 수단: 기존 저장소 파일 삭제 후 재생성 (데이터 손실 발생)
         if let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first {
-            let base = appSupport.appendingPathComponent("default.store")
-            try? FileManager.default.removeItem(at: base)
+            try? FileManager.default.removeItem(at: appSupport.appendingPathComponent("default.store"))
             try? FileManager.default.removeItem(at: appSupport.appendingPathComponent("default.store-shm"))
             try? FileManager.default.removeItem(at: appSupport.appendingPathComponent("default.store-wal"))
         }

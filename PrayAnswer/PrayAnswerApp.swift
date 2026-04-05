@@ -19,18 +19,48 @@ struct PrayAnswerApp: App {
 
     init() {
         let schema = Schema([Prayer.self, Attachment.self, PrayerCollection.self, PrayerHabit.self, PrayerHabitLog.self])
-        let config = ModelConfiguration(schema: schema, cloudKitDatabase: .automatic)
+        modelContainer = Self.makeModelContainer(schema: schema)
+    }
+
+    private static func makeModelContainer(schema: Schema) -> ModelContainer {
+        // 1차: CloudKit 동기화 활성화 (iCloud 로그인 + 컨테이너 정상일 때)
+        if let container = try? ModelContainer(
+            for: schema,
+            configurations: ModelConfiguration(schema: schema, cloudKitDatabase: .automatic)
+        ) {
+            print("✅ ModelContainer(CloudKit) 초기화 성공")
+            return container
+        }
+        print("⚠️ CloudKit 초기화 실패, 로컬 전용으로 재시도")
+
+        // 2차: 로컬 전용 (기존 저장소 그대로 사용)
+        if let container = try? ModelContainer(
+            for: schema,
+            configurations: ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+        ) {
+            print("✅ ModelContainer(로컬) 초기화 성공")
+            return container
+        }
+        print("⚠️ 로컬 초기화 실패, 기본 설정으로 재시도")
+
+        // 3차: 설정 없이 기본값으로 시도
+        if let container = try? ModelContainer(for: schema) {
+            print("✅ ModelContainer(기본) 초기화 성공")
+            return container
+        }
+        print("⚠️ 기본 초기화 실패, 저장소 초기화 후 재생성")
+
+        // 4차: 기존 저장소 삭제 후 새로 생성 (최후 수단 — 데이터 손실 발생)
+        let storeURL = URL.applicationSupportDirectory.appending(path: "default.store")
+        for ext in ["", "-shm", "-wal"] {
+            try? FileManager.default.removeItem(at: storeURL.appendingPathExtension(ext))
+        }
         do {
-            modelContainer = try ModelContainer(for: schema, configurations: config)
+            let container = try ModelContainer(for: schema)
+            print("✅ ModelContainer 저장소 재생성 성공")
+            return container
         } catch {
-            // CloudKit 초기화 실패 시 로컬 전용으로 재시도
-            print("⚠️ ModelContainer(CloudKit) 초기화 실패, 로컬 전용으로 재시도: \(error)")
-            do {
-                let localConfig = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
-                modelContainer = try ModelContainer(for: schema, configurations: localConfig)
-            } catch {
-                fatalError("ModelContainer 복구 실패: \(error)")
-            }
+            fatalError("ModelContainer 완전 초기화 실패: \(error)")
         }
     }
 

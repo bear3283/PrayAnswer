@@ -33,30 +33,24 @@ struct PrayAnswerApp: App {
         }
         print("⚠️ CloudKit 초기화 실패, 로컬 전용으로 재시도")
 
-        // 2차: 로컬 전용 (기존 저장소 그대로 사용)
-        if let container = try? ModelContainer(
-            for: schema,
-            configurations: ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
-        ) {
+        // 2차: 로컬 전용 — cloudKitDatabase: .none 명시 필수
+        // (entitlements에 CloudKit 키가 있으면 명시하지 않을 경우 .automatic이 기본값이 되어 계속 실패)
+        let localConfig = ModelConfiguration(schema: schema, cloudKitDatabase: .none, isStoredInMemoryOnly: false)
+        if let container = try? ModelContainer(for: schema, configurations: localConfig) {
             print("✅ ModelContainer(로컬) 초기화 성공")
             return container
         }
-        print("⚠️ 로컬 초기화 실패, 기본 설정으로 재시도")
+        print("⚠️ 로컬 초기화 실패, 저장소 재생성 시도")
 
-        // 3차: 설정 없이 기본값으로 시도
-        if let container = try? ModelContainer(for: schema) {
-            print("✅ ModelContainer(기본) 초기화 성공")
-            return container
-        }
-        print("⚠️ 기본 초기화 실패, 저장소 초기화 후 재생성")
-
-        // 4차: 기존 저장소 삭제 후 새로 생성 (최후 수단 — 데이터 손실 발생)
-        let storeURL = URL.applicationSupportDirectory.appending(path: "default.store")
-        for ext in ["", "-shm", "-wal"] {
-            try? FileManager.default.removeItem(at: storeURL.appendingPathExtension(ext))
+        // 3차: 기존 저장소 파일 삭제 후 재생성 (최후 수단 — 데이터 손실 발생)
+        if let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first {
+            let base = appSupport.appendingPathComponent("default.store")
+            try? FileManager.default.removeItem(at: base)
+            try? FileManager.default.removeItem(at: appSupport.appendingPathComponent("default.store-shm"))
+            try? FileManager.default.removeItem(at: appSupport.appendingPathComponent("default.store-wal"))
         }
         do {
-            let container = try ModelContainer(for: schema)
+            let container = try ModelContainer(for: schema, configurations: localConfig)
             print("✅ ModelContainer 저장소 재생성 성공")
             return container
         } catch {

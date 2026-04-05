@@ -35,7 +35,7 @@ struct PrayAnswerApp: App {
 
         // 2차: 로컬 전용 — cloudKitDatabase: .none 명시 필수
         // (entitlements에 CloudKit 키가 있으면 명시하지 않을 경우 .automatic이 기본값이 되어 계속 실패)
-        let localConfig = ModelConfiguration(schema: schema, cloudKitDatabase: .none, isStoredInMemoryOnly: false)
+        let localConfig = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false, cloudKitDatabase: .none)
         if let container = try? ModelContainer(for: schema, configurations: localConfig) {
             print("✅ ModelContainer(로컬) 초기화 성공")
             return container

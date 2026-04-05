@@ -262,7 +262,7 @@ struct CollectionPickerSheet: View {
                                 Text(collection.name)
                                     .font(DesignSystem.Typography.callout)
                                     .foregroundColor(DesignSystem.Colors.primaryText)
-                                Text("\(collection.prayers.count)개의 기도")
+                                Text("\((collection.prayers ?? []).count)개의 기도")
                                     .font(DesignSystem.Typography.caption2)
                                     .foregroundColor(DesignSystem.Colors.secondaryText)
                             }
@@ -498,7 +498,7 @@ struct CollectionManagerView: View {
                     .font(DesignSystem.Typography.callout)
                     .fontWeight(.medium)
                     .foregroundColor(DesignSystem.Colors.primaryText)
-                Text(L.Collection.prayerCount(collection.prayers.count))
+                Text(L.Collection.prayerCount((collection.prayers ?? []).count))
                     .font(DesignSystem.Typography.caption2)
                     .foregroundColor(DesignSystem.Colors.secondaryText)
             }
@@ -523,7 +523,7 @@ struct CollectionManagerView: View {
 
     private func deleteCollection(_ collection: PrayerCollection) {
         // prayers의 collection 참조 해제 (nullify)
-        for prayer in collection.prayers {
+        for prayer in (collection.prayers ?? []) {
             prayer.collection = nil
         }
         modelContext.delete(collection)

@@ -92,6 +92,18 @@ struct AddPrayerView: View {
                 scrollToTopTrigger.toggle()
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: .sharedPrayerTextReceived)) { notification in
+            guard let text = notification.userInfo?["text"] as? String, !text.isEmpty else { return }
+            guard !draftEntries.isEmpty else { return }
+            // 공유된 텍스트를 현재 활성 entry의 content에 설정
+            if draftEntries[safeIdx].content.isEmpty {
+                draftEntries[safeIdx].content = text
+            } else {
+                draftEntries[safeIdx].content += "\n\n" + text
+            }
+            scrollToTopTrigger.toggle()
+            isContentFieldFocused = true
+        }
     }
 
     // MARK: - iPad Content
@@ -280,7 +292,7 @@ struct AddPrayerView: View {
             .alert(L.Alert.saveComplete, isPresented: $showingSuccessAlert) {
                 Button(L.Button.confirm) {
                     withAnimation(.easeInOut(duration: 0.3)) {
-                        selectedTab = 0
+                        selectedTab = 2
                     }
                 }
             } message: {
@@ -747,14 +759,16 @@ struct AddPrayerView: View {
     }
 
     private func updateWidgetData() {
-        // 위젯 데이터 업데이트를 위해 모든 즐겨찾기 기도 다시 로드
         guard let viewModel = prayerViewModel else { return }
 
+        // fetch 직후 즉시 값 타입 변환 (Prayer @Model 참조를 외부로 전달 금지)
         let allFavorites = viewModel.favoritePrayers()
-        let favoritesByStorage = Dictionary(grouping: allFavorites) { $0.storage }
-
-        // 위젯 데이터 매니저를 통해 데이터 공유
-        WidgetDataManager.shared.shareFavoritePrayersByStorage(favoritesByStorage)
+        var dataByStorage: [PrayerStorage: [PrayerWidgetData]] = [:]
+        for prayer in allFavorites {
+            let storage = prayer.storage
+            dataByStorage[storage, default: []].append(prayer.toWidgetData())
+        }
+        WidgetDataManager.shared.shareFavoritePrayersByStorage(dataByStorage)
     }
 
     // MARK: - Image OCR

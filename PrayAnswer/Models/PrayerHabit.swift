@@ -7,12 +7,12 @@ import UserNotifications
 /// 반복 기도 시간 스케줄. 매일 또는 특정 요일에 알림을 보내고 체크인을 기록한다.
 @Model
 final class PrayerHabit {
-    var label: String           // 예: "아침 기도", "저녁 기도"
-    var time: Date              // 시각만 사용 (날짜 부분은 무시)
+    var label: String = ""      // 예: "아침 기도", "저녁 기도"
+    var time: Date = Date()    // 시각만 사용 (날짜 부분은 무시)
     var weekdaysData: Data?     // WeekdaySelection JSON
-    var notificationEnabled: Bool
-    var isActive: Bool
-    var createdDate: Date
+    var notificationEnabled: Bool = false
+    var isActive: Bool = true
+    var createdDate: Date = Date()
 
     @Relationship(deleteRule: .cascade)
     var logs: [PrayerHabitLog] = []
@@ -106,9 +106,9 @@ final class PrayerHabit {
 
 @Model
 final class PrayerHabitLog {
-    var date: Date
+    var date: Date = Date()
     var completedAt: Date?
-    var isCompleted: Bool
+    var isCompleted: Bool = false
 
     var habit: PrayerHabit?
 
@@ -121,13 +121,15 @@ final class PrayerHabitLog {
 // MARK: - 습관 알림 관리 (NotificationManager 확장)
 
 extension NotificationManager {
-    /// 습관 알림 스케줄링
+    /// 습관 알림 스케줄링 (인용구 포함)
     func scheduleHabitNotifications(for habit: PrayerHabit) {
         cancelHabitNotifications(for: habit)
         guard habit.notificationEnabled && habit.isActive else { return }
 
         let calendar = Calendar.current
         let timeComponents = calendar.dateComponents([.hour, .minute], from: habit.time)
+        let habitIDHash = abs(habit.notificationIdentifierPrefix.hashValue)
+        let quote = PrayerQuoteManager.shared.quoteForNotification(habitID: habitIDHash)
 
         for weekday in habit.weekdays.selectedDays {
             var components = DateComponents()
@@ -138,15 +140,17 @@ extension NotificationManager {
             let identifier = "\(habit.notificationIdentifierPrefix)_wd\(weekday)"
 
             let content = UNMutableNotificationContent()
-            content.title = L.Habit.notificationTitle
-            content.body = habit.label.isEmpty ? L.Habit.notificationBody : habit.label
+            content.title = habit.label.isEmpty ? L.Habit.notificationTitle : "🙏 \(habit.label)"
+            content.subtitle = quote.notificationLine
+            content.body = L.Habit.notificationBody
             content.sound = .default
             content.userInfo = ["habitAction": "checkin"]
 
             let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: true)
             let request = UNNotificationRequest(identifier: identifier, content: content, trigger: trigger)
 
-            notificationCenter.add(request) { error in
+            let center = UNUserNotificationCenter.current()
+            center.add(request) { error in
                 #if DEBUG
                 if let error { print("습관 알림 등록 오류 (\(identifier)): \(error)") }
                 else { print("습관 알림 등록 성공: \(identifier)") }
@@ -157,11 +161,12 @@ extension NotificationManager {
 
     /// 습관 알림 전체 취소
     func cancelHabitNotifications(for habit: PrayerHabit) {
-        notificationCenter.getPendingNotificationRequests { [weak self] requests in
+        let center = UNUserNotificationCenter.current()
+        center.getPendingNotificationRequests { requests in
             let prefix = habit.notificationIdentifierPrefix
             let ids = requests.map { $0.identifier }.filter { $0.hasPrefix(prefix) }
             if !ids.isEmpty {
-                self?.notificationCenter.removePendingNotificationRequests(withIdentifiers: ids)
+                center.removePendingNotificationRequests(withIdentifiers: ids)
             }
         }
     }

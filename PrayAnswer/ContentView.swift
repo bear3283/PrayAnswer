@@ -12,7 +12,7 @@ import WidgetKit
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    @State private var selectedTab: Int = 0
+    @State private var selectedTab: Int = 2
 
     var body: some View {
         Group {
@@ -53,24 +53,66 @@ struct ContentView: View {
                     userInfo: ["storage": storageType]
                 )
             }
-            selectedTab = 0
+            selectedTab = 2
 
         case "favorites":
             // prayanswer://favorites → 기도 목록 탭 (즐겨찾기 필터)
             NotificationCenter.default.post(name: .widgetOpenFavorites, object: nil)
-            selectedTab = 0
+            selectedTab = 2
 
         case "people":
             // prayanswer://people → 기도대상자 탭
+            selectedTab = 0
+
+        case "prayers":
+            // prayanswer://prayers → Share Extension 저장 후 기도 목록으로 이동
+            savePendingSharedPrayer()
             selectedTab = 2
 
         case "stats":
             // prayanswer://stats → 통계 탭
-            selectedTab = 3
+            selectedTab = 4
 
         default:
             break
         }
+    }
+
+    // MARK: - Share Extension 직접 저장
+
+    private struct PendingSharedPrayerData: Codable {
+        let content: String
+        let target: String
+        let targetDate: Double?
+        let notificationEnabled: Bool
+    }
+
+    private func savePendingSharedPrayer() {
+        let defaults = UserDefaults(suiteName: "group.prayAnswer.widget")
+        guard let data = defaults?.data(forKey: "pendingSharedPrayerData"),
+              let pending = try? JSONDecoder().decode(PendingSharedPrayerData.self, from: data) else { return }
+
+        defaults?.removeObject(forKey: "pendingSharedPrayerData")
+        defaults?.synchronize()
+
+        let targetDate: Date? = pending.targetDate.map { Date(timeIntervalSince1970: $0) }
+        let title = Prayer.generateTitle(from: pending.target, category: .other)
+        let prayer = Prayer(
+            title: title,
+            content: pending.content,
+            category: .other,
+            target: pending.target,
+            targetDate: targetDate,
+            notificationEnabled: pending.notificationEnabled
+        )
+        modelContext.insert(prayer)
+        try? modelContext.save()
+
+        if pending.notificationEnabled, let date = targetDate {
+            NotificationManager.shared.scheduleNotifications(for: prayer, targetDate: date)
+        }
+
+        WidgetCenter.shared.reloadAllTimelines()
     }
 
 }
@@ -82,14 +124,15 @@ struct iPhoneContentView: View {
 
     var body: some View {
         TabView(selection: $selectedTab) {
-            // 기도 목록 탭 (첫 번째 화면)
-            PrayerListView(selectedTab: selectedTab)
+            // 기도대상자 탭 (0)
+            PeopleListView(selectedTab: selectedTab)
                 .tabItem {
-                    Image(systemName: "list.bullet.rectangle.portrait")
-                    Text(L.Tab.prayerList)
+                    Image(systemName: "person.2")
+                    Text(L.Tab.people)
                 }
                 .tag(0)
-            // 기도 추가 탭 (두 번째로 이동)
+
+            // 기도 추가 탭 (1)
             AddPrayerView(selectedTab: $selectedTab)
                 .tabItem {
                     Image(systemName: "hands.clap")
@@ -97,27 +140,27 @@ struct iPhoneContentView: View {
                 }
                 .tag(1)
 
-            // 기도대상자 탭 (세 번째 화면)
-            PeopleListView(selectedTab: selectedTab)
+            // 기도 목록 탭 (2, 메인)
+            PrayerListView(selectedTab: selectedTab)
                 .tabItem {
-                    Image(systemName: "person.2")
-                    Text(L.Tab.people)
+                    Image(systemName: "list.bullet.rectangle.portrait")
+                    Text(L.Tab.prayerList)
                 }
                 .tag(2)
 
-            // 통계 탭 (네 번째 화면)
-            StatisticsView()
-                .tabItem {
-                    Image(systemName: "chart.bar.xaxis")
-                    Text(L.Tab.statistics)
-                }
-                .tag(3)
-
-            // 기도 습관 탭 (다섯 번째 화면)
+            // 기도 습관 탭 (3)
             HabitView()
                 .tabItem {
                     Image(systemName: "clock.badge.checkmark")
                     Text("습관")
+                }
+                .tag(3)
+
+            // 통계 탭 (4)
+            StatisticsView()
+                .tabItem {
+                    Image(systemName: "chart.bar.xaxis")
+                    Text(L.Tab.statistics)
                 }
                 .tag(4)
         }
@@ -159,6 +202,8 @@ extension Notification.Name {
     static let widgetAddPrayerWithCategory = Notification.Name("WidgetAddPrayerWithCategory")
     static let widgetOpenStorage = Notification.Name("WidgetOpenStorage")
     static let widgetOpenFavorites = Notification.Name("WidgetOpenFavorites")
+    /// Share Extension에서 텍스트를 공유했을 때 발송
+    static let sharedPrayerTextReceived = Notification.Name("SharedPrayerTextReceived")
 }
 
 // MARK: - iPad Content View (NavigationSplitView-based)
@@ -1409,12 +1454,14 @@ struct PrayerListView: View {
     }
 
     private func updateWidgetDataOnAppear() {
-        // 모든 즐겨찾기 기도들을 가져와서 보관소별로 분류
+        // fetch 직후 즉시 값 타입 변환 (Prayer @Model 참조를 외부로 전달 금지)
         let allFavorites = allPrayers.filter { $0.isFavorite }
-        let favoritesByStorage = Dictionary(grouping: allFavorites) { $0.storage }
-
-        // 위젯 데이터 매니저를 통해 데이터 공유
-        WidgetDataManager.shared.shareFavoritePrayersByStorage(favoritesByStorage)
+        var dataByStorage: [PrayerStorage: [PrayerWidgetData]] = [:]
+        for prayer in allFavorites {
+            let storage = prayer.storage
+            dataByStorage[storage, default: []].append(prayer.toWidgetData())
+        }
+        WidgetDataManager.shared.shareFavoritePrayersByStorage(dataByStorage)
     }
 }
 

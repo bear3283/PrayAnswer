@@ -8,6 +8,7 @@
 import SwiftUI
 import SwiftData
 import UserNotifications
+import CoreData
 
 @main
 struct PrayAnswerApp: App {
@@ -18,15 +19,15 @@ struct PrayAnswerApp: App {
 
     init() {
         let schema = Schema([Prayer.self, Attachment.self, PrayerCollection.self, PrayerHabit.self, PrayerHabitLog.self])
-        let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+        let config = ModelConfiguration(schema: schema, cloudKitDatabase: .automatic)
         do {
             modelContainer = try ModelContainer(for: schema, configurations: config)
         } catch {
-            // 스키마 마이그레이션 실패 시: 기존 저장소를 유지한 채 재시도
-            // (데이터 삭제 없이 앱을 안전하게 구동)
-            print("⚠️ ModelContainer 초기화 실패, 재시도: \(error)")
+            // CloudKit 초기화 실패 시 로컬 전용으로 재시도
+            print("⚠️ ModelContainer(CloudKit) 초기화 실패, 로컬 전용으로 재시도: \(error)")
             do {
-                modelContainer = try ModelContainer(for: schema)
+                let localConfig = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+                modelContainer = try ModelContainer(for: schema, configurations: localConfig)
             } catch {
                 fatalError("ModelContainer 복구 실패: \(error)")
             }
@@ -46,9 +47,51 @@ struct PrayAnswerApp: App {
                             modelContext: modelContainer.mainContext
                         )
                     }
+
+                    // Share Extension에서 공유된 텍스트 처리
+                    checkPendingSharedText()
+                }
+                .onReceive(
+                    NotificationCenter.default.publisher(
+                        for: NSPersistentCloudKitContainer.eventChangedNotification
+                    )
+                ) { notification in
+                    handleCloudKitEvent(notification)
                 }
         }
         .modelContainer(modelContainer)
+    }
+
+    // MARK: - CloudKit 동기화 이벤트 처리
+
+    private func handleCloudKitEvent(_ notification: Notification) {
+        guard
+            let event = notification.userInfo?[
+                NSPersistentCloudKitContainer.eventNotificationUserInfoKey
+            ] as? NSPersistentCloudKitContainer.Event,
+            event.type == .import,
+            event.endDate != nil,
+            event.error == nil
+        else { return }
+
+        // 다른 기기에서 import 완료 → 위젯 데이터 갱신
+        DispatchQueue.main.async {
+            refreshWidgetData()
+        }
+    }
+
+    private func refreshWidgetData() {
+        let context = modelContainer.mainContext
+        guard let prayers = try? context.fetch(FetchDescriptor<Prayer>()) else { return }
+
+        var dataByStorage: [PrayerStorage: [PrayerWidgetData]] = [:]
+        for storage in PrayerStorage.allCases {
+            let filtered = prayers
+                .filter { $0.storage == storage && $0.isFavorite }
+                .sorted { $0.createdDate > $1.createdDate }
+            dataByStorage[storage] = filtered.map { $0.toWidgetData() }
+        }
+        WidgetDataManager.shared.shareFavoritePrayersByStorage(dataByStorage)
     }
 
     private func requestNotificationPermission() {
@@ -66,15 +109,45 @@ struct PrayAnswerApp: App {
         }
     }
 
+    // MARK: - Share Extension 연동
+
+    private func checkPendingSharedText() {
+        let appGroupID = "group.prayAnswer.widget"
+        guard let defaults = UserDefaults(suiteName: appGroupID) else { return }
+
+        // 새 JSON 형식 (Share Extension에서 직접 저장) — URL scheme으로 처리 안 된 경우 대비
+        // prayanswer://prayers URL로 앱이 열리면 ContentView에서 처리되므로 여기선 건너뜀
+        if defaults.data(forKey: "pendingSharedPrayerData") != nil { return }
+
+        // 구 형식 (텍스트만 공유) — AddPrayerView pre-fill
+        let key = "pendingSharedPrayerText"
+        guard let text = defaults.string(forKey: key), !text.isEmpty else { return }
+
+        defaults.removeObject(forKey: key)
+        defaults.synchronize()
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            NotificationCenter.default.post(
+                name: .sharedPrayerTextReceived,
+                object: nil,
+                userInfo: ["text": text]
+            )
+        }
+    }
+
 }
 
 // MARK: - App Delegate
 
 class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // 알림 델리게이트 설정
         UNUserNotificationCenter.current().delegate = self
         return true
+    }
+
+    // Share Extension 완료 후 앱이 포그라운드로 올 때 감지
+    func applicationDidBecomeActive(_ application: UIApplication) {
+        checkPendingSharedText()
     }
 
     // 포그라운드에서 알림 표시
@@ -84,7 +157,29 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
 
     // 알림 탭 처리
     func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
-        // 알림을 탭했을 때의 처리
         completionHandler()
+    }
+
+    private func checkPendingSharedText() {
+        let appGroupID = "group.prayAnswer.widget"
+        guard let defaults = UserDefaults(suiteName: appGroupID) else { return }
+
+        // 새 JSON 형식은 URL scheme(prayanswer://prayers)으로 ContentView에서 처리
+        if defaults.data(forKey: "pendingSharedPrayerData") != nil { return }
+
+        // 구 형식 텍스트 처리
+        let key = "pendingSharedPrayerText"
+        guard let text = defaults.string(forKey: key), !text.isEmpty else { return }
+
+        defaults.removeObject(forKey: key)
+        defaults.synchronize()
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            NotificationCenter.default.post(
+                name: .sharedPrayerTextReceived,
+                object: nil,
+                userInfo: ["text": text]
+            )
+        }
     }
 }

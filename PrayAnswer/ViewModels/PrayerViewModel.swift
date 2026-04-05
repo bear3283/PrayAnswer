@@ -318,8 +318,13 @@ final class PrayerViewModel: ObservableObject {
     private func updateWidgetData() {
         guard checkIfValid() else { return }
 
+        // fetch 직후 즉시 값 타입 변환 (Prayer @Model 참조를 외부로 전달 금지)
         let allFavorites = favoritePrayers()
-        let favoritesByStorage = Dictionary(grouping: allFavorites) { $0.storage }
-        WidgetDataManager.shared.shareFavoritePrayersByStorage(favoritesByStorage)
+        var dataByStorage: [PrayerStorage: [PrayerWidgetData]] = [:]
+        for prayer in allFavorites {
+            let storage = prayer.storage
+            dataByStorage[storage, default: []].append(prayer.toWidgetData())
+        }
+        WidgetDataManager.shared.shareFavoritePrayersByStorage(dataByStorage)
     }
 }

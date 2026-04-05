@@ -146,12 +146,11 @@ struct ModernPrayerRow: View {
     
     var body: some View {
         ModernCard {
-            VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
-                // 상단: 상태 아이콘 + 대상자 + 카테고리 + 즐겨찾기
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+                // 상단: 상태 + 대상자 + 카테고리 + 첨부 + 알림 + D-Day + 즐겨찾기
                 HStack(alignment: .center, spacing: DesignSystem.Spacing.sm) {
                     StatusIndicator(storage: prayer.storage, size: .medium)
 
-                    // 대상자 표시 (있는 경우)
                     if prayer.hasTarget {
                         Text(prayer.target)
                             .font(DesignSystem.Typography.headline)
@@ -173,6 +172,16 @@ struct ModernPrayerRow: View {
                         .foregroundColor(DesignSystem.Colors.secondaryText)
                     }
 
+                    if prayer.notificationEnabled {
+                        Image(systemName: "bell.fill")
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundColor(DesignSystem.Colors.primary.opacity(0.8))
+                    }
+
+                    if prayer.hasTargetDate {
+                        DDayBadge(prayer: prayer, size: .small)
+                    }
+
                     Spacer()
 
                     if let onFavoriteToggle = onFavoriteToggle {
@@ -182,26 +191,17 @@ struct ModernPrayerRow: View {
                     }
                 }
 
-                // 중간: 기도 내용 (전체 너비 사용, 3줄)
+                // 기도 내용
                 Text(prayer.content)
                     .font(DesignSystem.Typography.body)
                     .foregroundColor(DesignSystem.Colors.primaryText)
                     .lineLimit(3)
                     .frame(maxWidth: .infinity, alignment: .leading)
 
-                // 하단: D-Day + 날짜
-                HStack {
-                    // D-Day 배지 표시
-                    if prayer.hasTargetDate {
-                        DDayBadge(prayer: prayer, size: .small)
-                    }
-
-                    Spacer()
-
-                    Text(prayer.formattedCreatedDate)
-                        .font(DesignSystem.Typography.caption2)
-                        .foregroundColor(DesignSystem.Colors.tertiaryText)
-                }
+                // 날짜 (D-Day 없어도 고정 높이 없이 자연스럽게 표시)
+                Text(prayer.formattedCreatedDate)
+                    .font(DesignSystem.Typography.caption2)
+                    .foregroundColor(DesignSystem.Colors.tertiaryText)
             }
             .padding(DesignSystem.Spacing.lg)
             .frame(maxWidth: .infinity, alignment: .leading)

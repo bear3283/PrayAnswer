@@ -52,6 +52,19 @@ struct WeekdaySelection: Codable, Equatable {
     }
 
     var displayText: String {
+        // 매일 (7일 모두)
+        if monday && tuesday && wednesday && thursday && friday && saturday && sunday {
+            return "매일"
+        }
+        // 주중 (월~금만)
+        if monday && tuesday && wednesday && thursday && friday && !saturday && !sunday {
+            return "주중"
+        }
+        // 주말 (토~일만)
+        if saturday && sunday && !monday && !tuesday && !wednesday && !thursday && !friday {
+            return "주말"
+        }
+        // 개별 요일
         let dayNames = [
             (sunday, L.Weekday.sunday),
             (monday, L.Weekday.monday),

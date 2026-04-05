@@ -113,9 +113,9 @@ struct PrayAnswerShortcuts: AppShortcutsProvider {
         AppShortcut(
             intent: AddPrayerIntent(),
             phrases: [
-                "\\(.applicationName)에 기도제목 추가",
-                "\\(.applicationName)에 기도 추가해줘",
-                "\\(.applicationName) 기도제목 적어줘"
+                "\(.applicationName)에 기도제목 추가",
+                "\(.applicationName)에 기도 추가해줘",
+                "\(.applicationName) 기도제목 적어줘"
             ],
             shortTitle: "기도제목 추가",
             systemImageName: "hands.clap.fill"
@@ -123,9 +123,9 @@ struct PrayAnswerShortcuts: AppShortcutsProvider {
         AppShortcut(
             intent: CheckInPrayerHabitIntent(),
             phrases: [
-                "\\(.applicationName) 오늘 기도 완료",
-                "\\(.applicationName) 기도 체크",
-                "\\(.applicationName) 기도했어"
+                "\(.applicationName) 오늘 기도 완료",
+                "\(.applicationName) 기도 체크",
+                "\(.applicationName) 기도했어"
             ],
             shortTitle: "기도 완료",
             systemImageName: "checkmark.circle.fill"

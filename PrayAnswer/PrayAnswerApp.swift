@@ -23,18 +23,15 @@ struct PrayAnswerApp: App {
     }
 
     private static func makeModelContainer(schema: Schema) -> ModelContainer {
-        // CloudKit 컨테이너가 Apple 서버에 초기화된 후 아래 주석을 해제하세요.
-        // CloudKit Dashboard(Xcode → Signing & Capabilities → CloudKit Dashboard)에서
-        // iCloud.com.restart.PrayAnswer 컨테이너 스키마가 Deploy 된 이후 활성화합니다.
-        //
-        // if let container = try? ModelContainer(
-        //     for: schema,
-        //     configurations: ModelConfiguration(schema: schema, cloudKitDatabase: .automatic)
-        // ) {
-        //     print("✅ ModelContainer(CloudKit) 초기화 성공")
-        //     return container
-        // }
-        // print("⚠️ CloudKit 초기화 실패, 로컬 전용으로 재시도")
+        // 1차: CloudKit 동기화 활성화
+        if let container = try? ModelContainer(
+            for: schema,
+            configurations: ModelConfiguration(schema: schema, cloudKitDatabase: .automatic)
+        ) {
+            print("✅ ModelContainer(CloudKit) 초기화 성공")
+            return container
+        }
+        print("⚠️ CloudKit 초기화 실패, 로컬 전용으로 재시도")
 
         // 로컬 전용 — cloudKitDatabase: .none 명시로 entitlements의 CloudKit 키 무시
         let localConfig = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false, cloudKitDatabase: .none)

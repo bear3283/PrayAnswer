@@ -8,6 +8,7 @@
 import SwiftUI
 import SwiftData
 import UserNotifications
+import CoreData
 
 @main
 struct PrayAnswerApp: App {
@@ -50,8 +51,47 @@ struct PrayAnswerApp: App {
                     // Share Extension에서 공유된 텍스트 처리
                     checkPendingSharedText()
                 }
+                .onReceive(
+                    NotificationCenter.default.publisher(
+                        for: NSPersistentCloudKitContainer.eventChangedNotification
+                    )
+                ) { notification in
+                    handleCloudKitEvent(notification)
+                }
         }
         .modelContainer(modelContainer)
+    }
+
+    // MARK: - CloudKit 동기화 이벤트 처리
+
+    private func handleCloudKitEvent(_ notification: Notification) {
+        guard
+            let event = notification.userInfo?[
+                NSPersistentCloudKitContainer.eventNotificationUserInfoKey
+            ] as? NSPersistentCloudKitContainer.Event,
+            event.type == .import,
+            event.endDate != nil,
+            event.error == nil
+        else { return }
+
+        // 다른 기기에서 import 완료 → 위젯 데이터 갱신
+        DispatchQueue.main.async {
+            refreshWidgetData()
+        }
+    }
+
+    private func refreshWidgetData() {
+        let context = modelContainer.mainContext
+        guard let prayers = try? context.fetch(FetchDescriptor<Prayer>()) else { return }
+
+        var dataByStorage: [PrayerStorage: [PrayerWidgetData]] = [:]
+        for storage in PrayerStorage.allCases {
+            let filtered = prayers
+                .filter { $0.storage == storage && $0.isFavorite }
+                .sorted { $0.createdDate > $1.createdDate }
+            dataByStorage[storage] = filtered.map { $0.toWidgetData() }
+        }
+        WidgetDataManager.shared.shareFavoritePrayersByStorage(dataByStorage)
     }
 
     private func requestNotificationPermission() {

@@ -50,8 +50,8 @@ final class Prayer {
     var createdDate: Date = Date()
     var modifiedDate: Date?
     var movedDate: Date?
-    var storage: PrayerStorage = .wait
-    var category: PrayerCategory = .personal
+    var storage: PrayerStorage = PrayerStorage.wait
+    var category: PrayerCategory = PrayerCategory.personal
     var target: String = "" // 기도 대상자
     var isFavorite: Bool = false // 즐겨찾기 여부
     var targetDate: Date? // D-Day 목표 날짜

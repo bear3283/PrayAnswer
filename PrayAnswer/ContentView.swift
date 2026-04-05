@@ -64,6 +64,11 @@ struct ContentView: View {
             // prayanswer://people → 기도대상자 탭
             selectedTab = 0
 
+        case "prayers":
+            // prayanswer://prayers → Share Extension 저장 후 기도 목록으로 이동
+            savePendingSharedPrayer()
+            selectedTab = 2
+
         case "stats":
             // prayanswer://stats → 통계 탭
             selectedTab = 4
@@ -71,6 +76,43 @@ struct ContentView: View {
         default:
             break
         }
+    }
+
+    // MARK: - Share Extension 직접 저장
+
+    private struct PendingSharedPrayerData: Codable {
+        let content: String
+        let target: String
+        let targetDate: Double?
+        let notificationEnabled: Bool
+    }
+
+    private func savePendingSharedPrayer() {
+        let defaults = UserDefaults(suiteName: "group.prayAnswer.widget")
+        guard let data = defaults?.data(forKey: "pendingSharedPrayerData"),
+              let pending = try? JSONDecoder().decode(PendingSharedPrayerData.self, from: data) else { return }
+
+        defaults?.removeObject(forKey: "pendingSharedPrayerData")
+        defaults?.synchronize()
+
+        let targetDate: Date? = pending.targetDate.map { Date(timeIntervalSince1970: $0) }
+        let title = Prayer.generateTitle(from: pending.target, category: .other)
+        let prayer = Prayer(
+            title: title,
+            content: pending.content,
+            category: .other,
+            target: pending.target,
+            targetDate: targetDate,
+            notificationEnabled: pending.notificationEnabled
+        )
+        modelContext.insert(prayer)
+        try? modelContext.save()
+
+        if pending.notificationEnabled, let date = targetDate {
+            NotificationManager.shared.scheduleNotifications(for: prayer, targetDate: date)
+        }
+
+        WidgetCenter.shared.reloadAllTimelines()
     }
 
 }

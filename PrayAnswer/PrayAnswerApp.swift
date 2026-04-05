@@ -73,17 +73,19 @@ struct PrayAnswerApp: App {
 
     private func checkPendingSharedText() {
         let appGroupID = "group.prayAnswer.widget"
+        guard let defaults = UserDefaults(suiteName: appGroupID) else { return }
+
+        // 새 JSON 형식 (Share Extension에서 직접 저장) — URL scheme으로 처리 안 된 경우 대비
+        // prayanswer://prayers URL로 앱이 열리면 ContentView에서 처리되므로 여기선 건너뜀
+        if defaults.data(forKey: "pendingSharedPrayerData") != nil { return }
+
+        // 구 형식 (텍스트만 공유) — AddPrayerView pre-fill
         let key = "pendingSharedPrayerText"
+        guard let text = defaults.string(forKey: key), !text.isEmpty else { return }
 
-        guard let defaults = UserDefaults(suiteName: appGroupID),
-              let text = defaults.string(forKey: key),
-              !text.isEmpty else { return }
-
-        // 읽은 즉시 삭제 (중복 처리 방지)
         defaults.removeObject(forKey: key)
         defaults.synchronize()
 
-        // AddPrayerView에 content pre-fill 알림 발송
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             NotificationCenter.default.post(
                 name: .sharedPrayerTextReceived,
@@ -120,11 +122,14 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
 
     private func checkPendingSharedText() {
         let appGroupID = "group.prayAnswer.widget"
-        let key = "pendingSharedPrayerText"
+        guard let defaults = UserDefaults(suiteName: appGroupID) else { return }
 
-        guard let defaults = UserDefaults(suiteName: appGroupID),
-              let text = defaults.string(forKey: key),
-              !text.isEmpty else { return }
+        // 새 JSON 형식은 URL scheme(prayanswer://prayers)으로 ContentView에서 처리
+        if defaults.data(forKey: "pendingSharedPrayerData") != nil { return }
+
+        // 구 형식 텍스트 처리
+        let key = "pendingSharedPrayerText"
+        guard let text = defaults.string(forKey: key), !text.isEmpty else { return }
 
         defaults.removeObject(forKey: key)
         defaults.synchronize()

@@ -542,7 +542,7 @@
 				DEVELOPMENT_TEAM = 36CPZWS26C;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = PrayAnswerShareExtension/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -570,7 +570,7 @@
 				DEVELOPMENT_TEAM = 36CPZWS26C;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = PrayAnswerShareExtension/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

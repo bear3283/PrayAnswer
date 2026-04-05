@@ -36,22 +36,22 @@ enum AttachmentType: String, Codable, CaseIterable {
 @Model
 final class Attachment {
     /// 저장된 파일명 (UUID 기반, PrayerAttachments/ 디렉토리)
-    var fileName: String
+    var fileName: String = ""
 
     /// 표시용 원본 파일명
-    var originalName: String
+    var originalName: String = ""
 
     /// 첨부 타입 (이미지 또는 PDF)
-    var typeRawValue: String
+    var typeRawValue: String = "image"
 
     /// 파일 크기 (바이트)
-    var fileSize: Int64
+    var fileSize: Int64 = 0
 
     /// 생성 날짜
-    var createdDate: Date
+    var createdDate: Date = Date()
 
     /// 표시 순서
-    var order: Int
+    var order: Int = 0
 
     /// OCR 추출 텍스트 (이미지만 해당)
     var ocrText: String?

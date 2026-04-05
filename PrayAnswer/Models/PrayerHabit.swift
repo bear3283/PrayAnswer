@@ -7,12 +7,12 @@ import UserNotifications
 /// 반복 기도 시간 스케줄. 매일 또는 특정 요일에 알림을 보내고 체크인을 기록한다.
 @Model
 final class PrayerHabit {
-    var label: String           // 예: "아침 기도", "저녁 기도"
-    var time: Date              // 시각만 사용 (날짜 부분은 무시)
+    var label: String = ""      // 예: "아침 기도", "저녁 기도"
+    var time: Date = Date()    // 시각만 사용 (날짜 부분은 무시)
     var weekdaysData: Data?     // WeekdaySelection JSON
-    var notificationEnabled: Bool
-    var isActive: Bool
-    var createdDate: Date
+    var notificationEnabled: Bool = false
+    var isActive: Bool = true
+    var createdDate: Date = Date()
 
     @Relationship(deleteRule: .cascade)
     var logs: [PrayerHabitLog] = []
@@ -106,9 +106,9 @@ final class PrayerHabit {
 
 @Model
 final class PrayerHabitLog {
-    var date: Date
+    var date: Date = Date()
     var completedAt: Date?
-    var isCompleted: Bool
+    var isCompleted: Bool = false
 
     var habit: PrayerHabit?
 

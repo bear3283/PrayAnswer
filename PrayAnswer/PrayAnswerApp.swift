@@ -18,15 +18,15 @@ struct PrayAnswerApp: App {
 
     init() {
         let schema = Schema([Prayer.self, Attachment.self, PrayerCollection.self, PrayerHabit.self, PrayerHabitLog.self])
-        let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+        let config = ModelConfiguration(schema: schema, cloudKitDatabase: .automatic)
         do {
             modelContainer = try ModelContainer(for: schema, configurations: config)
         } catch {
-            // 스키마 마이그레이션 실패 시: 기존 저장소를 유지한 채 재시도
-            // (데이터 삭제 없이 앱을 안전하게 구동)
-            print("⚠️ ModelContainer 초기화 실패, 재시도: \(error)")
+            // CloudKit 초기화 실패 시 로컬 전용으로 재시도
+            print("⚠️ ModelContainer(CloudKit) 초기화 실패, 로컬 전용으로 재시도: \(error)")
             do {
-                modelContainer = try ModelContainer(for: schema)
+                let localConfig = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+                modelContainer = try ModelContainer(for: schema, configurations: localConfig)
             } catch {
                 fatalError("ModelContainer 복구 실패: \(error)")
             }

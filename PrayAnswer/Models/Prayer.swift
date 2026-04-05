@@ -45,15 +45,15 @@ enum PrayerCategory: String, CaseIterable, Codable {
 // 기도 모델
 @Model
 final class Prayer {
-    var title: String
-    var content: String
-    var createdDate: Date
+    var title: String = ""
+    var content: String = ""
+    var createdDate: Date = Date()
     var modifiedDate: Date?
     var movedDate: Date?
-    var storage: PrayerStorage
-    var category: PrayerCategory
-    var target: String // 기도 대상자
-    var isFavorite: Bool // 즐겨찾기 여부
+    var storage: PrayerStorage = .wait
+    var category: PrayerCategory = .personal
+    var target: String = "" // 기도 대상자
+    var isFavorite: Bool = false // 즐겨찾기 여부
     var targetDate: Date? // D-Day 목표 날짜
     var notificationEnabled: Bool = false // 알림 활성화 여부 (기본값으로 마이그레이션 지원)
     var notificationSettingsData: Data? // 알림 세부설정 JSON 저장

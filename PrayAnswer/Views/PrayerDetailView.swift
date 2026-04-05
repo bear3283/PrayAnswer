@@ -625,13 +625,13 @@ struct PrayerDetailView: View {
             finalSettings.isEnabled = editedNotificationEnabled
 
             // 삭제된 첨부 파일 처리
-            let existingFileNames = Set(prayer.attachments.map { $0.fileName })
+            let existingFileNames = Set((prayer.attachments ?? []).map { $0.fileName })
             let editedFileNames = Set(editedAttachments.map { $0.fileName })
             let deletedFileNames = existingFileNames.subtracting(editedFileNames)
 
             for fileName in deletedFileNames {
                 AttachmentStorageManager.shared.deleteFile(fileName: fileName)
-                if let attachment = prayer.attachments.first(where: { $0.fileName == fileName }) {
+                if let attachment = (prayer.attachments ?? []).first(where: { $0.fileName == fileName }) {
                     prayer.removeAttachment(attachment)
                 }
             }

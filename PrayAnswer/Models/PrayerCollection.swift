@@ -15,7 +15,7 @@ final class PrayerCollection {
     var sortOrder: Int = 0
 
     @Relationship(deleteRule: .nullify, inverse: \Prayer.collection)
-    var prayers: [Prayer] = []
+    var prayers: [Prayer]?
 
     init(name: String, icon: String = "folder.fill", colorIndex: Int = 0, sortOrder: Int = 0) {
         self.name = name
@@ -59,5 +59,5 @@ final class PrayerCollection {
         Self.colorPalette[colorIndex % Self.colorPalette.count]
     }
 
-    var prayerCount: Int { prayers.count }
+    var prayerCount: Int { (prayers ?? []).count }
 }

@@ -82,7 +82,7 @@ struct CheckInPrayerHabitIntent: AppIntent {
         for habit in habits {
             guard habit.weekdays.selectedDays.contains(todayWeekday) else { continue }
 
-            let alreadyLogged = habit.logs.contains {
+            let alreadyLogged = (habit.logs ?? []).contains {
                 Calendar.current.startOfDay(for: $0.date) == today && $0.isCompleted
             }
             guard !alreadyLogged else { continue }
@@ -91,7 +91,7 @@ struct CheckInPrayerHabitIntent: AppIntent {
             log.isCompleted = true
             log.completedAt = Date()
             log.habit = habit
-            habit.logs.append(log)
+            if habit.logs == nil { habit.logs = [] }; habit.logs!.append(log)
             context.insert(log)
             checkedIn += 1
         }

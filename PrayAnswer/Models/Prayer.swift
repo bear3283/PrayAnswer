@@ -60,8 +60,8 @@ final class Prayer {
     var calendarEventId: String? // 캘린더 이벤트 식별자
     var imageFileName: String? // 첨부 이미지 파일명 (레거시 - 위젯 호환용)
 
-    /// 첨부 파일 목록 (이미지, PDF)
-    @Relationship(deleteRule: .cascade) var attachments: [Attachment] = []
+    /// 첨부 파일 목록 (이미지, PDF) — CloudKit 호환을 위해 Optional
+    @Relationship(deleteRule: .cascade) var attachments: [Attachment]?
 
     /// 속한 컬렉션 (폴더). nil이면 미분류
     var collection: PrayerCollection?
@@ -184,43 +184,45 @@ extension Prayer {
 
     /// 첨부 파일이 있는지 여부 (레거시 이미지 포함)
     var hasAttachments: Bool {
-        !attachments.isEmpty || hasImage
+        !(attachments ?? []).isEmpty || hasImage
     }
 
     /// 총 첨부 파일 개수 (레거시 이미지 포함)
     var attachmentCount: Int {
-        let legacyCount = (hasImage && attachments.isEmpty) ? 1 : 0
-        return attachments.count + legacyCount
+        let list = attachments ?? []
+        let legacyCount = (hasImage && list.isEmpty) ? 1 : 0
+        return list.count + legacyCount
     }
 
     /// 이미지 첨부 파일만 필터링 (정렬됨)
     var imageAttachments: [Attachment] {
-        attachments.filter { $0.isImage }.sorted { $0.order < $1.order }
+        (attachments ?? []).filter { $0.isImage }.sorted { $0.order < $1.order }
     }
 
     /// PDF 첨부 파일만 필터링 (정렬됨)
     var pdfAttachments: [Attachment] {
-        attachments.filter { $0.isPDF }.sorted { $0.order < $1.order }
+        (attachments ?? []).filter { $0.isPDF }.sorted { $0.order < $1.order }
     }
 
     /// 모든 첨부 파일 (정렬됨)
     var sortedAttachments: [Attachment] {
-        attachments.sorted { $0.order < $1.order }
+        (attachments ?? []).sorted { $0.order < $1.order }
     }
 
     /// 첨부 파일 추가
     func addAttachment(_ attachment: Attachment) {
-        attachment.order = attachments.count
+        attachment.order = (attachments ?? []).count
         attachment.prayer = self
-        attachments.append(attachment)
+        if attachments == nil { attachments = [] }
+        attachments!.append(attachment)
         modifiedDate = Date()
     }
 
     /// 첨부 파일 제거
     func removeAttachment(_ attachment: Attachment) {
-        attachments.removeAll { $0.fileName == attachment.fileName }
+        attachments?.removeAll { $0.fileName == attachment.fileName }
         // 순서 재정렬
-        for (index, att) in attachments.sorted(by: { $0.order < $1.order }).enumerated() {
+        for (index, att) in (attachments ?? []).sorted(by: { $0.order < $1.order }).enumerated() {
             att.order = index
         }
         modifiedDate = Date()

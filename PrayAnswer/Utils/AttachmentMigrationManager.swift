@@ -59,7 +59,7 @@ final class AttachmentMigrationManager {
                 // imageFileName이 있고, attachments가 비어있는 경우만 마이그레이션
                 if let imageFileName = prayer.imageFileName,
                    !imageFileName.isEmpty,
-                   prayer.attachments.isEmpty {
+                   (prayer.attachments ?? []).isEmpty {
 
                     // 파일 복사 (PrayerImages -> PrayerAttachments)
                     if let copiedFileName = copyImageFile(from: imageFileName) {

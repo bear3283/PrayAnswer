@@ -84,7 +84,7 @@ final class PrayerViewModel: ObservableObject {
 
         #if !WIDGET_EXTENSION
         // 첨부 파일 삭제 (이미지, PDF)
-        let fileNames = prayer.attachments.map { $0.fileName }
+        let fileNames = (prayer.attachments ?? []).map { $0.fileName }
         AttachmentStorageManager.shared.deleteFiles(fileNames: fileNames)
 
         // 레거시 이미지 파일 삭제

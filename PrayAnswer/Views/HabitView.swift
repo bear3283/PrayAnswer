@@ -189,7 +189,7 @@ struct HabitView: View {
             log.isCompleted = true
             log.completedAt = Date()
             log.habit = habit
-            habit.logs.append(log)
+            if habit.logs == nil { habit.logs = [] }; habit.logs!.append(log)
             modelContext.insert(log)
         }
 

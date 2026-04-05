@@ -15,7 +15,7 @@ final class PrayerHabit {
     var createdDate: Date = Date()
 
     @Relationship(deleteRule: .cascade)
-    var logs: [PrayerHabitLog] = []
+    var logs: [PrayerHabitLog]?
 
     init(label: String, time: Date, weekdays: WeekdaySelection = .everyday, notificationEnabled: Bool = true) {
         self.label = label
@@ -51,7 +51,7 @@ final class PrayerHabit {
     /// 특정 날짜의 로그
     func log(for date: Date) -> PrayerHabitLog? {
         let target = Calendar.current.startOfDay(for: date)
-        return logs.first { Calendar.current.startOfDay(for: $0.date) == target }
+        return (logs ?? []).first { Calendar.current.startOfDay(for: $0.date) == target }
     }
 
     /// 오늘 완료 여부
@@ -80,7 +80,7 @@ final class PrayerHabit {
         }
 
         while true {
-            let dayLog = logs.first { calendar.startOfDay(for: $0.date) == checkDate }
+            let dayLog = (logs ?? []).first { calendar.startOfDay(for: $0.date) == checkDate }
             guard dayLog?.isCompleted == true else { break }
             streak += 1
             guard let prev = calendar.date(byAdding: .day, value: -1, to: checkDate) else { break }
@@ -91,14 +91,14 @@ final class PrayerHabit {
 
     /// 전체 완료 횟수
     var totalCompletedCount: Int {
-        logs.filter { $0.isCompleted }.count
+        (logs ?? []).filter { $0.isCompleted }.count
     }
 
     /// 이번 주 완료 횟수
     var thisWeekCount: Int {
         let calendar = Calendar.current
         let startOfWeek = calendar.dateInterval(of: .weekOfYear, for: Date())?.start ?? Date()
-        return logs.filter { $0.isCompleted && $0.date >= startOfWeek }.count
+        return (logs ?? []).filter { $0.isCompleted && $0.date >= startOfWeek }.count
     }
 }
 

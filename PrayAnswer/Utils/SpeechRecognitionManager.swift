@@ -126,11 +126,7 @@ final class SpeechRecognitionManager: NSObject {
 
             // 에러 또는 최종 결과일 때 정리
             if error != nil || isFinal {
-                // 인식 완료 후 리소스 정리
-                self.recognitionRequest = nil
-                self.recognitionTask = nil
-
-                // 오디오 엔진이 아직 실행 중이면 중지
+                // 오디오 엔진이 아직 실행 중이면 중지 (오디오 리소스는 백그라운드에서 처리 가능)
                 if self.audioEngine.isRunning {
                     self.audioEngine.stop()
                     self.audioEngine.inputNode.removeTap(onBus: 0)
@@ -138,7 +134,10 @@ final class SpeechRecognitionManager: NSObject {
 
                 try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
 
+                // @Observable 프로퍼티는 반드시 메인 스레드에서 수정
                 DispatchQueue.main.async {
+                    self.recognitionRequest = nil
+                    self.recognitionTask = nil
                     self.isRecording = false
                 }
             }

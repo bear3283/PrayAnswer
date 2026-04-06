@@ -13,6 +13,7 @@ import CoreData
 @main
 struct PrayAnswerApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+    @Environment(\.scenePhase) private var scenePhase
 
     // SwiftData ModelContainer
     let modelContainer: ModelContainer
@@ -28,18 +29,26 @@ struct PrayAnswerApp: App {
             for: schema,
             configurations: ModelConfiguration(schema: schema, cloudKitDatabase: .automatic)
         ) {
+            #if DEBUG
             print("✅ ModelContainer(CloudKit) 초기화 성공")
+            #endif
             return container
         }
+        #if DEBUG
         print("⚠️ CloudKit 초기화 실패, 로컬 전용으로 재시도")
+        #endif
 
         // 로컬 전용 — cloudKitDatabase: .none 명시로 entitlements의 CloudKit 키 무시
         let localConfig = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false, cloudKitDatabase: .none)
         if let container = try? ModelContainer(for: schema, configurations: localConfig) {
+            #if DEBUG
             print("✅ ModelContainer(로컬) 초기화 성공")
+            #endif
             return container
         }
+        #if DEBUG
         print("⚠️ 로컬 초기화 실패, 저장소 재생성 시도")
+        #endif
 
         // 최후 수단: 기존 저장소 파일 삭제 후 재생성 (데이터 손실 발생)
         if let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first {
@@ -49,7 +58,9 @@ struct PrayAnswerApp: App {
         }
         do {
             let container = try ModelContainer(for: schema, configurations: localConfig)
+            #if DEBUG
             print("✅ ModelContainer 저장소 재생성 성공")
+            #endif
             return container
         } catch {
             fatalError("ModelContainer 완전 초기화 실패: \(error)")
@@ -76,12 +87,17 @@ struct PrayAnswerApp: App {
                 .onReceive(
                     NotificationCenter.default.publisher(
                         for: NSPersistentCloudKitContainer.eventChangedNotification
-                    )
+                    ).receive(on: DispatchQueue.main)
                 ) { notification in
                     handleCloudKitEvent(notification)
                 }
         }
         .modelContainer(modelContainer)
+        .onChange(of: scenePhase) { _, newPhase in
+            if newPhase == .active {
+                SharedTextHandler.processPending(delay: 0.3)
+            }
+        }
     }
 
     // MARK: - CloudKit 동기화 이벤트 처리
@@ -134,27 +150,7 @@ struct PrayAnswerApp: App {
     // MARK: - Share Extension 연동
 
     private func checkPendingSharedText() {
-        let appGroupID = "group.prayAnswer.widget"
-        guard let defaults = UserDefaults(suiteName: appGroupID) else { return }
-
-        // 새 JSON 형식 (Share Extension에서 직접 저장) — URL scheme으로 처리 안 된 경우 대비
-        // prayanswer://prayers URL로 앱이 열리면 ContentView에서 처리되므로 여기선 건너뜀
-        if defaults.data(forKey: "pendingSharedPrayerData") != nil { return }
-
-        // 구 형식 (텍스트만 공유) — AddPrayerView pre-fill
-        let key = "pendingSharedPrayerText"
-        guard let text = defaults.string(forKey: key), !text.isEmpty else { return }
-
-        defaults.removeObject(forKey: key)
-        defaults.synchronize()
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            NotificationCenter.default.post(
-                name: .sharedPrayerTextReceived,
-                object: nil,
-                userInfo: ["text": text]
-            )
-        }
+        SharedTextHandler.processPending(delay: 0.5)
     }
 
 }
@@ -167,11 +163,6 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         return true
     }
 
-    // Share Extension 완료 후 앱이 포그라운드로 올 때 감지
-    func applicationDidBecomeActive(_ application: UIApplication) {
-        checkPendingSharedText()
-    }
-
     // 포그라운드에서 알림 표시
     func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
         completionHandler([.banner, .sound, .badge])
@@ -181,22 +172,30 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
     func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
         completionHandler()
     }
+}
 
-    private func checkPendingSharedText() {
+// MARK: - Share Extension 텍스트 공유 처리 (중복 제거용 헬퍼)
+
+private enum SharedTextHandler {
+    static func processPending(delay: Double) {
         let appGroupID = "group.prayAnswer.widget"
         guard let defaults = UserDefaults(suiteName: appGroupID) else { return }
 
-        // 새 JSON 형식은 URL scheme(prayanswer://prayers)으로 ContentView에서 처리
-        if defaults.data(forKey: "pendingSharedPrayerData") != nil { return }
+        // 새 JSON 형식: URL scheme 전달이 실패한 경우를 대비해 알림으로도 fallback 처리
+        if defaults.data(forKey: "pendingSharedPrayerData") != nil {
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+                NotificationCenter.default.post(name: .pendingSharedPrayerDataAvailable, object: nil)
+            }
+            return
+        }
 
-        // 구 형식 텍스트 처리
         let key = "pendingSharedPrayerText"
         guard let text = defaults.string(forKey: key), !text.isEmpty else { return }
 
         defaults.removeObject(forKey: key)
         defaults.synchronize()
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
             NotificationCenter.default.post(
                 name: .sharedPrayerTextReceived,
                 object: nil,

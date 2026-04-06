@@ -1,42 +1,28 @@
 import Foundation
-import SwiftUI
 import SwiftData
 import WidgetKit
 
 /// 기도 관련 에러 타입
 enum PrayerError: Error {
     case invalidState
-    case saveFailed
-    case deleteFailed
-    case updateFailed
 }
 
 @Observable
-final class PrayerViewModel: ObservableObject {
+@MainActor
+final class PrayerViewModel {
     private var modelContext: ModelContext
-    private var isDeinitialized = false
-    
+
     init(modelContext: ModelContext) {
         self.modelContext = modelContext
     }
-    
+
     deinit {
-        isDeinitialized = true
         PrayerLogger.shared.viewModelDeallocated("PrayerViewModel")
     }
-    
-    private func checkIfValid() -> Bool {
-        guard !isDeinitialized else {
-            PrayerLogger.shared.viewModelOperationAfterDealloc("PrayerViewModel")
-            return false
-        }
-        return true
-    }
-    
+
     // 기도 추가 - 에러를 외부로 전파, Prayer 객체 반환
     @discardableResult
     func addPrayer(title: String, content: String, category: PrayerCategory = .personal, target: String = "", targetDate: Date? = nil, notificationEnabled: Bool = false, notificationSettings: NotificationSettings? = nil, imageFileName: String? = nil) throws -> Prayer {
-        guard checkIfValid() else { throw PrayerError.invalidState }
         let newPrayer = Prayer(title: title, content: content, category: category, target: target, targetDate: targetDate, notificationEnabled: notificationEnabled, notificationSettings: notificationSettings, imageFileName: imageFileName)
         modelContext.insert(newPrayer)
 
@@ -316,8 +302,6 @@ final class PrayerViewModel: ObservableObject {
     
     // 위젯 데이터 업데이트 (ModelContext는 메인 스레드에서만 접근)
     private func updateWidgetData() {
-        guard checkIfValid() else { return }
-
         // fetch 직후 즉시 값 타입 변환 (Prayer @Model 참조를 외부로 전달 금지)
         let allFavorites = favoritePrayers()
         var dataByStorage: [PrayerStorage: [PrayerWidgetData]] = [:]

@@ -25,6 +25,9 @@ struct ContentView: View {
         .onOpenURL { url in
             handleWidgetURL(url)
         }
+        .onReceive(NotificationCenter.default.publisher(for: .pendingSharedPrayerDataAvailable)) { _ in
+            savePendingSharedPrayer()
+        }
     }
 
     private func handleWidgetURL(_ url: URL) {
@@ -113,6 +116,9 @@ struct ContentView: View {
         }
 
         WidgetCenter.shared.reloadAllTimelines()
+
+        // 목록 새로고침 트리거 (앱이 실행 중일 때 @Query 자동 갱신이 안 되는 경우 fallback)
+        NotificationCenter.default.post(name: .prayerSavedFromShareExtension, object: nil)
     }
 
 }
@@ -152,7 +158,7 @@ struct iPhoneContentView: View {
             HabitView()
                 .tabItem {
                     Image(systemName: "clock.badge.checkmark")
-                    Text("습관")
+                    Text("기도 습관")
                 }
                 .tag(3)
 
@@ -204,6 +210,10 @@ extension Notification.Name {
     static let widgetOpenFavorites = Notification.Name("WidgetOpenFavorites")
     /// Share Extension에서 텍스트를 공유했을 때 발송
     static let sharedPrayerTextReceived = Notification.Name("SharedPrayerTextReceived")
+    /// Share Extension JSON 데이터가 UserDefaults에 대기 중일 때 발송 (URL scheme 실패 fallback)
+    static let pendingSharedPrayerDataAvailable = Notification.Name("PendingSharedPrayerDataAvailable")
+    /// Share Extension 기도 저장 완료 후 목록 새로고침 트리거
+    static let prayerSavedFromShareExtension = Notification.Name("PrayerSavedFromShareExtension")
 }
 
 // MARK: - iPad Content View (NavigationSplitView-based)
@@ -1141,9 +1151,11 @@ struct PrayerListView: View {
     @State private var isShareMode: Bool = false
     @State private var selectedPrayersForShare: Set<String> = []  // Prayer ID
     @State private var showShareSheet: Bool = false
+    @State private var shareExtensionRefreshID: UUID = UUID()
 
     // 선택된 보관소 + 컬렉션 필터링
     private var filteredPrayers: [Prayer] {
+        _ = shareExtensionRefreshID  // Share Extension 저장 후 강제 재평가 의존성
         var result = allPrayers.filter { $0.storage == selectedStorage }
         if let col = selectedCollection {
             result = result.filter { $0.collection?.persistentModelID == col.persistentModelID }
@@ -1257,9 +1269,10 @@ struct PrayerListView: View {
                             }
                         }
                         .onDelete { indexSet in
+                            let prayers = filteredPrayers
                             for index in indexSet {
-                                let prayer = filteredPrayers[index]
-                                deletePrayer(prayer)
+                                guard index < prayers.count else { continue }
+                                deletePrayer(prayers[index])
                             }
                         }
                     }
@@ -1273,59 +1286,56 @@ struct PrayerListView: View {
 
                 // 고정 헤더 오버레이 (iOS 전화 앱 스타일)
                 VStack(spacing: 0) {
-                    HStack {
-                        // 공유 모드 취소 버튼
-                        if isShareMode {
-                            Button(action: {
-                                withAnimation {
-                                    isShareMode = false
-                                    selectedPrayersForShare.removeAll()
-                                }
-                            }) {
-                                Text(L.Share.cancel)
-                                    .font(DesignSystem.Typography.callout)
-                                    .foregroundColor(DesignSystem.Colors.primary)
-                            }
-                            .padding(.leading, DesignSystem.Spacing.lg)
-                        } else {
-                            Color.clear.frame(width: 60)
-                        }
-
-                        Spacer()
-
+                    ZStack {
+                        // 타이틀 — 항상 화면 정중앙
                         Text(isShareMode ? L.Share.selectPrayers : L.Nav.prayerList)
                             .font(.system(size: 17, weight: .semibold))
                             .foregroundColor(DesignSystem.Colors.primaryText)
+                            .frame(maxWidth: .infinity, alignment: .center)
 
-                        Spacer()
+                        // 좌우 버튼 — 타이틀과 독립적으로 배치
+                        HStack {
+                            if isShareMode {
+                                Button(action: {
+                                    withAnimation {
+                                        isShareMode = false
+                                        selectedPrayersForShare.removeAll()
+                                    }
+                                }) {
+                                    Text(L.Share.cancel)
+                                        .font(DesignSystem.Typography.callout)
+                                        .foregroundColor(DesignSystem.Colors.primary)
+                                }
+                                .padding(.leading, DesignSystem.Spacing.lg)
+                            }
 
-                        // 공유 버튼
-                        if isShareMode {
-                            Button(action: {
-                                if !selectedPrayersForShare.isEmpty {
-                                    showShareSheet = true
+                            Spacer()
+
+                            if isShareMode {
+                                Button(action: {
+                                    if !selectedPrayersForShare.isEmpty {
+                                        showShareSheet = true
+                                    }
+                                }) {
+                                    Text(L.Share.share)
+                                        .font(DesignSystem.Typography.callout)
+                                        .fontWeight(.semibold)
+                                        .foregroundColor(selectedPrayersForShare.isEmpty ? DesignSystem.Colors.tertiaryText : DesignSystem.Colors.primary)
                                 }
-                            }) {
-                                Text(L.Share.share)
-                                    .font(DesignSystem.Typography.callout)
-                                    .fontWeight(.semibold)
-                                    .foregroundColor(selectedPrayersForShare.isEmpty ? DesignSystem.Colors.tertiaryText : DesignSystem.Colors.primary)
-                            }
-                            .disabled(selectedPrayersForShare.isEmpty)
-                            .padding(.trailing, DesignSystem.Spacing.lg)
-                        } else if !filteredPrayers.isEmpty {
-                            Button(action: {
-                                withAnimation {
-                                    isShareMode = true
+                                .disabled(selectedPrayersForShare.isEmpty)
+                                .padding(.trailing, DesignSystem.Spacing.lg)
+                            } else if !filteredPrayers.isEmpty {
+                                Button(action: {
+                                    withAnimation {
+                                        isShareMode = true
+                                    }
+                                }) {
+                                    Image(systemName: "square.and.arrow.up")
+                                        .font(.system(size: 17))
+                                        .foregroundColor(DesignSystem.Colors.primary)
                                 }
-                            }) {
-                                Image(systemName: "square.and.arrow.up")
-                                    .font(.system(size: 17))
-                                    .foregroundColor(DesignSystem.Colors.primary)
+                                .padding(.trailing, DesignSystem.Spacing.lg)
                             }
-                            .padding(.trailing, DesignSystem.Spacing.lg)
-                        } else {
-                            Color.clear.frame(width: 60)
                         }
                     }
                     .frame(height: 44)
@@ -1385,6 +1395,9 @@ struct PrayerListView: View {
             }
             .sheet(isPresented: $showCollectionManager) {
                 CollectionManagerView()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .prayerSavedFromShareExtension)) { _ in
+                shareExtensionRefreshID = UUID()
             }
         }
         .onChange(of: selectedTab) {

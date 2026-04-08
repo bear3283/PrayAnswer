@@ -161,7 +161,7 @@ struct PeopleListView: View {
             .navigationBarHidden(true)
             .navigationDestination(for: PeopleNavigationTarget.self) { nav in
                 if nav.target.isEmpty {
-                    MyselfPrayerListView()
+                    MyProfileView()
                 } else {
                     PersonDetailView(target: nav.target)
                 }

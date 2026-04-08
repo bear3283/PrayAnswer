@@ -13,6 +13,7 @@ struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var selectedTab: Int = 2
+    @State private var pendingImportPackage: PrayerExchangePackage?
 
     var body: some View {
         Group {
@@ -23,10 +24,24 @@ struct ContentView: View {
             }
         }
         .onOpenURL { url in
-            handleWidgetURL(url)
+            handleIncomingURL(url)
         }
         .onReceive(NotificationCenter.default.publisher(for: .pendingSharedPrayerDataAvailable)) { _ in
             savePendingSharedPrayer()
+        }
+        .sheet(item: $pendingImportPackage) { package in
+            ImportPrayerView(package: package)
+        }
+    }
+
+    // MARK: - .prayanswer 파일 처리
+    func handleIncomingURL(_ url: URL) {
+        guard url.pathExtension == "prayanswer" else {
+            handleWidgetURL(url)
+            return
+        }
+        if let package = try? PrayerExchangePackager.read(from: url) {
+            pendingImportPackage = package
         }
     }
 
@@ -380,7 +395,7 @@ struct iPadContentView: View {
     private var peopleDetailContent: some View {
         if let person = selectedPerson {
             if person.isEmpty {
-                MyselfPrayerListView()
+                MyProfileView()
             } else {
                 PersonDetailView(target: person)
             }
@@ -1153,6 +1168,13 @@ struct PrayerListView: View {
     @State private var showShareSheet: Bool = false
     @State private var shareExtensionRefreshID: UUID = UUID()
 
+    // 나의 기도 섹션
+    @State private var showMyPrayerExchange = false
+
+    private var myRequestPrayers: [Prayer] {
+        allPrayers.filter { $0.isMyRequest }
+    }
+
     // 선택된 보관소 + 컬렉션 필터링
     private var filteredPrayers: [Prayer] {
         _ = shareExtensionRefreshID  // Share Extension 저장 후 강제 재평가 의존성
@@ -1172,17 +1194,22 @@ struct PrayerListView: View {
                         // 헤더 공간 확보
                         Color.clear.frame(height: 68)
 
+                        // 나의 기도 섹션
+                        MyPrayerBannerView(
+                            prayers: myRequestPrayers,
+                            onExchange: { showMyPrayerExchange = true }
+                        )
+                        .padding(.horizontal, DesignSystem.Spacing.md)
+
                         // 보관소 선택 섹션
                         ModernStorageSelector(selectedStorage: $selectedStorage, allPrayers: allPrayers)
 
                         // 컬렉션 필터 바
-                        if !collections.isEmpty {
-                            CollectionFilterBar(
-                                collections: collections,
-                                selectedCollection: $selectedCollection,
-                                onManage: { showCollectionManager = true }
-                            )
-                        }
+                        CollectionFilterBar(
+                            collections: collections,
+                            selectedCollection: $selectedCollection,
+                            onManage: { showCollectionManager = true }
+                        )
 
                         EmptyStateView(storage: selectedStorage)
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -1200,6 +1227,22 @@ struct PrayerListView: View {
                         .listRowSeparator(.hidden)
                         .listRowInsets(EdgeInsets())
 
+                        // 나의 기도 섹션
+                        Section {
+                            MyPrayerBannerView(
+                                prayers: myRequestPrayers,
+                                onExchange: { showMyPrayerExchange = true }
+                            )
+                        }
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
+                        .listRowInsets(EdgeInsets(
+                            top: 0,
+                            leading: DesignSystem.Spacing.md,
+                            bottom: 0,
+                            trailing: DesignSystem.Spacing.md
+                        ))
+
                         // 보관소 선택 섹션
                         Section {
                             ModernStorageSelector(selectedStorage: $selectedStorage, allPrayers: allPrayers)
@@ -1209,18 +1252,16 @@ struct PrayerListView: View {
                         .listRowInsets(EdgeInsets())
 
                         // 컬렉션 필터 바
-                        if !collections.isEmpty {
-                            Section {
-                                CollectionFilterBar(
-                                    collections: collections,
-                                    selectedCollection: $selectedCollection,
-                                    onManage: { showCollectionManager = true }
-                                )
-                            }
-                            .listRowBackground(Color.clear)
-                            .listRowSeparator(.hidden)
-                            .listRowInsets(EdgeInsets())
+                        Section {
+                            CollectionFilterBar(
+                                collections: collections,
+                                selectedCollection: $selectedCollection,
+                                onManage: { showCollectionManager = true }
+                            )
                         }
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
+                        .listRowInsets(EdgeInsets())
 
                         ForEach(filteredPrayers, id: \Prayer.id) { (prayer: Prayer) in
                             if isShareMode {
@@ -1395,6 +1436,9 @@ struct PrayerListView: View {
             }
             .sheet(isPresented: $showCollectionManager) {
                 CollectionManagerView()
+            }
+            .sheet(isPresented: $showMyPrayerExchange) {
+                PrayerExchangeView()
             }
             .onReceive(NotificationCenter.default.publisher(for: .prayerSavedFromShareExtension)) { _ in
                 shareExtensionRefreshID = UUID()

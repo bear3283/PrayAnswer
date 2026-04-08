@@ -59,6 +59,7 @@ final class Prayer {
     var notificationSettingsData: Data? // 알림 세부설정 JSON 저장
     var calendarEventId: String? // 캘린더 이벤트 식별자
     var imageFileName: String? // 첨부 이미지 파일명 (레거시 - 위젯 호환용)
+    var isMyRequest: Bool = false // 나의 기도제목 (다른 사람이 나를 위해 기도해줄 항목)
 
     /// 첨부 파일 목록 (이미지, PDF) — CloudKit 호환을 위해 Optional
     @Relationship(deleteRule: .cascade) var attachments: [Attachment]?

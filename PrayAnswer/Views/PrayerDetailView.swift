@@ -17,6 +17,10 @@ struct PrayerDetailView: View {
     @State private var editedNotificationEnabled: Bool = false
     @State private var editedNotificationSettings: NotificationSettings = NotificationSettings()
     @State private var editedCalendarEventId: String? = nil
+    @Query(sort: \PrayerCollection.sortOrder) private var collections: [PrayerCollection]
+    @State private var editedCollection: PrayerCollection? = nil
+    @State private var showCollectionPicker = false
+    @State private var isDeleted = false
     @State private var showingStoragePicker = false
     @State private var showingDeleteAlert = false
     @State private var prayerViewModel: PrayerViewModel?
@@ -53,21 +57,9 @@ struct PrayerDetailView: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: DesignSystem.Spacing.xl) {
-                VStack(spacing: DesignSystem.Spacing.lg) {
-                    if isEditing {
-                        // 편집 모드 UI
-                        editingView
-                    } else {
-                        // 보기 모드 UI
-                        viewingView
-                    }
-                }
-                .padding(.horizontal, DesignSystem.Spacing.xl)
-                .padding(.bottom, DesignSystem.Spacing.xxxl)
-                .adaptiveFrame(sizeClass: horizontalSizeClass, maxWidth: DesignSystem.AdaptiveLayout.maxDetailWidth)
+            if !isDeleted {
+                prayerContent
             }
-            .frame(maxWidth: .infinity)
         }
         .navigationTitle(isEditing ? L.Nav.prayerEdit : L.Nav.prayerDetail)
         .navigationBarTitleDisplayMode(.inline)
@@ -236,6 +228,25 @@ struct PrayerDetailView: View {
             .presentationDetents([.medium])
             .presentationDragIndicator(.visible)
         }
+    }
+
+    // MARK: - Prayer Content
+
+    @ViewBuilder
+    private var prayerContent: some View {
+        VStack(spacing: DesignSystem.Spacing.xl) {
+            VStack(spacing: DesignSystem.Spacing.lg) {
+                if isEditing {
+                    editingView
+                } else {
+                    viewingView
+                }
+            }
+            .padding(.horizontal, DesignSystem.Spacing.xl)
+            .padding(.bottom, DesignSystem.Spacing.xxxl)
+            .adaptiveFrame(sizeClass: horizontalSizeClass, maxWidth: DesignSystem.AdaptiveLayout.maxDetailWidth)
+        }
+        .frame(maxWidth: .infinity)
     }
 
     // MARK: - Viewing Mode View
@@ -522,6 +533,51 @@ struct PrayerDetailView: View {
             }
         }
 
+        // 컬렉션 선택
+        if !collections.isEmpty {
+            ModernCard {
+                Button {
+                    showCollectionPicker = true
+                } label: {
+                    HStack(spacing: DesignSystem.Spacing.md) {
+                        if let col = editedCollection {
+                            ZStack {
+                                Circle()
+                                    .fill(col.color.opacity(0.2))
+                                    .frame(width: 32, height: 32)
+                                Image(systemName: col.icon)
+                                    .font(.system(size: 14))
+                                    .foregroundColor(col.color)
+                            }
+                            Text(col.name)
+                                .font(DesignSystem.Typography.callout)
+                                .foregroundColor(DesignSystem.Colors.primaryText)
+                        } else {
+                            Image(systemName: "folder")
+                                .font(.system(size: 16))
+                                .foregroundColor(DesignSystem.Colors.tertiaryText)
+                                .frame(width: 32)
+                            Text(L.Collection.none)
+                                .font(DesignSystem.Typography.callout)
+                                .foregroundColor(DesignSystem.Colors.tertiaryText)
+                        }
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.caption)
+                            .foregroundColor(DesignSystem.Colors.tertiaryText)
+                    }
+                    .padding(DesignSystem.Spacing.md)
+                }
+                .buttonStyle(PlainButtonStyle())
+            }
+            .sheet(isPresented: $showCollectionPicker) {
+                CollectionPickerSheet(
+                    collections: collections,
+                    selected: $editedCollection
+                )
+            }
+        }
+
         // D-Day 섹션 (편집 모드)
         ModernCard {
             DDayFormSection(
@@ -574,6 +630,7 @@ struct PrayerDetailView: View {
         // 첨부 파일 상태 로드
         editedAttachments = prayer.sortedAttachments
         editedPendingAttachments = []
+        editedCollection = prayer.collection
 
         withAnimation(.easeInOut(duration: 0.3)) {
             isEditing = true
@@ -598,6 +655,7 @@ struct PrayerDetailView: View {
         }
         editedAttachments = []
         editedPendingAttachments = []
+        editedCollection = nil
         extractedText = ""
     }
 
@@ -665,6 +723,9 @@ struct PrayerDetailView: View {
                 imageFileName: firstImageFileName
             )
 
+            // 컬렉션 업데이트
+            prayer.collection = editedCollection
+
             // 캘린더 이벤트 ID 업데이트
             if prayer.calendarEventId != editedCalendarEventId {
                 prayer.updateCalendarEventId(editedCalendarEventId)
@@ -688,21 +749,23 @@ struct PrayerDetailView: View {
 
         // 캘린더 이벤트도 함께 삭제
         if let eventId = prayer.calendarEventId {
-            CalendarManager.shared.removeEvent(withIdentifier: eventId) { _ in
-                // 캘린더 이벤트 삭제 결과와 관계없이 기도 삭제 진행
-            }
+            CalendarManager.shared.removeEvent(withIdentifier: eventId) { _ in }
         }
 
-        // 첨부 파일 삭제는 ViewModel.deletePrayer에서 처리됨
+        // isDeleted = true → body가 빈 뷰 반환, prayer 프로퍼티 접근 완전 차단
+        // pop 애니메이션 중 backing data detached 크래시 방지
+        isDeleted = true
 
         do {
             try viewModel.deletePrayer(prayer)
             PrayerLogger.shared.userAction("기도 삭제")
-            dismiss()
         } catch {
+            isDeleted = false
             showError(L.Error.deletePrayerFailed)
             PrayerLogger.shared.prayerOperationFailed("삭제", error: error)
         }
+
+        dismiss()
     }
 
     private func movePrayerToStorage(_ newStorage: PrayerStorage) {

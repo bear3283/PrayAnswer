@@ -18,7 +18,6 @@ struct MyProfileView: View {
     @State private var isEditingName = false
     @State private var draftName = ""
     @State private var showAddPrayer = false
-    @State private var showExchange = false
     @State private var showDeleteAlert = false
     @State private var prayerToDelete: Prayer?
     @State private var prayerViewModel: PrayerViewModel?
@@ -114,27 +113,6 @@ struct MyProfileView: View {
                     .font(DesignSystem.Typography.caption2)
             }
 
-            // 공유 / 교환 버튼
-            Section {
-                Button {
-                    showExchange = true
-                } label: {
-                    HStack {
-                        Image(systemName: "arrow.2.squarepath")
-                            .foregroundColor(DesignSystem.Colors.primary)
-                        Text("기도 교환하기")
-                            .foregroundColor(DesignSystem.Colors.primaryText)
-                        Spacer()
-                        Image(systemName: "chevron.right")
-                            .foregroundColor(DesignSystem.Colors.tertiaryText)
-                            .font(.caption)
-                    }
-                }
-            } footer: {
-                Text("나의 기도제목과 다른 사람의 기도제목을 선택해 공유할 수 있습니다.")
-                    .font(DesignSystem.Typography.caption2)
-            }
-
             // 내가 드리는 기도 목록 (기존 "본인" 기도)
             if !myselfPrayers.isEmpty {
                 Section {
@@ -162,8 +140,7 @@ struct MyProfileView: View {
                 }
             }
         }
-        .navigationTitle("나의 페이지")
-        .navigationBarTitleDisplayMode(.large)
+        .navigationBarTitleDisplayMode(.inline)
         .onAppear {
             if prayerViewModel == nil {
                 prayerViewModel = PrayerViewModel(modelContext: modelContext)
@@ -171,9 +148,6 @@ struct MyProfileView: View {
         }
         .sheet(isPresented: $showAddPrayer) {
             AddMyPrayerSheet()
-        }
-        .sheet(isPresented: $showExchange) {
-            PrayerExchangeView()
         }
         .alert("기도제목 삭제", isPresented: $showDeleteAlert) {
             Button("삭제", role: .destructive) {

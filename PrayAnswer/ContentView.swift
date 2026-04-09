@@ -1197,11 +1197,8 @@ struct PrayerListView: View {
                         Color.clear.frame(height: 68)
 
                         // 나의 기도 섹션
-                        MyPrayerBannerView(
-                            prayers: myRequestPrayers,
-                            onExchange: { showMyPrayerExchange = true }
-                        )
-                        .padding(.horizontal, DesignSystem.Spacing.md)
+                        MyPrayerBannerView(prayers: myRequestPrayers)
+                            .padding(.horizontal, DesignSystem.Spacing.md)
 
                         // 보관소 선택 섹션
                         ModernStorageSelector(selectedStorage: $selectedStorage, allPrayers: allPrayers)

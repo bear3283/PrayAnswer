@@ -26,8 +26,7 @@ struct HabitView: View {
                 }
             }
             .background(DesignSystem.Colors.background)
-            .navigationTitle(L.Habit.navTitle)
-            .navigationBarTitleDisplayMode(.large)
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button {

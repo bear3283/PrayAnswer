@@ -11,8 +11,12 @@ import Charts
 
 struct StatisticsView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.modelContext) private var modelContext
     @Query private var allPrayers: [Prayer]
     @State private var animateCharts = false
+    #if DEBUG
+    @State private var showDummyDataConfirm = false
+    #endif
 
     // MARK: - Computed Properties
 
@@ -80,8 +84,27 @@ struct StatisticsView: View {
             }
         }
         .background(DesignSystem.Colors.secondaryBackground)
-        .navigationTitle(L.Stats.title)
-        .navigationBarTitleDisplayMode(.large)
+        .navigationBarTitleDisplayMode(.inline)
+        #if DEBUG
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button {
+                    showDummyDataConfirm = true
+                } label: {
+                    Image(systemName: "wand.and.stars")
+                        .foregroundColor(.orange)
+                }
+            }
+        }
+        .confirmationDialog("더미 데이터 생성", isPresented: $showDummyDataConfirm, titleVisibility: .visible) {
+            Button("생성 (기존 데이터 삭제됨)", role: .destructive) {
+                ScreenshotDataGenerator.generateSampleData(in: modelContext)
+            }
+            Button("취소", role: .cancel) {}
+        } message: {
+            Text("스크린샷용 샘플 데이터를 생성합니다.\n기존 데이터가 모두 삭제됩니다.")
+        }
+        #endif
         .onAppear {
             animateCharts = false
             withAnimation(.easeOut(duration: 0.7).delay(0.15)) {

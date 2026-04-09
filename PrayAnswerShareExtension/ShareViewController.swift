@@ -294,16 +294,49 @@ class ShareViewController: UIViewController, UITextViewDelegate {
         for provider in attachments {
             if provider.hasItemConformingToTypeIdentifier(UTType.plainText.identifier) {
                 provider.loadItem(forTypeIdentifier: UTType.plainText.identifier) { [weak self] obj, _ in
-                    DispatchQueue.main.async { self?.applyText((obj as? String) ?? "") }
+                    let text = (obj as? String) ?? ""
+                    DispatchQueue.main.async { self?.handleExtractedText(text) }
                 }
                 return
             }
             if provider.hasItemConformingToTypeIdentifier(UTType.url.identifier) {
                 provider.loadItem(forTypeIdentifier: UTType.url.identifier) { [weak self] obj, _ in
-                    DispatchQueue.main.async { self?.applyText((obj as? URL)?.absoluteString ?? "") }
+                    let text = (obj as? URL)?.absoluteString ?? ""
+                    DispatchQueue.main.async { self?.handleExtractedText(text) }
                 }
                 return
             }
+        }
+    }
+
+    /// 공유된 텍스트에 prayanswer://receive 딥링크가 있으면 메인 앱으로 바로 전달
+    private func handleExtractedText(_ text: String) {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        // 텍스트 안에서 prayanswer://receive?data=... 링크 추출
+        if let receiveURL = extractReceiveURL(from: trimmed) {
+            openMainApp(with: receiveURL)
+            return
+        }
+
+        applyText(trimmed)
+    }
+
+    private func extractReceiveURL(from text: String) -> URL? {
+        // 줄 단위로 순회하며 prayanswer://receive 링크 찾기
+        for line in text.components(separatedBy: "\n") {
+            let trimmedLine = line.trimmingCharacters(in: .whitespaces)
+            if trimmedLine.hasPrefix("prayanswer://receive"),
+               let url = URL(string: trimmedLine) {
+                return url
+            }
+        }
+        return nil
+    }
+
+    private func openMainApp(with url: URL) {
+        extensionContext?.open(url) { [weak self] _ in
+            self?.extensionContext?.completeRequest(returningItems: [], completionHandler: nil)
         }
     }
 

@@ -34,21 +34,28 @@ struct ContentView: View {
         }
     }
 
-    // MARK: - .prayanswer 파일 처리
+    // MARK: - 수신 URL 처리 (딥링크 + 파일)
     func handleIncomingURL(_ url: URL) {
-        guard url.pathExtension == "prayanswer" else {
-            handleWidgetURL(url)
+        // .prayanswer 파일 (AirDrop, Files 앱)
+        if url.pathExtension == "prayanswer" {
+            if let package = try? PrayerExchangePackager.read(from: url) {
+                pendingImportPackage = package
+            }
             return
         }
-        if let package = try? PrayerExchangePackager.read(from: url) {
-            pendingImportPackage = package
-        }
+        handleWidgetURL(url)
     }
 
     private func handleWidgetURL(_ url: URL) {
         guard url.scheme == "prayanswer" else { return }
 
         switch url.host {
+        case "receive":
+            // prayanswer://receive?data=BASE64URL — 기도제목 교환 딥링크
+            if let package = try? PrayerExchangePackager.fromDeepLink(url) {
+                pendingImportPackage = package
+            }
+            return
         case "add":
             // 카테고리 파라미터가 있으면 알림으로 전달
             if let components = URLComponents(url: url, resolvingAgainstBaseURL: false),

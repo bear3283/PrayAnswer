@@ -1,15 +1,15 @@
 import SwiftUI
 import SwiftData
 
-/// 보낼 기도제목을 선택하고 공유 시트를 띄우는 화면
+/// 보낼 기도제목을 선택하고 공유하는 화면
 struct PrayerExchangeView: View {
     @Environment(\.dismiss) private var dismiss
     @Query private var allPrayers: [Prayer]
     @ObservedObject private var myProfile = MyProfile.shared
 
     @State private var selectedIDs: Set<UUID> = []
-    @State private var shareItems: [Any] = []
     @State private var showShareSheet = false
+    @State private var shareText = ""
     @State private var errorMessage: String?
     @State private var showError = false
 
@@ -18,7 +18,7 @@ struct PrayerExchangeView: View {
         allPrayers.filter { $0.isMyRequest }
     }
 
-    // 다른 사람의 기도 (공유 가능 항목 — target이 있고 isMyRequest가 아닌 것)
+    // 다른 사람의 기도 (target이 있고 isMyRequest가 아닌 것)
     private var othersPrayers: [Prayer] {
         allPrayers.filter { !$0.target.isEmpty && !$0.isMyRequest }
     }
@@ -26,6 +26,25 @@ struct PrayerExchangeView: View {
     var body: some View {
         NavigationStack {
             List {
+                // 안내
+                Section {
+                    HStack(alignment: .top, spacing: DesignSystem.Spacing.md) {
+                        Image(systemName: "info.circle.fill")
+                            .foregroundColor(DesignSystem.Colors.primary)
+                        VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
+                            Text("앱이 있으면 바로 저장, 없으면 텍스트로 전달")
+                                .font(DesignSystem.Typography.subheadline)
+                                .fontWeight(.medium)
+                                .foregroundColor(DesignSystem.Colors.primaryText)
+                            Text("카카오톡, 문자, 이메일 등 어디서든 공유할 수 있어요. 받는 분이 PrayAnswer 앱이 있다면 링크 한 번으로 기도목록에 바로 저장됩니다.")
+                                .font(DesignSystem.Typography.caption)
+                                .foregroundColor(DesignSystem.Colors.secondaryText)
+                        }
+                    }
+                    .padding(.vertical, DesignSystem.Spacing.xs)
+                }
+                .listRowBackground(DesignSystem.Colors.primary.opacity(0.06))
+
                 // 나의 기도제목 섹션
                 if !myRequestPrayers.isEmpty {
                     Section {
@@ -72,16 +91,21 @@ struct PrayerExchangeView: View {
                         .foregroundColor(DesignSystem.Colors.secondaryText)
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("보내기 (\(selectedIDs.count))") {
+                    Button {
                         prepareAndShare()
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "square.and.arrow.up")
+                            Text("보내기 (\(selectedIDs.count))")
+                        }
+                        .fontWeight(.semibold)
+                        .foregroundColor(selectedIDs.isEmpty ? DesignSystem.Colors.tertiaryText : DesignSystem.Colors.primary)
                     }
-                    .fontWeight(.semibold)
-                    .foregroundColor(DesignSystem.Colors.primary)
                     .disabled(selectedIDs.isEmpty)
                 }
             }
             .sheet(isPresented: $showShareSheet) {
-                ShareSheet(activityItems: shareItems)
+                ShareSheet(activityItems: [shareText])
             }
             .alert("오류", isPresented: $showError) {
                 Button("확인") {}
@@ -130,14 +154,7 @@ struct PrayerExchangeView: View {
         let senderName = myProfile.name.isEmpty ? "PrayAnswer 사용자" : myProfile.name
         let package = PrayerExchangePackage(sender: senderName, prayers: items)
 
-        do {
-            let fileURL = try PrayerExchangePackager.writeToFile(package)
-            shareItems = [fileURL]
-            showShareSheet = true
-        } catch {
-            errorMessage = error.localizedDescription
-            showError = true
-        }
+        shareText = PrayerExchangePackager.makeShareMessage(package)
+        showShareSheet = true
     }
 }
-

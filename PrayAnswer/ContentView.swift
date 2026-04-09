@@ -1169,14 +1169,9 @@ struct PrayerListView: View {
     @State private var scrollOffset: CGFloat = 0
     @State private var navigationPath = NavigationPath()
 
-    // 공유 기능
-    @State private var isShareMode: Bool = false
-    @State private var selectedPrayersForShare: Set<String> = []  // Prayer ID
-    @State private var showShareSheet: Bool = false
-    @State private var shareExtensionRefreshID: UUID = UUID()
-
-    // 나의 기도 섹션
+    // 기도제목 보내기
     @State private var showMyPrayerExchange = false
+    @State private var shareExtensionRefreshID: UUID = UUID()
 
     private var myRequestPrayers: [Prayer] {
         allPrayers.filter { $0.isMyRequest }
@@ -1236,10 +1231,7 @@ struct PrayerListView: View {
 
                         // 나의 기도 섹션
                         Section {
-                            MyPrayerBannerView(
-                                prayers: myRequestPrayers,
-                                onExchange: { showMyPrayerExchange = true }
-                            )
+                            MyPrayerBannerView(prayers: myRequestPrayers)
                         }
                         .listRowBackground(Color.clear)
                         .listRowSeparator(.hidden)
@@ -1271,50 +1263,24 @@ struct PrayerListView: View {
                         .listRowInsets(EdgeInsets())
 
                         ForEach(filteredPrayers, id: \Prayer.id) { (prayer: Prayer) in
-                            if isShareMode {
-                                // 공유 모드: 선택 가능한 행
-                                let prayerIdString = String(describing: prayer.id)
-                                ShareSelectablePrayerRow(
-                                    prayer: prayer,
-                                    isSelected: selectedPrayersForShare.contains(prayerIdString)
-                                ) {
-                                    if selectedPrayersForShare.contains(prayerIdString) {
-                                        selectedPrayersForShare.remove(prayerIdString)
-                                    } else {
-                                        selectedPrayersForShare.insert(prayerIdString)
-                                    }
+                            ZStack {
+                                NavigationLink(value: prayer) {
+                                    EmptyView()
                                 }
-                                .listRowBackground(Color.clear)
-                                .listRowSeparator(.hidden)
-                                .listRowInsets(EdgeInsets(
-                                    top: DesignSystem.Spacing.sm,
-                                    leading: DesignSystem.Spacing.md,
-                                    bottom: DesignSystem.Spacing.sm,
-                                    trailing: DesignSystem.Spacing.md
-                                ))
-                            } else {
-                                // 일반 모드: 네비게이션 가능한 행
-                                ZStack {
-                                    // 투명한 NavigationLink로 네비게이션 기능만 유지
-                                    NavigationLink(value: prayer) {
-                                        EmptyView()
-                                    }
-                                    .opacity(0)
+                                .opacity(0)
 
-                                    // 실제 보이는 UI
-                                    ModernPrayerRow(prayer: prayer) {
-                                        toggleFavorite(prayer)
-                                    }
+                                ModernPrayerRow(prayer: prayer) {
+                                    toggleFavorite(prayer)
                                 }
-                                .listRowBackground(Color.clear)
-                                .listRowSeparator(.hidden)
-                                .listRowInsets(EdgeInsets(
-                                    top: DesignSystem.Spacing.sm,
-                                    leading: DesignSystem.Spacing.md,
-                                    bottom: DesignSystem.Spacing.sm,
-                                    trailing: DesignSystem.Spacing.md
-                                ))
                             }
+                            .listRowBackground(Color.clear)
+                            .listRowSeparator(.hidden)
+                            .listRowInsets(EdgeInsets(
+                                top: DesignSystem.Spacing.sm,
+                                leading: DesignSystem.Spacing.md,
+                                bottom: DesignSystem.Spacing.sm,
+                                trailing: DesignSystem.Spacing.md
+                            ))
                         }
                         .onDelete { indexSet in
                             let prayers = filteredPrayers
@@ -1336,54 +1302,26 @@ struct PrayerListView: View {
                 VStack(spacing: 0) {
                     ZStack {
                         // 타이틀 — 항상 화면 정중앙
-                        Text(isShareMode ? L.Share.selectPrayers : L.Nav.prayerList)
+                        Text(L.Nav.prayerList)
                             .font(.system(size: 17, weight: .semibold))
                             .foregroundColor(DesignSystem.Colors.primaryText)
                             .frame(maxWidth: .infinity, alignment: .center)
 
-                        // 좌우 버튼 — 타이틀과 독립적으로 배치
+                        // 우측 버튼
                         HStack {
-                            if isShareMode {
-                                Button(action: {
-                                    withAnimation {
-                                        isShareMode = false
-                                        selectedPrayersForShare.removeAll()
-                                    }
-                                }) {
-                                    Text(L.Share.cancel)
-                                        .font(DesignSystem.Typography.callout)
-                                        .foregroundColor(DesignSystem.Colors.primary)
-                                }
-                                .padding(.leading, DesignSystem.Spacing.lg)
-                            }
-
                             Spacer()
-
-                            if isShareMode {
-                                Button(action: {
-                                    if !selectedPrayersForShare.isEmpty {
-                                        showShareSheet = true
-                                    }
-                                }) {
-                                    Text(L.Share.share)
-                                        .font(DesignSystem.Typography.callout)
-                                        .fontWeight(.semibold)
-                                        .foregroundColor(selectedPrayersForShare.isEmpty ? DesignSystem.Colors.tertiaryText : DesignSystem.Colors.primary)
-                                }
-                                .disabled(selectedPrayersForShare.isEmpty)
-                                .padding(.trailing, DesignSystem.Spacing.lg)
-                            } else if !filteredPrayers.isEmpty {
-                                Button(action: {
-                                    withAnimation {
-                                        isShareMode = true
-                                    }
-                                }) {
+                            Button {
+                                showMyPrayerExchange = true
+                            } label: {
+                                HStack(spacing: 4) {
                                     Image(systemName: "square.and.arrow.up")
-                                        .font(.system(size: 17))
-                                        .foregroundColor(DesignSystem.Colors.primary)
+                                        .font(.system(size: 15, weight: .medium))
+                                    Text("기도제목 보내기")
+                                        .font(DesignSystem.Typography.callout)
                                 }
-                                .padding(.trailing, DesignSystem.Spacing.lg)
+                                .foregroundColor(DesignSystem.Colors.primary)
                             }
+                            .padding(.trailing, DesignSystem.Spacing.lg)
                         }
                     }
                     .frame(height: 44)
@@ -1431,16 +1369,6 @@ struct PrayerListView: View {
             } message: {
                 Text(errorMessage)
             }
-            .sheet(isPresented: $showShareSheet, onDismiss: {
-                // 공유 완료 후 일반 모드로 복귀
-                withAnimation {
-                    isShareMode = false
-                    selectedPrayersForShare.removeAll()
-                }
-            }) {
-                ShareSheet(activityItems: [generateShareText()])
-                    .presentationDetents([.medium, .large])
-            }
             .sheet(isPresented: $showCollectionManager) {
                 CollectionManagerView()
             }
@@ -1453,11 +1381,6 @@ struct PrayerListView: View {
         }
         .onChange(of: selectedTab) {
             navigationPath = NavigationPath()
-            // 탭 변경 시 공유 모드 종료
-            if isShareMode {
-                isShareMode = false
-                selectedPrayersForShare.removeAll()
-            }
         }
         .onChange(of: collections) { _, newCollections in
             // 선택된 컬렉션이 삭제됐을 때 초기화
@@ -1466,21 +1389,6 @@ struct PrayerListView: View {
                 selectedCollection = nil
             }
         }
-    }
-
-    // MARK: - Share Functions
-
-    private func generateShareText() -> String {
-        let selectedPrayers = filteredPrayers.filter { (prayer: Prayer) -> Bool in
-            selectedPrayersForShare.contains(String(describing: prayer.id))
-        }
-
-        let lines = selectedPrayers.map { prayer in
-            let targetName = prayer.target.isEmpty ? L.Target.myself : prayer.target
-            return "\(targetName) - \(prayer.content)"
-        }
-
-        return lines.joined(separator: "\n\n")
     }
 
     private func deletePrayer(_ prayer: Prayer) {

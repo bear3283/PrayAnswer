@@ -3,7 +3,6 @@ import SwiftUI
 /// 기도목록 상단에 표시되는 "나의 기도제목" 배너
 struct MyPrayerBannerView: View {
     let prayers: [Prayer]
-    let onExchange: () -> Void
 
     @State private var isExpanded = true
 
@@ -67,25 +66,6 @@ struct MyPrayerBannerView: View {
                         }
                     }
 
-                    // 교환 버튼
-                    Button {
-                        onExchange()
-                    } label: {
-                        HStack(spacing: DesignSystem.Spacing.xs) {
-                            Image(systemName: "arrow.2.squarepath")
-                                .font(.system(size: 13, weight: .medium))
-                            Text("기도 교환하기")
-                                .font(DesignSystem.Typography.caption)
-                                .fontWeight(.medium)
-                        }
-                        .foregroundColor(DesignSystem.Colors.primary)
-                        .padding(.horizontal, DesignSystem.Spacing.md)
-                        .padding(.vertical, DesignSystem.Spacing.sm)
-                        .background(DesignSystem.Colors.primary.opacity(0.1))
-                        .clipShape(Capsule())
-                    }
-                    .frame(maxWidth: .infinity, alignment: .trailing)
-                    .padding(.top, DesignSystem.Spacing.xs)
                 }
             }
             .padding(DesignSystem.Spacing.md)

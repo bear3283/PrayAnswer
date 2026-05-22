@@ -7,6 +7,185 @@ import SwiftUI
 import SwiftData
 import Charts
 
+// MARK: - StatsPeriod
+
+private enum StatsPeriod: String, CaseIterable {
+    case all = "전체"
+    case sixMonths = "6개월"
+    case threeMonths = "3개월"
+    case oneMonth = "1개월"
+
+    var months: Int? {
+        switch self {
+        case .all: return nil
+        case .sixMonths: return 6
+        case .threeMonths: return 3
+        case .oneMonth: return 1
+        }
+    }
+}
+
+// MARK: - InsightItem
+
+private struct InsightItem: Identifiable {
+    let id = UUID()
+    let icon: String
+    let title: String
+    let value: String
+    let color: Color
+}
+
+// MARK: - StatsData (단일 패스 캐시)
+// allPrayers를 한 번만 순회해서 모든 통계를 계산한다.
+private struct StatsData {
+    var filteredCount: Int = 0
+    var favoritesCount: Int = 0
+    var storageChartData: [(storage: PrayerStorage, count: Int)] = []
+    var answerRateText: String = "0%"
+    var monthlyData: [MonthlyCount] = []
+    var insightItems: [InsightItem] = []
+    var monthlyTotalLabel: String = ""
+    var categoryData: [(category: PrayerCategory, count: Int)] = []
+    var topTargets: [(target: String, count: Int)] = []
+
+    init() {}
+
+    init(prayers: [Prayer], period: StatsPeriod) {
+        let calendar = Calendar.current
+        let now = Date()
+        let formatter = DateFormatter()
+        formatter.dateFormat = "M월"
+
+        // 기간 필터링
+        let monthCount = period.months ?? 6
+        let periodStart: Date?
+        if let m = period.months,
+           let start = calendar.date(byAdding: .month, value: -m, to: now) {
+            periodStart = calendar.startOfDay(for: start)
+        } else {
+            periodStart = nil
+        }
+
+        let filtered: [Prayer]
+        if let start = periodStart {
+            filtered = prayers.filter { $0.createdDate >= start }
+        } else {
+            filtered = prayers
+        }
+
+        guard !filtered.isEmpty else { return }
+
+        // 월별 경계 (monthCount개월)
+        let monthBoundaries: [(start: Date, end: Date, label: String)] = (0..<monthCount).reversed().compactMap { offset in
+            guard let date = calendar.date(byAdding: .month, value: -offset, to: now),
+                  let start = calendar.date(from: calendar.dateComponents([.year, .month], from: date)),
+                  let end = calendar.date(byAdding: .month, value: 1, to: start)
+            else { return nil }
+            return (start, end, formatter.string(from: date))
+        }
+
+        // ── 단일 패스 ──────────────────────────────
+        var storageMap: [PrayerStorage: Int] = [:]
+        var categoryMap: [PrayerCategory: Int] = [:]
+        var targetMap: [String: Int] = [:]
+        var monthlyMap: [String: Int] = [:]
+        var favCount = 0
+
+        for prayer in filtered {
+            storageMap[prayer.storage, default: 0] += 1
+            categoryMap[prayer.category, default: 0] += 1
+            if prayer.isFavorite { favCount += 1 }
+            if !prayer.target.isEmpty {
+                targetMap[prayer.target, default: 0] += 1
+            }
+            for boundary in monthBoundaries
+            where prayer.createdDate >= boundary.start && prayer.createdDate < boundary.end {
+                monthlyMap[boundary.label, default: 0] += 1
+                break
+            }
+        }
+
+        // ── 결과 조합 ──────────────────────────────
+        filteredCount = filtered.count
+        favoritesCount = favCount
+
+        storageChartData = PrayerStorage.allCases.map { s in
+            (storage: s, count: storageMap[s] ?? 0)
+        }
+
+        let yesCount = storageMap[.yes] ?? 0
+        let rate = Double(yesCount) / Double(filtered.count) * 100
+        answerRateText = String(format: "%.0f%%", rate)
+
+        monthlyData = monthBoundaries.map { b in
+            MonthlyCount(label: b.label, count: monthlyMap[b.label] ?? 0)
+        }
+
+        let recentTotal = monthlyData.reduce(0) { $0 + $1.count }
+        switch period {
+        case .all:        monthlyTotalLabel = L.Stats.last6MonthsTotal(recentTotal)
+        case .sixMonths:  monthlyTotalLabel = L.Stats.last6MonthsTotal(recentTotal)
+        case .threeMonths: monthlyTotalLabel = "최근 3개월 합계 \(recentTotal)개"
+        case .oneMonth:   monthlyTotalLabel = "최근 1개월 합계 \(recentTotal)개"
+        }
+
+        categoryData = PrayerCategory.allCases
+            .compactMap { cat -> (category: PrayerCategory, count: Int)? in
+                let c = categoryMap[cat] ?? 0
+                return c > 0 ? (cat, c) : nil
+            }
+            .sorted { $0.count > $1.count }
+
+        topTargets = targetMap
+            .sorted { $0.value > $1.value }
+            .prefix(5)
+            .map { (target: $0.key, count: $0.value) }
+
+        // ── 인사이트 카드 ────────────────────────────
+        var insights: [InsightItem] = []
+
+        // 기도 시작일 (기간 내 첫 기도부터 오늘까지)
+        if let earliest = filtered.min(by: { $0.createdDate < $1.createdDate }) {
+            let days = max(1, (calendar.dateComponents([.day],
+                from: calendar.startOfDay(for: earliest.createdDate),
+                to: calendar.startOfDay(for: now)).day ?? 0) + 1)
+            insights.append(InsightItem(icon: "calendar.badge.clock",
+                title: "기도 시작", value: "\(days)일째", color: .blue))
+        }
+
+        // 이번 달 추가된 기도
+        let thisMonthStart = calendar.date(
+            from: calendar.dateComponents([.year, .month], from: now)) ?? now
+        let thisMonthCount = filtered.filter { $0.createdDate >= thisMonthStart }.count
+        if thisMonthCount > 0 {
+            insights.append(InsightItem(icon: "plus.circle.fill",
+                title: "이번 달 추가", value: "\(thisMonthCount)개", color: DesignSystem.Colors.primary))
+        }
+
+        // 응답받은 기도
+        let yesCountInsight = storageMap[.yes] ?? 0
+        if yesCountInsight > 0 {
+            insights.append(InsightItem(icon: "checkmark.seal.fill",
+                title: "응답받은 기도", value: "\(yesCountInsight)개", color: DesignSystem.Colors.answered))
+        }
+
+        // 주 기도 분야
+        if let topCat = categoryData.first {
+            insights.append(InsightItem(icon: "tag.fill",
+                title: "주 기도 분야", value: topCat.category.displayName,
+                color: topCat.category.color))
+        }
+
+        // 가장 많이 기도한 대상
+        if let topTarget = topTargets.first {
+            insights.append(InsightItem(icon: "person.fill",
+                title: "가장 많이 기도한 대상", value: topTarget.target, color: .orange))
+        }
+
+        insightItems = insights
+    }
+}
+
 // MARK: - StatisticsView
 
 struct StatisticsView: View {
@@ -14,53 +193,11 @@ struct StatisticsView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var allPrayers: [Prayer]
     @State private var animateCharts = false
+    @State private var stats = StatsData()
+    @State private var selectedPeriod: StatsPeriod = .all
     #if DEBUG
     @State private var showDummyDataConfirm = false
     #endif
-
-    // MARK: - Computed Properties
-
-    private var storageChartData: [(storage: PrayerStorage, count: Int)] {
-        PrayerStorage.allCases.map { s in
-            (storage: s, count: allPrayers.filter { $0.storage == s }.count)
-        }
-    }
-
-    private var answerRateText: String {
-        guard !allPrayers.isEmpty else { return "0%" }
-        let rate = Double(allPrayers.filter { $0.storage == .yes }.count) / Double(allPrayers.count) * 100
-        return String(format: "%.0f%%", rate)
-    }
-
-    private var monthlyData: [MonthlyCount] {
-        let calendar = Calendar.current
-        let now = Date()
-        let formatter = DateFormatter()
-        formatter.dateFormat = "M월"
-        return (0..<6).reversed().compactMap { offset -> MonthlyCount? in
-            guard let date = calendar.date(byAdding: .month, value: -offset, to: now),
-                  let start = calendar.date(from: calendar.dateComponents([.year, .month], from: date)),
-                  let end = calendar.date(byAdding: .month, value: 1, to: start)
-            else { return nil }
-            let count = allPrayers.filter { $0.createdDate >= start && $0.createdDate < end }.count
-            return MonthlyCount(label: formatter.string(from: date), count: count)
-        }
-    }
-
-    private var categoryData: [(category: PrayerCategory, count: Int)] {
-        PrayerCategory.allCases
-            .map { cat in (category: cat, count: allPrayers.filter { $0.category == cat }.count) }
-            .filter { $0.count > 0 }
-            .sorted { $0.count > $1.count }
-    }
-
-    private var topTargets: [(target: String, count: Int)] {
-        let grouped = Dictionary(grouping: allPrayers.filter { !$0.target.isEmpty }) { $0.target }
-        return grouped.map { ($0.key, $0.value.count) }
-            .sorted { $0.1 > $1.1 }
-            .prefix(5)
-            .map { $0 }
-    }
 
     // MARK: - Body
 
@@ -106,11 +243,24 @@ struct StatisticsView: View {
         }
         #endif
         .onAppear {
+            rebuildStats()
             animateCharts = false
             withAnimation(.easeOut(duration: 0.7).delay(0.15)) {
                 animateCharts = true
             }
         }
+        .onChange(of: allPrayers) { rebuildStats() }
+        .onChange(of: selectedPeriod) {
+            rebuildStats()
+            animateCharts = false
+            withAnimation(.easeOut(duration: 0.5).delay(0.05)) {
+                animateCharts = true
+            }
+        }
+    }
+
+    private func rebuildStats() {
+        stats = StatsData(prayers: allPrayers, period: selectedPeriod)
     }
 
     // MARK: - Main Scroll Content
@@ -118,19 +268,49 @@ struct StatisticsView: View {
     private var mainScrollContent: some View {
         ScrollView {
             LazyVStack(spacing: DesignSystem.Spacing.xl) {
+                periodPicker
+                if !stats.insightItems.isEmpty {
+                    insightCardsSection
+                }
                 summaryCards
                 storageSection
                 monthlySection
-                if !categoryData.isEmpty {
+                if !stats.categoryData.isEmpty {
                     categorySection
                 }
-                if !topTargets.isEmpty {
+                if !stats.topTargets.isEmpty {
                     targetsSection
                 }
             }
             .padding(.horizontal, DesignSystem.Spacing.lg)
             .padding(.vertical, DesignSystem.Spacing.xl)
         }
+    }
+
+    // MARK: - Period Picker
+
+    private var periodPicker: some View {
+        Picker("기간", selection: $selectedPeriod) {
+            ForEach(StatsPeriod.allCases, id: \.self) { period in
+                Text(period.rawValue).tag(period)
+            }
+        }
+        .pickerStyle(.segmented)
+    }
+
+    // MARK: - Insight Cards
+
+    private var insightCardsSection: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: DesignSystem.Spacing.md) {
+                ForEach(stats.insightItems) { item in
+                    InsightCard(item: item)
+                }
+            }
+            .padding(.horizontal, DesignSystem.Spacing.lg)
+        }
+        // LazyVStack에 이미 lg padding이 있으므로 bleed out
+        .padding(.horizontal, -DesignSystem.Spacing.lg)
     }
 
     // MARK: - Empty State
@@ -162,19 +342,19 @@ struct StatisticsView: View {
     private var summaryCards: some View {
         HStack(spacing: DesignSystem.Spacing.md) {
             StatSummaryCard(
-                value: "\(allPrayers.count)",
+                value: "\(stats.filteredCount)",
                 label: L.Stats.totalPrayers,
                 icon: "hands.clap.fill",
                 color: DesignSystem.Colors.primary
             )
             StatSummaryCard(
-                value: answerRateText,
+                value: stats.answerRateText,
                 label: L.Stats.answerRate,
                 icon: "checkmark.circle.fill",
                 color: DesignSystem.Colors.answered
             )
             StatSummaryCard(
-                value: "\(allPrayers.totalFavoritePrayers)",
+                value: "\(stats.favoritesCount)",
                 label: L.Stats.favorites,
                 icon: "heart.fill",
                 color: .pink
@@ -188,7 +368,7 @@ struct StatisticsView: View {
         StatSectionCard(title: L.Stats.storageDistribution) {
             HStack(alignment: .center, spacing: DesignSystem.Spacing.xl) {
                 ZStack {
-                    Chart(storageChartData.filter { $0.count > 0 }, id: \.storage) { item in
+                    Chart(stats.storageChartData.filter { $0.count > 0 }, id: \.storage) { item in
                         SectorMark(
                             angle: .value("count", item.count),
                             innerRadius: .ratio(0.58),
@@ -203,7 +383,7 @@ struct StatisticsView: View {
                     .animation(.spring(duration: 0.6).delay(0.1), value: animateCharts)
 
                     VStack(spacing: 2) {
-                        Text("\(allPrayers.count)")
+                        Text("\(stats.filteredCount)")
                             .font(DesignSystem.Typography.title2)
                             .foregroundColor(DesignSystem.Colors.primaryText)
                         Text(L.Stats.total)
@@ -213,11 +393,11 @@ struct StatisticsView: View {
                 }
 
                 VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
-                    ForEach(storageChartData, id: \.storage) { item in
+                    ForEach(stats.storageChartData, id: \.storage) { item in
                         StorageLegendRow(
                             storage: item.storage,
                             count: item.count,
-                            total: allPrayers.count
+                            total: stats.filteredCount
                         )
                     }
                 }
@@ -232,7 +412,7 @@ struct StatisticsView: View {
         StatSectionCard(title: L.Stats.monthlyActivity) {
             VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
                 Chart {
-                    ForEach(monthlyData) { data in
+                    ForEach(stats.monthlyData) { data in
                         BarMark(
                             x: .value("월", data.label),
                             y: .value("기도", animateCharts ? data.count : 0)
@@ -256,8 +436,7 @@ struct StatisticsView: View {
                     }
                 }
 
-                let recentTotal = monthlyData.reduce(0) { $0 + $1.count }
-                Text(L.Stats.last6MonthsTotal(recentTotal))
+                Text(stats.monthlyTotalLabel)
                     .font(DesignSystem.Typography.caption)
                     .foregroundColor(DesignSystem.Colors.secondaryText)
             }
@@ -269,7 +448,7 @@ struct StatisticsView: View {
     private var categorySection: some View {
         StatSectionCard(title: L.Stats.categoryDistribution) {
             Chart {
-                ForEach(categoryData, id: \.category) { item in
+                ForEach(stats.categoryData, id: \.category) { item in
                     BarMark(
                         x: .value("기도 수", animateCharts ? item.count : 0),
                         y: .value("카테고리", item.category.displayName)
@@ -291,7 +470,7 @@ struct StatisticsView: View {
                     AxisValueLabel()
                 }
             }
-            .frame(height: CGFloat(categoryData.count) * 36 + 20)
+            .frame(height: CGFloat(stats.categoryData.count) * 36 + 20)
         }
     }
 
@@ -300,7 +479,7 @@ struct StatisticsView: View {
     private var targetsSection: some View {
         StatSectionCard(title: L.Stats.topTargets) {
             VStack(spacing: 0) {
-                ForEach(Array(topTargets.enumerated()), id: \.offset) { index, item in
+                ForEach(Array(stats.topTargets.enumerated()), id: \.offset) { index, item in
                     if index > 0 {
                         Divider()
                             .padding(.leading, DesignSystem.Spacing.xxxl)
@@ -309,6 +488,39 @@ struct StatisticsView: View {
                 }
             }
         }
+    }
+}
+
+// MARK: - InsightCard
+
+private struct InsightCard: View {
+    let item: InsightItem
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+            HStack(spacing: DesignSystem.Spacing.xs) {
+                Image(systemName: item.icon)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(item.color)
+                Text(item.title)
+                    .font(DesignSystem.Typography.caption)
+                    .foregroundColor(DesignSystem.Colors.secondaryText)
+            }
+            Text(item.value)
+                .font(DesignSystem.Typography.title3)
+                .foregroundColor(DesignSystem.Colors.primaryText)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+        }
+        .padding(.horizontal, DesignSystem.Spacing.lg)
+        .padding(.vertical, DesignSystem.Spacing.md)
+        .frame(minWidth: 110)
+        .background(DesignSystem.Colors.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.medium))
+        .overlay(
+            RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.medium)
+                .strokeBorder(item.color.opacity(0.25), lineWidth: 1)
+        )
     }
 }
 
@@ -414,9 +626,9 @@ private struct TargetRankRow: View {
 
     private var rankColor: Color {
         switch rank {
-        case 1: return Color(red: 1.0, green: 0.84, blue: 0.0)    // gold
-        case 2: return Color(.systemGray2)                          // silver
-        case 3: return Color(red: 0.8, green: 0.5, blue: 0.2)     // bronze
+        case 1: return Color(red: 1.0, green: 0.84, blue: 0.0)
+        case 2: return Color(.systemGray2)
+        case 3: return Color(red: 0.8, green: 0.5, blue: 0.2)
         default: return DesignSystem.Colors.tertiaryText
         }
     }

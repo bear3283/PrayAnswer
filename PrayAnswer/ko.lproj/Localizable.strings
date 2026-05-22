@@ -4,9 +4,9 @@
 */
 
 // MARK: - Tab Bar
-"tab.prayer_list" = "기도 목록";
-"tab.add_prayer" = "기도 추가";
-"tab.people" = "기도대상자";
+"tab.prayer_list" = "목록";
+"tab.add_prayer" = "추가";
+"tab.people" = "대상자";
 
 // MARK: - Navigation Titles
 "nav.prayer_list" = "기도 목록";

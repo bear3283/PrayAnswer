@@ -60,6 +60,7 @@ final class Prayer {
     var calendarEventId: String? // 캘린더 이벤트 식별자
     var imageFileName: String? // 첨부 이미지 파일명 (레거시 - 위젯 호환용)
     var isMyRequest: Bool = false // 나의 기도제목 (다른 사람이 나를 위해 기도해줄 항목)
+    var sortOrder: Int = 0 // 수동 정렬 순서
 
     /// 첨부 파일 목록 (이미지, PDF) — CloudKit 호환을 위해 Optional
     @Relationship(deleteRule: .cascade) var attachments: [Attachment]?
@@ -121,6 +122,23 @@ final class Prayer {
     func toggleNotification() {
         self.notificationEnabled.toggle()
         self.modifiedDate = Date()
+    }
+}
+
+// MARK: - Drag & Drop Transfer ID
+
+extension Prayer {
+    /// 드래그 앤 드롭 전송용 ID (PersistentIdentifier JSON 인코딩)
+    var transferID: String {
+        guard let data = try? JSONEncoder().encode(persistentModelID),
+              let str = String(data: data, encoding: .utf8) else { return "" }
+        return str
+    }
+
+    static func find(by transferID: String, in prayers: [Prayer]) -> Prayer? {
+        guard let data = transferID.data(using: .utf8),
+              let id = try? JSONDecoder().decode(PersistentIdentifier.self, from: data) else { return nil }
+        return prayers.first { $0.persistentModelID == id }
     }
 }
 

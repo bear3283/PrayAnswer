@@ -50,11 +50,19 @@ struct PrayAnswerApp: App {
         print("⚠️ 로컬 초기화 실패, 저장소 재생성 시도")
         #endif
 
-        // 최후 수단: 기존 저장소 파일 삭제 후 재생성 (데이터 손실 발생)
+        // 최후 수단: 기존 저장소를 삭제하지 않고 백업 이동 후 재생성
+        // (삭제 대신 이동 → 복구 가능성 유지)
         if let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first {
-            try? FileManager.default.removeItem(at: appSupport.appendingPathComponent("default.store"))
-            try? FileManager.default.removeItem(at: appSupport.appendingPathComponent("default.store-shm"))
-            try? FileManager.default.removeItem(at: appSupport.appendingPathComponent("default.store-wal"))
+            let backupDir = appSupport.appendingPathComponent("StoreBackup_\(Int(Date().timeIntervalSince1970))")
+            try? FileManager.default.createDirectory(at: backupDir, withIntermediateDirectories: true)
+            for name in ["default.store", "default.store-shm", "default.store-wal"] {
+                let src = appSupport.appendingPathComponent(name)
+                let dst = backupDir.appendingPathComponent(name)
+                try? FileManager.default.moveItem(at: src, to: dst)
+            }
+            #if DEBUG
+            print("⚠️ 저장소를 백업으로 이동: \(backupDir.lastPathComponent)")
+            #endif
         }
         do {
             let container = try ModelContainer(for: schema, configurations: localConfig)

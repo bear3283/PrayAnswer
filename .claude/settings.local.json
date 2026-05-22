@@ -114,7 +114,18 @@
       "Bash(osascript << 'EOF'\ntell application \"Simulator\" to activate\ndelay 0.5\ntell application \"System Events\"\n    tell process \"Simulator\"\n        tell window 1\n            tell group 1\n                set allElements to entire contents\n                click item 44 of allElements\n            end tell\n        end tell\n    end tell\nend tell\nEOF)",
       "Bash(/bin/bash -c 'sleep 2 && xcrun simctl io AD1838F8-869C-4C67-A4EB-92968A1E6AF6 screenshot /tmp/ipad_addprayer.png && echo \"OK\"')",
       "Bash(osascript << 'EOF'\ntell application \"Simulator\" to activate\ndelay 0.5\ntell application \"System Events\"\n    tell process \"Simulator\"\n        tell window 1\n            tell group 1\n                set allElements to entire contents\n                set i to 0\n                repeat with el in allElements\n                    set i to i + 1\n                    try\n                        if role of el is \"AXButton\" and description of el contains \"통계\" then\n                            click el\n                            return \"clicked 통계 at \" & i\n                        end if\n                    end try\n                    if i > 300 then exit repeat\n                end repeat\n            end tell\n        end tell\n    end tell\nend tell\nEOF)",
-      "Bash(/bin/bash -c 'sleep 2 && xcrun simctl io AD1838F8-869C-4C67-A4EB-92968A1E6AF6 screenshot /tmp/ipad_stats3.png && echo \"OK\"')"
+      "Bash(/bin/bash -c 'sleep 2 && xcrun simctl io AD1838F8-869C-4C67-A4EB-92968A1E6AF6 screenshot /tmp/ipad_stats3.png && echo \"OK\"')",
+      "Bash(xxd)",
+      "Bash(sed -i '' 's/MARKETING_VERSION = 1\\\\.11;/MARKETING_VERSION = 1.12;/g' PrayAnswer.xcodeproj/project.pbxproj)",
+      "Bash(sed -i '' 's/CURRENT_PROJECT_VERSION = 1;/CURRENT_PROJECT_VERSION = 2;/g' PrayAnswer.xcodeproj/project.pbxproj)",
+      "Bash(sed -i '' 's/prayer\\\\.attachments\\\\.map/\\(prayer.attachments ?? []\\).map/g' PrayAnswer/ViewModels/PrayerViewModel.swift PrayAnswer/Views/PrayerDetailView.swift)",
+      "Bash(sed -i '' 's/prayer\\\\.attachments\\\\.isEmpty/\\(prayer.attachments ?? []\\).isEmpty/g' PrayAnswer/Utils/AttachmentMigrationManager.swift)",
+      "Bash(sed -i '' 's/prayer\\\\.attachments\\\\.first/\\(prayer.attachments ?? []\\).first/g' PrayAnswer/Views/PrayerDetailView.swift)",
+      "Bash(sed:*)",
+      "Bash(wc -l \"/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/PrayAnswer/Views\"/*.swift)",
+      "Bash(wc -l \"/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/PrayAnswer/Views/Components\"/*.swift)",
+      "Bash(wc -l \"/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/PrayAnswer/Models\"/*.swift)",
+      "Bash(wc -l \"/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/PrayAnswer/Utils\"/*.swift)"
     ]
   }
 }

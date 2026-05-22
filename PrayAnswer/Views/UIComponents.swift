@@ -277,12 +277,16 @@ struct ShareSelectablePrayerRow: View {
 struct ShareSheet: UIViewControllerRepresentable {
     let activityItems: [Any]
     var applicationActivities: [UIActivity]? = nil
+    var onCompletion: ((Bool) -> Void)? = nil
 
     func makeUIViewController(context: Context) -> UIActivityViewController {
         let controller = UIActivityViewController(
             activityItems: activityItems,
             applicationActivities: applicationActivities
         )
+        controller.completionWithItemsHandler = { _, completed, _, _ in
+            onCompletion?(completed)
+        }
         return controller
     }
 
@@ -337,23 +341,25 @@ struct ModernStorageCard: View {
     
     var body: some View {
         Button(action: onTap) {
-            VStack(spacing: DesignSystem.Spacing.sm) {
-                StatusIndicator(storage: storage, size: .medium, style: .circleWhite)
+            HStack(spacing: DesignSystem.Spacing.sm) {
+                StatusIndicator(storage: storage, size: .small, style: .circleWhite)
 
-                VStack(spacing: DesignSystem.Spacing.xs) {
-                    Text(storage.displayName)
-                        .font(DesignSystem.Typography.caption)
-                        .fontWeight(.semibold)
-                        .foregroundColor(isSelected ? .white : DesignSystem.Colors.primaryText)
+                Text(storage.displayName)
+                    .font(DesignSystem.Typography.caption)
+                    .fontWeight(.semibold)
+                    .foregroundColor(isSelected ? .white : DesignSystem.Colors.primaryText)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
 
-                    Text("\(count)")
-                        .font(DesignSystem.Typography.caption2)
-                        .fontWeight(.medium)
-                        .foregroundColor(isSelected ? .white.opacity(0.8) : DesignSystem.Colors.secondaryText)
-                }
+                Spacer()
+
+                Text("\(count)")
+                    .font(DesignSystem.Typography.caption2)
+                    .fontWeight(.medium)
+                    .foregroundColor(isSelected ? .white.opacity(0.8) : DesignSystem.Colors.secondaryText)
             }
-            .padding(.vertical, DesignSystem.Spacing.md)
-            .padding(.horizontal, DesignSystem.Spacing.lg)
+            .padding(.vertical, DesignSystem.Spacing.sm)
+            .padding(.horizontal, DesignSystem.Spacing.md)
             .frame(maxWidth: .infinity)
             .background(
                 isSelected ? storage.color : DesignSystem.Colors.cardBackground

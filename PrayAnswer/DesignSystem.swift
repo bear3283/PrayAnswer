@@ -36,19 +36,19 @@ struct DesignSystem {
         static let tertiaryText = Color(.tertiaryLabel)
     }
     
-    // MARK: - Typography
+    // MARK: - Typography (SF Pro Rounded)
     struct Typography {
-        static let largeTitle = Font.largeTitle.weight(.bold)
-        static let title1 = Font.title.weight(.bold)
-        static let title2 = Font.title2.weight(.semibold)
-        static let title3 = Font.title3.weight(.semibold)
-        static let headline = Font.headline.weight(.semibold)
-        static let body = Font.body.weight(.regular)
-        static let callout = Font.callout.weight(.medium)
-        static let subheadline = Font.subheadline.weight(.medium)
-        static let footnote = Font.footnote.weight(.regular)
-        static let caption = Font.caption.weight(.medium)
-        static let caption2 = Font.caption2.weight(.regular)
+        static let largeTitle = Font.system(.largeTitle, design: .rounded).weight(.bold)
+        static let title1 = Font.system(.title, design: .rounded).weight(.bold)
+        static let title2 = Font.system(.title2, design: .rounded).weight(.semibold)
+        static let title3 = Font.system(.title3, design: .rounded).weight(.semibold)
+        static let headline = Font.system(.headline, design: .rounded).weight(.semibold)
+        static let body = Font.system(.body, design: .rounded).weight(.regular)
+        static let callout = Font.system(.callout, design: .rounded).weight(.medium)
+        static let subheadline = Font.system(.subheadline, design: .rounded).weight(.medium)
+        static let footnote = Font.system(.footnote, design: .rounded).weight(.regular)
+        static let caption = Font.system(.caption, design: .rounded).weight(.medium)
+        static let caption2 = Font.system(.caption2, design: .rounded).weight(.regular)
     }
     
     // MARK: - Spacing

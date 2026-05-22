@@ -7,20 +7,25 @@ struct PrayerExchangeView: View {
     @Query private var allPrayers: [Prayer]
     @ObservedObject private var myProfile = MyProfile.shared
 
-    @State private var selectedIDs: Set<UUID> = []
+    @State private var selectedIDs: Set<PersistentIdentifier> = []
     @State private var showShareSheet = false
-    @State private var shareText = ""
+    @State private var shareItems: [Any] = []
     @State private var errorMessage: String?
     @State private var showError = false
+    @State private var showSuccessToast = false
 
-    // 나의 기도제목
+    // 나의 기도제목 (최신순)
     private var myRequestPrayers: [Prayer] {
-        allPrayers.filter { $0.isMyRequest }
+        allPrayers
+            .filter { $0.isMyRequest }
+            .sorted { $0.createdDate > $1.createdDate }
     }
 
-    // 다른 사람의 기도 (target이 있고 isMyRequest가 아닌 것)
+    // 다른 사람의 기도 (target이 있고 isMyRequest가 아닌 것, 최신순)
     private var othersPrayers: [Prayer] {
-        allPrayers.filter { !$0.target.isEmpty && !$0.isMyRequest }
+        allPrayers
+            .filter { !$0.target.isEmpty && !$0.isMyRequest }
+            .sorted { $0.createdDate > $1.createdDate }
     }
 
     var body: some View {
@@ -32,11 +37,11 @@ struct PrayerExchangeView: View {
                         Image(systemName: "info.circle.fill")
                             .foregroundColor(DesignSystem.Colors.primary)
                         VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
-                            Text("앱이 있으면 바로 저장, 없으면 텍스트로 전달")
+                            Text("카카오톡·문자: 텍스트로 전달")
                                 .font(DesignSystem.Typography.subheadline)
                                 .fontWeight(.medium)
                                 .foregroundColor(DesignSystem.Colors.primaryText)
-                            Text("카카오톡, 문자, 이메일 등 어디서든 공유할 수 있어요. 받는 분이 PrayAnswer 앱이 있다면 링크 한 번으로 기도목록에 바로 저장됩니다.")
+                            Text("에어드롭·이메일: 기도파일(.prayanswer)로 전달 — 받는 분이 PrayAnswer 앱이 있다면 파일을 열어 바로 저장할 수 있어요.")
                                 .font(DesignSystem.Typography.caption)
                                 .foregroundColor(DesignSystem.Colors.secondaryText)
                         }
@@ -105,13 +110,37 @@ struct PrayerExchangeView: View {
                 }
             }
             .sheet(isPresented: $showShareSheet) {
-                ShareSheet(activityItems: [shareText])
+                ShareSheet(activityItems: shareItems) { completed in
+                    if completed {
+                        showSuccessToast = true
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                            dismiss()
+                        }
+                    }
+                }
             }
             .alert("오류", isPresented: $showError) {
                 Button("확인") {}
             } message: {
                 Text(errorMessage ?? "알 수 없는 오류가 발생했습니다.")
             }
+            .overlay(alignment: .bottom) {
+                if showSuccessToast {
+                    HStack(spacing: DesignSystem.Spacing.sm) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundColor(.white)
+                        Text("기도제목을 공유했습니다")
+                            .font(DesignSystem.Typography.subheadline)
+                            .foregroundColor(.white)
+                    }
+                    .padding(.horizontal, DesignSystem.Spacing.lg)
+                    .padding(.vertical, DesignSystem.Spacing.md)
+                    .background(DesignSystem.Colors.primary, in: Capsule())
+                    .padding(.bottom, DesignSystem.Spacing.xl)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+            }
+            .animation(.easeInOut(duration: 0.3), value: showSuccessToast)
         }
     }
 
@@ -150,11 +179,20 @@ struct PrayerExchangeView: View {
 
     private func prepareAndShare() {
         let selected = allPrayers.filter { selectedIDs.contains($0.id) }
-        let items = selected.map { ExchangePrayerItem(from: $0) }
+        let exchangeItems = selected.map { ExchangePrayerItem(from: $0) }
         let senderName = myProfile.name.isEmpty ? "PrayAnswer 사용자" : myProfile.name
-        let package = PrayerExchangePackage(sender: senderName, prayers: items)
+        let package = PrayerExchangePackage(sender: senderName, prayers: exchangeItems)
 
-        shareText = PrayerExchangePackager.makeShareMessage(package)
+        let text = PrayerExchangePackager.makeShareMessage(package)
+
+        // 텍스트 + 파일(.prayanswer)을 함께 공유
+        // 카카오톡/문자: 텍스트 선택, 에어드롭/메일: 파일 첨부 가능
+        var activityItems: [Any] = [text]
+        if let fileURL = try? PrayerExchangePackager.writeToFile(package) {
+            activityItems.append(fileURL)
+        }
+
+        shareItems = activityItems
         showShareSheet = true
     }
 }

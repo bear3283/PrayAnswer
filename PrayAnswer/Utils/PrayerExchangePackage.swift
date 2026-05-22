@@ -115,36 +115,31 @@ enum PrayerExchangePackager {
     // MARK: - 스마트 공유 텍스트 생성
 
     /// 앱 유무에 관계없이 전달 가능한 공유 메시지 생성
+    /// 딥링크는 포함하지 않음 — 파일(.prayanswer)을 함께 공유할 것
     static func makeShareMessage(_ package: PrayerExchangePackage) -> String {
         var lines: [String] = []
 
-        lines.append("\(package.sender)님의 기도제목 🙏")
+        lines.append("🙏 \(package.sender)님의 기도제목")
         lines.append("")
 
-        for item in package.prayers {
-            lines.append("• \(item.title)")
+        for (index, item) in package.prayers.enumerated() {
+            lines.append("\(index + 1). \(item.title)")
             if !item.content.isEmpty {
-                // 내용은 2줄까지만 미리보기
                 let preview = item.content
                     .components(separatedBy: "\n")
                     .prefix(2)
                     .joined(separator: " ")
-                let truncated = preview.count > 60 ? String(preview.prefix(60)) + "..." : preview
-                lines.append("  \(truncated)")
+                let truncated = preview.count > 80 ? String(preview.prefix(80)) + "..." : preview
+                lines.append("   \(truncated)")
             }
         }
 
         lines.append("")
-        lines.append("─────────────────")
-
-        // 딥링크 생성 (실패해도 텍스트만 전달)
-        if let deepLink = try? toDeepLink(package) {
-            lines.append("PrayAnswer 앱이 있다면 아래 링크로 바로 받으세요:")
-            lines.append(deepLink)
-            lines.append("")
-        }
-
-        lines.append("앱 다운로드: \(appStoreURL)")
+        lines.append("─────────────────────")
+        lines.append("📲 PrayAnswer 앱으로 기도제목 받기:")
+        lines.append("• 앱이 있다면: 링크를 눌러 바로 저장")
+        lines.append("• 앱이 없다면: 링크에서 먼저 다운로드 후 저장")
+        lines.append(appStoreURL)
 
         return lines.joined(separator: "\n")
     }

@@ -53,10 +53,9 @@ struct MyPrayerBannerView: View {
                                 Circle()
                                     .fill(prayer.category.color.opacity(0.3))
                                     .frame(width: 6, height: 6)
-                                Text(prayer.title)
+                                Text(prayer.content.isEmpty ? prayer.title : prayer.content)
                                     .font(DesignSystem.Typography.caption)
                                     .foregroundColor(DesignSystem.Colors.primaryText)
-                                    .lineLimit(1)
                             }
                         }
                         if prayers.count > 3 {

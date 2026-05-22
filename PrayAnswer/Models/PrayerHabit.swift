@@ -13,6 +13,7 @@ final class PrayerHabit {
     var notificationEnabled: Bool = false
     var isActive: Bool = true
     var createdDate: Date = Date()
+    var sortOrder: Int = 0
 
     @Relationship(deleteRule: .cascade)
     var logs: [PrayerHabitLog]?
@@ -67,22 +68,32 @@ final class PrayerHabit {
 
     // MARK: - 연속 달성 (streak)
 
-    /// 현재 연속 달성 일수
+    /// 현재 연속 달성 일수 (스케줄된 요일만 카운트, 비스케줄 날은 스킵)
     var currentStreak: Int {
         let calendar = Calendar.current
+        let scheduledDays = weekdays.selectedDays
+        guard !scheduledDays.isEmpty else { return 0 }
+
         var streak = 0
         var checkDate = calendar.startOfDay(for: Date())
 
-        // 오늘 미완료면 어제부터 체크
-        if !isCompletedToday {
+        // 오늘이 스케줄된 날이면서 미완료이면 어제부터 체크
+        let todayWeekday = calendar.component(.weekday, from: checkDate)
+        if scheduledDays.contains(todayWeekday) && !isCompletedToday {
             guard let yesterday = calendar.date(byAdding: .day, value: -1, to: checkDate) else { return 0 }
             checkDate = yesterday
         }
 
-        while true {
-            let dayLog = (logs ?? []).first { calendar.startOfDay(for: $0.date) == checkDate }
-            guard dayLog?.isCompleted == true else { break }
-            streak += 1
+        // 최대 365일 소급 (무한루프 방지)
+        for _ in 0..<365 {
+            let weekday = calendar.component(.weekday, from: checkDate)
+            if scheduledDays.contains(weekday) {
+                // 스케줄된 날: 완료 로그가 있어야 스트릭 유지
+                let dayLog = (logs ?? []).first { calendar.startOfDay(for: $0.date) == checkDate }
+                guard dayLog?.isCompleted == true else { break }
+                streak += 1
+            }
+            // 비스케줄 날은 카운트 없이 통과 (스트릭 유지)
             guard let prev = calendar.date(byAdding: .day, value: -1, to: checkDate) else { break }
             checkDate = prev
         }

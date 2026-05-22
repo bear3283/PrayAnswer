@@ -16,7 +16,7 @@ enum L {
         static let prayerList = NSLocalizedString("tab.prayer_list", comment: "Prayer List tab title")
         static let addPrayer = NSLocalizedString("tab.add_prayer", comment: "Add Prayer tab title")
         static let people = NSLocalizedString("tab.people", comment: "People tab title")
-        static let statistics = NSLocalizedString("tab.statistics", value: "기도 통계", comment: "Statistics tab title")
+        static let statistics = NSLocalizedString("tab.statistics", value: "통계", comment: "Statistics tab title")
     }
 
     // MARK: - Navigation Titles

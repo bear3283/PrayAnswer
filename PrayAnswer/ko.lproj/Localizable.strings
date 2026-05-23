@@ -410,6 +410,54 @@
 "attachment.error_invalid_document" = "유효하지 않은 문서입니다";
 "attachment.error_unsupported_format" = "지원하지 않는 파일 형식입니다";
 
+// MARK: - Settings Tab
+"settings.tab_title" = "설정";
+"settings.guide_section" = "사용법 가이드";
+"settings.ai_section" = "AI · 음성 설정";
+"settings.ai_toggle" = "AI 요약 사용";
+"settings.ai_toggle_desc" = "음성 녹음 후 Apple Intelligence로 기도문을 자동 정리합니다 (iOS 18.1+, Apple Intelligence 필요)";
+"settings.bluetooth_tip" = "에어팟·블루투스 마이크를 연결하면 더 선명하게 녹음됩니다";
+"settings.voice_chunking_tip" = "긴 기도 나눔도 자동으로 이어 녹음됩니다 (1분 이상 지원)";
+"settings.stats_section" = "기도 통계";
+"settings.stats_button" = "기도 통계 보기";
+"settings.stats_desc" = "응답률, 카테고리 분포, 월별 기도 추이를 확인하세요";
+"settings.app_section" = "앱 정보";
+"settings.version" = "버전";
+"settings.contact" = "문의하기";
+"settings.review" = "앱 평가하기";
+"settings.privacy_policy" = "개인정보 처리방침";
+
+// MARK: - Feature Guide Cards
+"guide.add_prayer_title" = "기도제목 추가";
+"guide.add_prayer_desc" = "하단 '추가' 탭에서 기도제목·내용·카테고리·대상자를 입력하고 저장하세요.";
+"guide.storage_title" = "보관소 관리";
+"guide.storage_desc" = "Wait·Yes·No 세 보관소로 기도 상태를 추적하세요. 상세 화면에서 보관소를 이동할 수 있습니다.";
+"guide.people_title" = "여러 사람 기도";
+"guide.people_desc" = "'대상자' 탭에서 사람별 기도제목을 한눈에 관리하세요. 가족·친구·공동체별로 정리됩니다.";
+"guide.favorite_title" = "즐겨찾기";
+"guide.favorite_desc" = "자주 기도하는 제목에 ♥를 표시하면 위젯과 목록 상단에서 빠르게 접근할 수 있습니다.";
+"guide.habit_title" = "기도 습관";
+"guide.habit_desc" = "'습관' 탭에서 매일 기도 체크인을 기록하세요. 연속 기도일과 주간 달력으로 꾸준함을 확인할 수 있습니다.";
+"guide.widget_title" = "홈 화면 위젯";
+"guide.widget_desc" = "홈 화면 길게 누르기 → 위젯 추가 → PrayAnswer. 기도제목 확인과 빠른 추가가 잠금 화면에서도 가능합니다.";
+"guide.exchange_title" = "기도 교환";
+"guide.exchange_desc" = "기도제목을 상대방과 교환하세요. 앱이 있으면 딥링크로 바로 저장, 없으면 텍스트로 전달됩니다.";
+"guide.share_ext_title" = "다른 앱에서 가져오기";
+"guide.share_ext_desc" = "카카오톡·메모 등에서 텍스트를 선택 → 공유 → PrayAnswer를 탭하면 바로 기도제목으로 추가됩니다.";
+"guide.collection_title" = "컬렉션(폴더)";
+"guide.collection_desc" = "기도제목을 주제별 폴더로 묶어 정리하세요. 기도제목 추가·편집 화면에서 폴더를 지정할 수 있습니다.";
+"guide.answer_note_title" = "응답 기록";
+"guide.answer_note_desc" = "기도가 응답받으면 Yes로 이동할 때 어떻게 응답받았는지 메모를 남겨 하나님의 역사를 기록하세요.";
+"guide.voice_ai_title" = "음성 AI 기록";
+"guide.voice_ai_desc" = "기도제목 추가·편집 화면의 🎤 버튼으로 말하면 Apple Intelligence가 기도문으로 자동 정리해 줍니다.";
+
+// MARK: - Voice Enhanced
+"voice.pause" = "일시정지";
+"voice.resume" = "재개";
+"voice.paused" = "일시정지됨";
+"voice.continuing" = "계속 녹음 중...";
+"voice.timer_format" = "%02d:%02d";
+
 // MARK: - Answer Note (응답/거절 메모)
 "answer_note.section_title" = "응답 기록";
 "answer_note.placeholder" = "어떻게 응답받으셨나요? (선택 입력)";

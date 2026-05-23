@@ -95,7 +95,7 @@ struct ContentView: View {
             selectedTab = 2
 
         case "stats":
-            // prayanswer://stats → 통계 탭
+            // prayanswer://stats → 설정 탭
             selectedTab = 4
 
         default:
@@ -184,11 +184,11 @@ struct iPhoneContentView: View {
                 }
                 .tag(3)
 
-            // 통계 탭 (4)
-            StatisticsView()
+            // 설정 탭 (4)
+            SettingsView()
                 .tabItem {
-                    Image(systemName: "chart.bar.xaxis")
-                    Text(L.Tab.statistics)
+                    Image(systemName: "gearshape.fill")
+                    Text(L.Settings.tabTitle)
                 }
                 .tag(4)
         }
@@ -254,7 +254,7 @@ struct iPadContentView: View {
         case prayers = "prayers"
         case people = "people"
         case addPrayer = "addPrayer"
-        case statistics = "statistics"
+        case settings = "settings"
         case habit = "habit"
 
         var id: String { rawValue }
@@ -264,7 +264,7 @@ struct iPadContentView: View {
             case .prayers: return L.Tab.prayerList
             case .people: return L.Tab.people
             case .addPrayer: return L.Tab.addPrayer
-            case .statistics: return L.Tab.statistics
+            case .settings: return L.Settings.tabTitle
             case .habit: return L.Habit.navTitle
             }
         }
@@ -274,7 +274,7 @@ struct iPadContentView: View {
             case .prayers: return "list.bullet.rectangle.portrait"
             case .people: return "person.2"
             case .addPrayer: return "hands.clap"
-            case .statistics: return "chart.bar.xaxis"
+            case .settings: return "gearshape.fill"
             case .habit: return "clock.badge.checkmark"
             }
         }
@@ -377,8 +377,8 @@ struct iPadContentView: View {
         case .addPrayer:
             AddPrayerView(selectedTab: $dummyAddPrayerTab)
 
-        case .statistics:
-            StatisticsView()
+        case .settings:
+            SettingsView()
 
         case .habit:
             HabitView()

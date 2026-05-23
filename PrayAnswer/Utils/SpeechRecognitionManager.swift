@@ -1,28 +1,28 @@
 import Foundation
 import Speech
 import AVFoundation
+import Accelerate
 
 /// 음성 인식 관리자 - Speech Framework를 사용한 음성→텍스트 변환
+/// 개선 사항: 블루투스 마이크 지원, 1분 자동 청킹, 오디오 레벨 미터, 일시정지/재개
 @Observable
 final class SpeechRecognitionManager: NSObject {
     static let shared = SpeechRecognitionManager()
 
-    // MARK: - Published Properties
+    // MARK: - Observable Properties
 
-    /// 현재 인식된 텍스트
     var recognizedText: String = ""
-
-    /// 녹음 중 여부
     var isRecording: Bool = false
-
-    /// 에러 메시지
+    var isPaused: Bool = false
     var errorMessage: String?
-
-    /// 권한 상태
     var authorizationStatus: SFSpeechRecognizerAuthorizationStatus = .notDetermined
-
-    /// 마이크 권한 상태
     var microphonePermissionGranted: Bool = false
+
+    /// 실시간 오디오 입력 레벨 (0.0 ~ 1.0) — 파형 시각화용
+    var audioLevel: Float = 0.0
+
+    /// 녹음 경과 시간 (초)
+    var elapsedSeconds: Int = 0
 
     // MARK: - Private Properties
 
@@ -31,10 +31,22 @@ final class SpeechRecognitionManager: NSObject {
     private var recognitionTask: SFSpeechRecognitionTask?
     private let audioEngine = AVAudioEngine()
 
+    /// 청킹: 이전 청크에서 누적된 텍스트
+    private var accumulatedText: String = ""
+
+    /// 청킹 타이머 — 55초마다 새 recognitionRequest로 교체
+    private var chunkTimer: Timer?
+    private let chunkInterval: TimeInterval = 55
+
+    /// 녹음 경과 시간 타이머
+    private var elapsedTimer: Timer?
+
+    /// 일시정지 시점의 누적 텍스트 스냅샷
+    private var pauseSnapshot: String = ""
+
     // MARK: - Initialization
 
     private override init() {
-        // 한국어 음성 인식기 초기화
         self.speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: "ko-KR"))
         super.init()
         self.speechRecognizer?.delegate = self
@@ -42,7 +54,6 @@ final class SpeechRecognitionManager: NSObject {
 
     // MARK: - Permission Requests
 
-    /// 음성 인식 권한 요청
     func requestSpeechAuthorization(completion: @escaping (Bool) -> Void) {
         SFSpeechRecognizer.requestAuthorization { [weak self] status in
             DispatchQueue.main.async {
@@ -52,7 +63,6 @@ final class SpeechRecognitionManager: NSObject {
         }
     }
 
-    /// 마이크 권한 요청
     func requestMicrophonePermission(completion: @escaping (Bool) -> Void) {
         AVAudioApplication.requestRecordPermission { [weak self] granted in
             DispatchQueue.main.async {
@@ -62,99 +72,31 @@ final class SpeechRecognitionManager: NSObject {
         }
     }
 
-    /// 모든 권한 요청
     func requestAllPermissions(completion: @escaping (Bool) -> Void) {
         requestSpeechAuthorization { [weak self] speechGranted in
-            guard speechGranted else {
-                completion(false)
-                return
-            }
-
+            guard speechGranted else { completion(false); return }
             self?.requestMicrophonePermission { micGranted in
                 completion(micGranted)
             }
         }
     }
 
-    /// 권한 상태 확인
     func checkPermissions() -> Bool {
-        return authorizationStatus == .authorized && microphonePermissionGranted
+        authorizationStatus == .authorized && microphonePermissionGranted
     }
 
     // MARK: - Recording Control
 
-    /// 녹음 시작
     func startRecording() throws {
-        // 이전 작업 정리
-        if recognitionTask != nil {
-            recognitionTask?.cancel()
-            recognitionTask = nil
-        }
+        guard !isRecording else { return }
 
-        // 오디오 세션 설정
-        let audioSession = AVAudioSession.sharedInstance()
-        try audioSession.setCategory(.record, mode: .measurement, options: .duckOthers)
-        try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
+        accumulatedText = ""
+        elapsedSeconds = 0
+        isPaused = false
 
-        // 인식 요청 생성
-        recognitionRequest = SFSpeechAudioBufferRecognitionRequest()
-
-        guard let recognitionRequest = recognitionRequest else {
-            throw SpeechRecognitionError.requestCreationFailed
-        }
-
-        // 실시간 결과 반환 설정
-        recognitionRequest.shouldReportPartialResults = true
-
-        // 음성 인식기 확인
-        guard let speechRecognizer = speechRecognizer, speechRecognizer.isAvailable else {
-            throw SpeechRecognitionError.recognizerNotAvailable
-        }
-
-        // 인식 작업 시작
-        recognitionTask = speechRecognizer.recognitionTask(with: recognitionRequest) { [weak self] result, error in
-            guard let self = self else { return }
-
-            var isFinal = false
-
-            if let result = result {
-                DispatchQueue.main.async {
-                    self.recognizedText = result.bestTranscription.formattedString
-                }
-                isFinal = result.isFinal
-            }
-
-            // 에러 또는 최종 결과일 때 정리
-            if error != nil || isFinal {
-                // 오디오 엔진이 아직 실행 중이면 중지 (오디오 리소스는 백그라운드에서 처리 가능)
-                if self.audioEngine.isRunning {
-                    self.audioEngine.stop()
-                    self.audioEngine.inputNode.removeTap(onBus: 0)
-                }
-
-                try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
-
-                // @Observable 프로퍼티는 반드시 메인 스레드에서 수정
-                DispatchQueue.main.async {
-                    self.recognitionRequest = nil
-                    self.recognitionTask = nil
-                    self.isRecording = false
-                }
-            }
-        }
-
-        // 오디오 입력 노드 설정 (기존 탭이 있으면 먼저 제거 - 빠른 재시작 시 크래시 방지)
-        let inputNode = audioEngine.inputNode
-        inputNode.removeTap(onBus: 0)
-        let recordingFormat = inputNode.outputFormat(forBus: 0)
-
-        inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { [weak self] buffer, _ in
-            self?.recognitionRequest?.append(buffer)
-        }
-
-        // 오디오 엔진 시작
-        audioEngine.prepare()
-        try audioEngine.start()
+        try startRecognitionSession()
+        startElapsedTimer()
+        startChunkTimer()
 
         DispatchQueue.main.async {
             self.isRecording = true
@@ -162,41 +104,68 @@ final class SpeechRecognitionManager: NSObject {
         }
     }
 
-    /// 녹음 중지
     func stopRecording() {
-        stopRecordingInternal()
-    }
-
-    private func stopRecordingInternal() {
-        // 이미 중지 상태면 무시
-        guard audioEngine.isRunning || recognitionRequest != nil else {
-            DispatchQueue.main.async {
-                self.isRecording = false
-            }
-            return
-        }
-
-        // 오디오 엔진 중지
-        if audioEngine.isRunning {
-            audioEngine.stop()
-            audioEngine.inputNode.removeTap(onBus: 0)
-        }
-
-        // 인식 요청 종료 (최종 결과를 받기 위해 endAudio만 호출)
+        stopChunkTimer()
+        stopElapsedTimer()
+        stopAudioEngine()
         recognitionRequest?.endAudio()
 
-        // 오디오 세션 비활성화
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
 
         DispatchQueue.main.async {
             self.isRecording = false
+            self.isPaused = false
+            self.audioLevel = 0
         }
-
-        // 인식 작업은 취소하지 않음 - 자연스럽게 완료되도록 함
-        // recognitionTask가 완료되면 콜백에서 정리됨
     }
 
-    /// 녹음 토글
+    func pauseRecording() {
+        guard isRecording, !isPaused else { return }
+
+        stopChunkTimer()
+        stopElapsedTimer()
+
+        // 현재 인식 중인 텍스트를 누적에 병합 후 스냅샷
+        let current = recognizedText.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !current.isEmpty {
+            accumulatedText = accumulatedText.isEmpty ? current : accumulatedText + "\n" + current
+        }
+        pauseSnapshot = accumulatedText
+
+        stopAudioEngine()
+        recognitionRequest?.endAudio()
+        recognitionRequest = nil
+        recognitionTask?.cancel()
+        recognitionTask = nil
+
+        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+
+        DispatchQueue.main.async {
+            self.isPaused = true
+            self.audioLevel = 0
+            self.recognizedText = self.accumulatedText
+        }
+    }
+
+    func resumeRecording() {
+        guard isRecording, isPaused else { return }
+
+        do {
+            accumulatedText = pauseSnapshot
+            try startRecognitionSession()
+            startElapsedTimer()
+            startChunkTimer()
+            DispatchQueue.main.async {
+                self.isPaused = false
+                self.errorMessage = nil
+            }
+        } catch {
+            DispatchQueue.main.async {
+                self.errorMessage = L.Voice.errorRecordingFailed
+            }
+        }
+    }
+
     func toggleRecording() {
         if isRecording {
             stopRecording()
@@ -211,9 +180,175 @@ final class SpeechRecognitionManager: NSObject {
         }
     }
 
-    /// 텍스트 초기화
+    func togglePause() {
+        if isPaused {
+            resumeRecording()
+        } else {
+            pauseRecording()
+        }
+    }
+
     func clearText() {
         recognizedText = ""
+        accumulatedText = ""
+    }
+
+    // MARK: - Private: Session Management
+
+    private func startRecognitionSession() throws {
+        if recognitionTask != nil {
+            recognitionTask?.cancel()
+            recognitionTask = nil
+        }
+
+        let audioSession = AVAudioSession.sharedInstance()
+        // 블루투스/에어팟 마이크 지원 + 음성 최적화 모드
+        try audioSession.setCategory(
+            .record,
+            mode: .default,
+            options: [.allowBluetooth, .allowBluetoothA2DP]
+        )
+        try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
+
+        recognitionRequest = SFSpeechAudioBufferRecognitionRequest()
+        guard let recognitionRequest else {
+            throw SpeechRecognitionError.requestCreationFailed
+        }
+        recognitionRequest.shouldReportPartialResults = true
+
+        guard let speechRecognizer, speechRecognizer.isAvailable else {
+            throw SpeechRecognitionError.recognizerNotAvailable
+        }
+
+        let accumulated = accumulatedText
+
+        recognitionTask = speechRecognizer.recognitionTask(with: recognitionRequest) { [weak self] result, error in
+            guard let self else { return }
+
+            if let result {
+                let chunk = result.bestTranscription.formattedString
+                let full = accumulated.isEmpty ? chunk : accumulated + "\n" + chunk
+                DispatchQueue.main.async {
+                    self.recognizedText = full
+                }
+
+                if result.isFinal {
+                    let finalChunk = result.bestTranscription.formattedString.trimmingCharacters(in: .whitespacesAndNewlines)
+                    DispatchQueue.main.async {
+                        self.accumulatedText = accumulated.isEmpty
+                            ? finalChunk
+                            : accumulated + "\n" + finalChunk
+                    }
+                }
+            }
+
+            if error != nil && !self.isPaused {
+                if self.audioEngine.isRunning {
+                    self.audioEngine.stop()
+                    self.audioEngine.inputNode.removeTap(onBus: 0)
+                }
+                try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+                DispatchQueue.main.async {
+                    self.recognitionRequest = nil
+                    self.recognitionTask = nil
+                    if !self.isRecording { return }
+                    self.isRecording = false
+                    self.audioLevel = 0
+                }
+            }
+        }
+
+        let inputNode = audioEngine.inputNode
+        inputNode.removeTap(onBus: 0)
+        let recordingFormat = inputNode.outputFormat(forBus: 0)
+
+        inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { [weak self] buffer, _ in
+            self?.recognitionRequest?.append(buffer)
+            self?.updateAudioLevel(buffer: buffer)
+        }
+
+        audioEngine.prepare()
+        try audioEngine.start()
+    }
+
+    private func stopAudioEngine() {
+        guard audioEngine.isRunning else { return }
+        audioEngine.stop()
+        audioEngine.inputNode.removeTap(onBus: 0)
+    }
+
+    // MARK: - Private: Chunking
+
+    private func startChunkTimer() {
+        chunkTimer?.invalidate()
+        chunkTimer = Timer.scheduledTimer(withTimeInterval: chunkInterval, repeats: false) { [weak self] _ in
+            self?.rotateChunk()
+        }
+    }
+
+    private func stopChunkTimer() {
+        chunkTimer?.invalidate()
+        chunkTimer = nil
+    }
+
+    /// 55초 경과 시 현재 텍스트를 누적하고 새 인식 세션 시작 (무중단)
+    private func rotateChunk() {
+        guard isRecording, !isPaused else { return }
+
+        // 현재 인식 중인 텍스트 누적
+        let current = recognizedText.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !current.isEmpty {
+            accumulatedText = accumulatedText.isEmpty ? current : accumulatedText + "\n" + current
+        }
+
+        // 기존 세션 정리
+        stopAudioEngine()
+        recognitionRequest?.endAudio()
+        recognitionRequest = nil
+        recognitionTask?.cancel()
+        recognitionTask = nil
+
+        // 새 세션 즉시 시작
+        do {
+            try startRecognitionSession()
+            startChunkTimer() // 다시 55초 타이머
+        } catch {
+            DispatchQueue.main.async {
+                self.errorMessage = L.Voice.errorRecordingFailed
+            }
+        }
+    }
+
+    // MARK: - Private: Elapsed Timer
+
+    private func startElapsedTimer() {
+        elapsedTimer?.invalidate()
+        elapsedTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
+            DispatchQueue.main.async {
+                self?.elapsedSeconds += 1
+            }
+        }
+    }
+
+    private func stopElapsedTimer() {
+        elapsedTimer?.invalidate()
+        elapsedTimer = nil
+    }
+
+    // MARK: - Private: Audio Level Metering
+
+    private func updateAudioLevel(buffer: AVAudioPCMBuffer) {
+        guard let channelData = buffer.floatChannelData?[0] else { return }
+        let frameCount = vDSP_Length(buffer.frameLength)
+        guard frameCount > 0 else { return }
+
+        var rms: Float = 0.0
+        vDSP_rmsqv(channelData, 1, &rms, frameCount)
+        let normalized = min(rms * 20, 1.0)
+
+        DispatchQueue.main.async {
+            self.audioLevel = normalized
+        }
     }
 }
 
@@ -239,14 +374,10 @@ enum SpeechRecognitionError: Error, LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .requestCreationFailed:
-            return L.Voice.errorRequestFailed
-        case .recognizerNotAvailable:
-            return L.Voice.errorRecognizerUnavailable
-        case .permissionDenied:
-            return L.Voice.errorPermissionDenied
-        case .audioSessionFailed:
-            return L.Voice.errorAudioSession
+        case .requestCreationFailed:   return L.Voice.errorRequestFailed
+        case .recognizerNotAvailable:  return L.Voice.errorRecognizerUnavailable
+        case .permissionDenied:        return L.Voice.errorPermissionDenied
+        case .audioSessionFailed:      return L.Voice.errorAudioSession
         }
     }
 }

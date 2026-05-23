@@ -4,7 +4,6 @@
 //
 
 import SwiftUI
-import StoreKit
 
 struct SettingsView: View {
     @State private var showStatistics = false
@@ -36,11 +35,18 @@ struct SettingsView: View {
 
     private var guideSection: some View {
         Section {
-            ForEach(guideItems, id: \.title) { item in
-                FeatureGuideRow(icon: item.icon, color: item.color, title: item.title, description: item.description)
+            NavigationLink {
+                FeatureGuideView()
+            } label: {
+                Label {
+                    Text(L.Settings.guideSection)
+                        .font(DesignSystem.Typography.callout)
+                        .foregroundColor(DesignSystem.Colors.primaryText)
+                } icon: {
+                    Image(systemName: "book")
+                        .foregroundColor(DesignSystem.Colors.primary)
+                }
             }
-        } header: {
-            Text(L.Settings.guideSection)
         }
     }
 
@@ -131,20 +137,18 @@ struct SettingsView: View {
             }
 
             Button {
-                let email = "eunkwanbear@gmail.com"
-                let subject = "PrayAnswer 문의"
-                let urlString = "mailto:\(email)?subject=\(subject.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")"
-                if let url = URL(string: urlString) {
+                if let url = URL(string: "https://www.instagram.com/mordecai_kwan") {
                     UIApplication.shared.open(url)
                 }
             } label: {
-                Label(L.Settings.contact, systemImage: "envelope")
+                Label(L.Settings.contact, systemImage: "message")
                     .foregroundColor(DesignSystem.Colors.primaryText)
             }
 
             Button {
-                if let scene = UIApplication.shared.connectedScenes.first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene {
-                    AppStore.requestReview(in: scene)
+                // 지역 코드(/kr/) 포함 URL 재사용 — 미포함 시 기본 스토어프론트로 연결돼 "지역에서 사용 불가" 오류 발생
+                if let url = URL(string: "\(PrayerExchangePackager.appStoreURL)?action=write-review") {
+                    UIApplication.shared.open(url)
                 }
             } label: {
                 Label(L.Settings.review, systemImage: "star")
@@ -152,7 +156,7 @@ struct SettingsView: View {
             }
 
             Button {
-                if let url = URL(string: "https://sites.google.com/view/prayanswer-privacy") {
+                if let url = URL(string: "https://www.notion.so/prayanswer-2a1d59d95c59809fb0aac3ec8ba026e6?source=copy_link") {
                     UIApplication.shared.open(url)
                 }
             } label: {
@@ -162,64 +166,6 @@ struct SettingsView: View {
         } header: {
             Text(L.Settings.appSection)
         }
-    }
-
-    // MARK: - Guide Items Data
-
-    private var guideItems: [GuideItem] {
-        [
-            GuideItem(icon: "hands.clap.fill",   color: DesignSystem.Colors.primary,      title: L.Guide.addPrayerTitle,   description: L.Guide.addPrayerDesc),
-            GuideItem(icon: "tray.2.fill",        color: DesignSystem.Colors.wait,         title: L.Guide.storageTitle,     description: L.Guide.storageDesc),
-            GuideItem(icon: "person.2.fill",      color: Color.blue,                       title: L.Guide.peopleTitle,      description: L.Guide.peopleDesc),
-            GuideItem(icon: "heart.fill",         color: Color.red,                        title: L.Guide.favoriteTitle,    description: L.Guide.favoriteDesc),
-            GuideItem(icon: "clock.badge.checkmark", color: Color.orange,                  title: L.Guide.habitTitle,       description: L.Guide.habitDesc),
-            GuideItem(icon: "rectangle.3.group.fill", color: Color.indigo,                 title: L.Guide.widgetTitle,      description: L.Guide.widgetDesc),
-            GuideItem(icon: "arrow.triangle.2.circlepath", color: DesignSystem.Colors.answered, title: L.Guide.exchangeTitle, description: L.Guide.exchangeDesc),
-            GuideItem(icon: "square.and.arrow.up.fill", color: Color.teal,                 title: L.Guide.shareExtTitle,    description: L.Guide.shareExtDesc),
-            GuideItem(icon: "folder.fill",        color: Color.yellow,                     title: L.Guide.collectionTitle,  description: L.Guide.collectionDesc),
-            GuideItem(icon: "checkmark.seal.fill", color: DesignSystem.Colors.answered,    title: L.Guide.answerNoteTitle,  description: L.Guide.answerNoteDesc),
-            GuideItem(icon: "mic.fill",           color: Color.purple,                     title: L.Guide.voiceAITitle,     description: L.Guide.voiceAIDesc),
-        ]
-    }
-}
-
-// MARK: - Supporting Types
-
-private struct GuideItem {
-    let icon: String
-    let color: Color
-    let title: String
-    let description: String
-}
-
-private struct FeatureGuideRow: View {
-    let icon: String
-    let color: Color
-    let title: String
-    let description: String
-
-    var body: some View {
-        HStack(alignment: .top, spacing: DesignSystem.Spacing.md) {
-            ZStack {
-                RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.small)
-                    .fill(color.opacity(0.15))
-                    .frame(width: 36, height: 36)
-                Image(systemName: icon)
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(color)
-            }
-
-            VStack(alignment: .leading, spacing: 3) {
-                Text(title)
-                    .font(DesignSystem.Typography.callout)
-                    .foregroundColor(DesignSystem.Colors.primaryText)
-                Text(description)
-                    .font(DesignSystem.Typography.caption2)
-                    .foregroundColor(DesignSystem.Colors.secondaryText)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-        .padding(.vertical, DesignSystem.Spacing.xs)
     }
 }
 

@@ -1363,7 +1363,7 @@ struct VoiceRecordingButton: View {
     }
 }
 
-/// 음성 녹음 오버레이 - 녹음 중 전체 화면 표시 (AI 정리 기능 포함)
+/// 음성 녹음 오버레이 - 파형 시각화·타이머·일시정지 포함
 struct VoiceRecordingOverlay: View {
     @Bindable var speechManager: SpeechRecognitionManager
     let onUseText: (String) -> Void
@@ -1374,348 +1374,65 @@ struct VoiceRecordingOverlay: View {
     @State private var showAISummaryPreview = false
     @State private var summarizedText = ""
     @State private var aiErrorMessage: String?
+    @State private var waveformLevels: [Float] = Array(repeating: 0.15, count: 7)
 
-    /// AI 사용자 설정 (AppStorage 연동)
     @AppStorage("aiFeatureEnabled") private var isAIUserEnabled: Bool = true
 
-    /// AI 기능 사용 가능 여부 (시스템 지원 + 사용자 활성화)
-    private var isAIAvailable: Bool {
-        AIFeatureAvailability.isSupported
-    }
+    private var isAIAvailable: Bool { AIFeatureAvailability.isSupported }
+    private var isAISystemSupported: Bool { AIFeatureAvailability.isSystemSupported }
 
-    /// 시스템이 AI를 지원하는지 여부 (사용자 설정과 무관)
-    private var isAISystemSupported: Bool {
-        AIFeatureAvailability.isSystemSupported
+    private var timerString: String {
+        let m = speechManager.elapsedSeconds / 60
+        let s = speechManager.elapsedSeconds % 60
+        return String(format: "%02d:%02d", m, s)
     }
 
     var body: some View {
         ZStack {
-            // 배경 블러
-            Color.black.opacity(0.6)
+            Color.black.opacity(0.75)
                 .ignoresSafeArea()
                 .contentShape(Rectangle())
                 .onTapGesture {
-                    // 배경 탭으로 취소
-                    if !speechManager.isRecording && !isAIProcessing {
-                        onCancel()
-                    }
+                    if !speechManager.isRecording && !isAIProcessing { onCancel() }
                 }
                 .zIndex(0)
 
-            VStack(spacing: DesignSystem.Spacing.xxl) {
-                // AI 토글 버튼 (시스템이 지원하는 경우에만 표시)
-                if isAISystemSupported {
-                    HStack {
-                        Spacer()
-                        Button(action: {
-                            withAnimation(.easeInOut(duration: 0.2)) {
-                                isAIUserEnabled.toggle()
-                            }
-                        }) {
-                            HStack(spacing: DesignSystem.Spacing.xs) {
-                                Image(systemName: isAIUserEnabled ? "sparkles" : "sparkles.slash")
-                                    .font(.body)
-                                Text(isAIUserEnabled ? "AI ON" : "AI OFF")
-                                    .font(DesignSystem.Typography.callout)
-                                    .fontWeight(.medium)
-                            }
-                            .foregroundColor(isAIUserEnabled ? .cyan : .white.opacity(0.5))
-                            .padding(.horizontal, DesignSystem.Spacing.lg)
-                            .padding(.vertical, DesignSystem.Spacing.md)
-                            .background(
-                                isAIUserEnabled
-                                    ? LinearGradient(
-                                        colors: [.purple.opacity(0.3), .blue.opacity(0.3), .cyan.opacity(0.3)],
-                                        startPoint: .leading,
-                                        endPoint: .trailing
-                                    )
-                                    : LinearGradient(
-                                        colors: [.white.opacity(0.1), .white.opacity(0.1)],
-                                        startPoint: .leading,
-                                        endPoint: .trailing
-                                    )
-                            )
-                            .cornerRadius(DesignSystem.CornerRadius.medium)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.medium)
-                                    .stroke(
-                                        isAIUserEnabled
-                                            ? LinearGradient(
-                                                colors: [.purple.opacity(0.5), .cyan.opacity(0.5)],
-                                                startPoint: .leading,
-                                                endPoint: .trailing
-                                            )
-                                            : LinearGradient(
-                                                colors: [.white.opacity(0.2), .white.opacity(0.2)],
-                                                startPoint: .leading,
-                                                endPoint: .trailing
-                                            ),
-                                        lineWidth: 1
-                                    )
-                            )
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                        .disabled(isAIProcessing)
-                    }
-                    .padding(.horizontal, DesignSystem.Spacing.xl)
+            VStack(spacing: 0) {
+                // ── 상단: AI 토글
+                topBar
                     .padding(.top, DesignSystem.Spacing.xl)
-                }
 
                 Spacer()
 
-                // 녹음 상태 인디케이터
-                ZStack {
-                    // 펄스 애니메이션 원
-                    if speechManager.isRecording {
-                        Circle()
-                            .fill(DesignSystem.Colors.primary.opacity(0.3))
-                            .frame(width: 160, height: 160)
-                            .scaleEffect(pulseAnimation ? 1.2 : 1.0)
-                            .opacity(pulseAnimation ? 0 : 0.5)
-                            .animation(
-                                .easeInOut(duration: 1.0).repeatForever(autoreverses: false),
-                                value: pulseAnimation
-                            )
-
-                        Circle()
-                            .fill(DesignSystem.Colors.primary.opacity(0.2))
-                            .frame(width: 140, height: 140)
-                            .scaleEffect(pulseAnimation ? 1.3 : 1.0)
-                            .opacity(pulseAnimation ? 0 : 0.3)
-                            .animation(
-                                .easeInOut(duration: 1.0).repeatForever(autoreverses: false).delay(0.3),
-                                value: pulseAnimation
-                            )
-                    }
-
-                    // AI 처리 중 애니메이션
-                    if isAIProcessing {
-                        Circle()
-                            .fill(
-                                LinearGradient(
-                                    colors: [.purple.opacity(0.3), .blue.opacity(0.3), .cyan.opacity(0.3)],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
-                            .frame(width: 160, height: 160)
-                            .scaleEffect(pulseAnimation ? 1.2 : 1.0)
-                            .opacity(pulseAnimation ? 0 : 0.5)
-                            .animation(
-                                .easeInOut(duration: 1.5).repeatForever(autoreverses: true),
-                                value: pulseAnimation
-                            )
-                    }
-
-                    // 마이크/AI 버튼
-                    Button(action: {
-                        if !isAIProcessing {
-                            speechManager.toggleRecording()
-                        }
-                    }) {
-                        Circle()
-                            .fill(
-                                isAIProcessing
-                                    ? LinearGradient(
-                                        colors: [.purple, .blue, .cyan],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    )
-                                    : LinearGradient(
-                                        colors: [speechManager.isRecording ? .red : DesignSystem.Colors.primary,
-                                                 speechManager.isRecording ? .red : DesignSystem.Colors.primary],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    )
-                            )
-                            .frame(width: 120, height: 120)
-                            .shadow(
-                                color: (speechManager.isRecording ? Color.red : DesignSystem.Colors.primary).opacity(0.4),
-                                radius: 20,
-                                x: 0,
-                                y: 10
-                            )
-                            .overlay(
-                                Group {
-                                    if isAIProcessing {
-                                        ProgressView()
-                                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                                            .scaleEffect(2)
-                                    } else {
-                                        Image(systemName: speechManager.isRecording ? "stop.fill" : "mic.fill")
-                                            .font(.system(size: 50, weight: .medium))
-                                            .foregroundColor(.white)
-                                    }
-                                }
-                            )
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                    .disabled(isAIProcessing)
-                }
-                .onAppear {
-                    pulseAnimation = true
+                // ── 중앙: 마이크 버튼 + 파형
+                VStack(spacing: DesignSystem.Spacing.xl) {
+                    micButton
+                    waveformView
+                    statusLabel
                 }
 
-                // 상태 텍스트
-                VStack(spacing: DesignSystem.Spacing.md) {
-                    if isAIProcessing {
-                        Text(L.AI.summarizing)
-                            .font(DesignSystem.Typography.headline)
-                            .foregroundStyle(
-                                LinearGradient(
-                                    colors: [.purple, .blue, .cyan],
-                                    startPoint: .leading,
-                                    endPoint: .trailing
-                                )
-                            )
-                    } else {
-                        Text(speechManager.isRecording ? L.Voice.listening : L.Voice.tapToStart)
-                            .font(DesignSystem.Typography.headline)
-                            .foregroundColor(.white)
-                    }
-
-                    if let errorMessage = speechManager.errorMessage ?? aiErrorMessage {
-                        Text(errorMessage)
-                            .font(DesignSystem.Typography.caption)
-                            .foregroundColor(Color.red.opacity(0.9))
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, DesignSystem.Spacing.xl)
-                    }
-                }
-
-                // 인식된 텍스트 표시
+                // ── 인식 텍스트
                 if !speechManager.recognizedText.isEmpty {
-                    VStack(spacing: DesignSystem.Spacing.md) {
-                        ScrollView {
-                            Text(speechManager.recognizedText)
-                                .font(DesignSystem.Typography.body)
-                                .foregroundColor(.white)
-                                .multilineTextAlignment(.center)
-                                .padding(DesignSystem.Spacing.lg)
-                        }
-                        .frame(maxHeight: 200)
-                        .background(Color.black.opacity(0.5))
-                        .cornerRadius(DesignSystem.CornerRadius.medium)
-                        .padding(.horizontal, DesignSystem.Spacing.xl)
-                    }
+                    recognizedTextBox
+                        .padding(.top, DesignSystem.Spacing.lg)
                 }
 
                 Spacer()
 
-                // 하단 버튼
-                VStack(spacing: DesignSystem.Spacing.md) {
-                    // 녹음 중일 때 명시적 중지 버튼
-                    if speechManager.isRecording {
-                        Button(action: {
-                            speechManager.stopRecording()
-                        }) {
-                            HStack(spacing: DesignSystem.Spacing.sm) {
-                                Image(systemName: "stop.circle.fill")
-                                Text(L.Voice.stopRecording)
-                            }
-                            .font(DesignSystem.Typography.headline)
-                            .foregroundColor(.red)
-                            .padding(.horizontal, DesignSystem.Spacing.xl)
-                            .padding(.vertical, DesignSystem.Spacing.md)
-                            .background(Color.red.opacity(0.2))
-                            .cornerRadius(DesignSystem.CornerRadius.large)
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                    }
-
-                    // AI 정리 버튼 (텍스트가 있고 녹음이 완료된 경우에만)
-                    if !speechManager.recognizedText.isEmpty && !speechManager.isRecording && isAIAvailable {
-                        Button(action: {
-                            performAISummarization()
-                        }) {
-                            HStack(spacing: DesignSystem.Spacing.sm) {
-                                Image(systemName: "sparkles")
-                                Text(L.AI.summarize)
-                            }
-                            .font(DesignSystem.Typography.headline)
-                            .foregroundStyle(
-                                LinearGradient(
-                                    colors: [.purple, .blue, .cyan],
-                                    startPoint: .leading,
-                                    endPoint: .trailing
-                                )
-                            )
-                            .padding(.horizontal, DesignSystem.Spacing.xl)
-                            .padding(.vertical, DesignSystem.Spacing.md)
-                            .background(
-                                LinearGradient(
-                                    colors: [.purple.opacity(0.2), .blue.opacity(0.2), .cyan.opacity(0.2)],
-                                    startPoint: .leading,
-                                    endPoint: .trailing
-                                )
-                            )
-                            .cornerRadius(DesignSystem.CornerRadius.large)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.large)
-                                    .stroke(
-                                        LinearGradient(
-                                            colors: [.purple.opacity(0.5), .blue.opacity(0.5), .cyan.opacity(0.5)],
-                                            startPoint: .leading,
-                                            endPoint: .trailing
-                                        ),
-                                        lineWidth: 1
-                                    )
-                            )
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                        .disabled(isAIProcessing)
-                    }
-
-                    HStack(spacing: DesignSystem.Spacing.xl) {
-                        // 취소 버튼
-                        Button(action: {
-                            speechManager.stopRecording()
-                            speechManager.clearText()
-                            onCancel()
-                        }) {
-                            HStack(spacing: DesignSystem.Spacing.sm) {
-                                Image(systemName: "xmark")
-                                Text(L.Voice.cancel)
-                            }
-                            .font(DesignSystem.Typography.headline)
-                            .foregroundColor(.white.opacity(0.8))
-                            .padding(.horizontal, DesignSystem.Spacing.xl)
-                            .padding(.vertical, DesignSystem.Spacing.md)
-                            .background(Color.white.opacity(0.2))
-                            .cornerRadius(DesignSystem.CornerRadius.large)
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                        .disabled(isAIProcessing)
-
-                        // 텍스트 사용 버튼 (텍스트가 있을 때만)
-                        if !speechManager.recognizedText.isEmpty && !speechManager.isRecording {
-                            Button(action: {
-                                onUseText(speechManager.recognizedText)
-                                speechManager.clearText()
-                            }) {
-                                HStack(spacing: DesignSystem.Spacing.sm) {
-                                    Image(systemName: "checkmark")
-                                    Text(L.Voice.useText)
-                                }
-                                .font(DesignSystem.Typography.headline)
-                                .foregroundColor(.white)
-                                .padding(.horizontal, DesignSystem.Spacing.xl)
-                                .padding(.vertical, DesignSystem.Spacing.md)
-                                .background(DesignSystem.Colors.primary)
-                                .cornerRadius(DesignSystem.CornerRadius.large)
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                            .disabled(isAIProcessing)
-                        }
-                    }
-                }
-                .padding(.bottom, DesignSystem.Spacing.xxxl)
+                // ── 하단: 타이머 + 컨트롤 버튼
+                bottomControls
+                    .padding(.bottom, DesignSystem.Spacing.xxxl)
             }
             .zIndex(1)
         }
         .animation(DesignSystem.Animation.standard, value: speechManager.isRecording)
+        .animation(DesignSystem.Animation.standard, value: speechManager.isPaused)
         .animation(DesignSystem.Animation.standard, value: speechManager.recognizedText)
         .animation(DesignSystem.Animation.standard, value: isAIProcessing)
+        .onChange(of: speechManager.audioLevel) { _, level in
+            updateWaveform(level: level)
+        }
+        .onAppear { pulseAnimation = true }
         .sheet(isPresented: $showAISummaryPreview) {
             AISummaryPreviewView(
                 originalText: speechManager.recognizedText,
@@ -1725,9 +1442,7 @@ struct VoiceRecordingOverlay: View {
                     speechManager.clearText()
                     showAISummaryPreview = false
                 },
-                onCancel: {
-                    showAISummaryPreview = false
-                },
+                onCancel: { showAISummaryPreview = false },
                 onRetry: {
                     showAISummaryPreview = false
                     performAISummarization()
@@ -1738,14 +1453,305 @@ struct VoiceRecordingOverlay: View {
         }
     }
 
+    // MARK: - Subviews
+
+    private var topBar: some View {
+        HStack {
+            Spacer()
+            if isAISystemSupported {
+                Button(action: {
+                    withAnimation(.easeInOut(duration: 0.2)) { isAIUserEnabled.toggle() }
+                }) {
+                    HStack(spacing: DesignSystem.Spacing.xs) {
+                        Image(systemName: isAIUserEnabled ? "sparkles" : "sparkles.slash")
+                            .font(.body)
+                        Text(isAIUserEnabled ? "AI ON" : "AI OFF")
+                            .font(DesignSystem.Typography.callout)
+                            .fontWeight(.medium)
+                    }
+                    .foregroundColor(isAIUserEnabled ? .cyan : .white.opacity(0.5))
+                    .padding(.horizontal, DesignSystem.Spacing.lg)
+                    .padding(.vertical, DesignSystem.Spacing.md)
+                    .background(
+                        isAIUserEnabled
+                            ? LinearGradient(colors: [.purple.opacity(0.3), .blue.opacity(0.3), .cyan.opacity(0.3)], startPoint: .leading, endPoint: .trailing)
+                            : LinearGradient(colors: [.white.opacity(0.1), .white.opacity(0.1)], startPoint: .leading, endPoint: .trailing)
+                    )
+                    .cornerRadius(DesignSystem.CornerRadius.medium)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.medium)
+                            .stroke(
+                                isAIUserEnabled
+                                    ? LinearGradient(colors: [.purple.opacity(0.5), .cyan.opacity(0.5)], startPoint: .leading, endPoint: .trailing)
+                                    : LinearGradient(colors: [.white.opacity(0.2), .white.opacity(0.2)], startPoint: .leading, endPoint: .trailing),
+                                lineWidth: 1
+                            )
+                    )
+                }
+                .buttonStyle(PlainButtonStyle())
+                .disabled(isAIProcessing)
+            }
+        }
+        .padding(.horizontal, DesignSystem.Spacing.xl)
+    }
+
+    private var micButton: some View {
+        ZStack {
+            // 펄스 링 (녹음 중 + 일시정지 아님)
+            if speechManager.isRecording && !speechManager.isPaused {
+                Circle()
+                    .fill(DesignSystem.Colors.primary.opacity(0.25))
+                    .frame(width: 160, height: 160)
+                    .scaleEffect(pulseAnimation ? 1.25 : 1.0)
+                    .opacity(pulseAnimation ? 0 : 0.5)
+                    .animation(.easeInOut(duration: 1.0).repeatForever(autoreverses: false), value: pulseAnimation)
+
+                Circle()
+                    .fill(DesignSystem.Colors.primary.opacity(0.15))
+                    .frame(width: 145, height: 145)
+                    .scaleEffect(pulseAnimation ? 1.3 : 1.0)
+                    .opacity(pulseAnimation ? 0 : 0.3)
+                    .animation(.easeInOut(duration: 1.0).repeatForever(autoreverses: false).delay(0.35), value: pulseAnimation)
+            }
+
+            if isAIProcessing {
+                Circle()
+                    .fill(LinearGradient(colors: [.purple.opacity(0.3), .blue.opacity(0.3), .cyan.opacity(0.3)], startPoint: .topLeading, endPoint: .bottomTrailing))
+                    .frame(width: 160, height: 160)
+                    .scaleEffect(pulseAnimation ? 1.2 : 1.0)
+                    .opacity(pulseAnimation ? 0 : 0.5)
+                    .animation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true), value: pulseAnimation)
+            }
+
+            Button(action: {
+                if !isAIProcessing { speechManager.toggleRecording() }
+            }) {
+                Circle()
+                    .fill(
+                        isAIProcessing
+                            ? LinearGradient(colors: [.purple, .blue, .cyan], startPoint: .topLeading, endPoint: .bottomTrailing)
+                            : speechManager.isPaused
+                                ? LinearGradient(colors: [.orange, .orange], startPoint: .topLeading, endPoint: .bottomTrailing)
+                                : speechManager.isRecording
+                                    ? LinearGradient(colors: [.red, .red], startPoint: .topLeading, endPoint: .bottomTrailing)
+                                    : LinearGradient(colors: [DesignSystem.Colors.primary, DesignSystem.Colors.primary], startPoint: .topLeading, endPoint: .bottomTrailing)
+                    )
+                    .frame(width: 120, height: 120)
+                    .shadow(
+                        color: (speechManager.isPaused ? Color.orange : speechManager.isRecording ? Color.red : DesignSystem.Colors.primary).opacity(0.4),
+                        radius: 20, x: 0, y: 10
+                    )
+                    .overlay(
+                        Group {
+                            if isAIProcessing {
+                                ProgressView().progressViewStyle(CircularProgressViewStyle(tint: .white)).scaleEffect(2)
+                            } else {
+                                Image(systemName: speechManager.isRecording ? "stop.fill" : "mic.fill")
+                                    .font(.system(size: 50, weight: .medium))
+                                    .foregroundColor(.white)
+                            }
+                        }
+                    )
+            }
+            .buttonStyle(PlainButtonStyle())
+            .disabled(isAIProcessing)
+        }
+    }
+
+    /// 실시간 파형 바 (7개)
+    private var waveformView: some View {
+        HStack(spacing: 5) {
+            ForEach(0..<7, id: \.self) { i in
+                RoundedRectangle(cornerRadius: 3)
+                    .fill(
+                        speechManager.isPaused
+                            ? Color.orange.opacity(0.6)
+                            : speechManager.isRecording
+                                ? DesignSystem.Colors.primary.opacity(0.85)
+                                : Color.white.opacity(0.3)
+                    )
+                    .frame(width: 5, height: CGFloat(max(8, waveformLevels[i] * 48)))
+                    .animation(.easeOut(duration: 0.1), value: waveformLevels[i])
+            }
+        }
+        .frame(height: 52)
+    }
+
+    private var statusLabel: some View {
+        VStack(spacing: DesignSystem.Spacing.sm) {
+            if isAIProcessing {
+                Text(L.AI.summarizing)
+                    .font(DesignSystem.Typography.headline)
+                    .foregroundStyle(LinearGradient(colors: [.purple, .blue, .cyan], startPoint: .leading, endPoint: .trailing))
+            } else if speechManager.isPaused {
+                Text(L.VoiceEnhanced.paused)
+                    .font(DesignSystem.Typography.headline)
+                    .foregroundColor(.orange)
+            } else {
+                Text(speechManager.isRecording ? L.Voice.listening : L.Voice.tapToStart)
+                    .font(DesignSystem.Typography.headline)
+                    .foregroundColor(.white)
+            }
+
+            if let err = speechManager.errorMessage ?? aiErrorMessage {
+                Text(err)
+                    .font(DesignSystem.Typography.caption)
+                    .foregroundColor(.red.opacity(0.9))
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, DesignSystem.Spacing.xl)
+            }
+        }
+    }
+
+    private var recognizedTextBox: some View {
+        ScrollView {
+            Text(speechManager.recognizedText)
+                .font(DesignSystem.Typography.body)
+                .foregroundColor(.white)
+                .multilineTextAlignment(.leading)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(DesignSystem.Spacing.lg)
+        }
+        .frame(maxHeight: 160)
+        .background(Color.black.opacity(0.45))
+        .cornerRadius(DesignSystem.CornerRadius.medium)
+        .padding(.horizontal, DesignSystem.Spacing.xl)
+    }
+
+    private var bottomControls: some View {
+        VStack(spacing: DesignSystem.Spacing.md) {
+            // 타이머 (녹음 중일 때만)
+            if speechManager.isRecording {
+                Text(timerString)
+                    .font(.system(size: 22, weight: .semibold, design: .monospaced))
+                    .foregroundColor(speechManager.isPaused ? .orange : .white)
+                    .padding(.bottom, DesignSystem.Spacing.xs)
+            }
+
+            // 녹음 중: 일시정지 + 중지
+            if speechManager.isRecording {
+                HStack(spacing: DesignSystem.Spacing.lg) {
+                    // 일시정지 / 재개
+                    Button(action: { speechManager.togglePause() }) {
+                        HStack(spacing: DesignSystem.Spacing.sm) {
+                            Image(systemName: speechManager.isPaused ? "play.fill" : "pause.fill")
+                            Text(speechManager.isPaused ? L.VoiceEnhanced.resume : L.VoiceEnhanced.pause)
+                        }
+                        .font(DesignSystem.Typography.callout)
+                        .fontWeight(.medium)
+                        .foregroundColor(speechManager.isPaused ? .orange : .white)
+                        .padding(.horizontal, DesignSystem.Spacing.xl)
+                        .padding(.vertical, DesignSystem.Spacing.md)
+                        .background(speechManager.isPaused ? Color.orange.opacity(0.25) : Color.white.opacity(0.2))
+                        .cornerRadius(DesignSystem.CornerRadius.large)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+
+                    // 중지
+                    Button(action: { speechManager.stopRecording() }) {
+                        HStack(spacing: DesignSystem.Spacing.sm) {
+                            Image(systemName: "stop.circle.fill")
+                            Text(L.Voice.stopRecording)
+                        }
+                        .font(DesignSystem.Typography.callout)
+                        .fontWeight(.medium)
+                        .foregroundColor(.red)
+                        .padding(.horizontal, DesignSystem.Spacing.xl)
+                        .padding(.vertical, DesignSystem.Spacing.md)
+                        .background(Color.red.opacity(0.2))
+                        .cornerRadius(DesignSystem.CornerRadius.large)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
+            }
+
+            // AI 정리 버튼 (녹음 완료 + 텍스트 있음)
+            if !speechManager.recognizedText.isEmpty && !speechManager.isRecording && isAIAvailable {
+                Button(action: { performAISummarization() }) {
+                    HStack(spacing: DesignSystem.Spacing.sm) {
+                        Image(systemName: "sparkles")
+                        Text(L.AI.summarize)
+                    }
+                    .font(DesignSystem.Typography.headline)
+                    .foregroundStyle(LinearGradient(colors: [.purple, .blue, .cyan], startPoint: .leading, endPoint: .trailing))
+                    .padding(.horizontal, DesignSystem.Spacing.xl)
+                    .padding(.vertical, DesignSystem.Spacing.md)
+                    .background(LinearGradient(colors: [.purple.opacity(0.2), .blue.opacity(0.2), .cyan.opacity(0.2)], startPoint: .leading, endPoint: .trailing))
+                    .cornerRadius(DesignSystem.CornerRadius.large)
+                    .overlay(RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.large).stroke(LinearGradient(colors: [.purple.opacity(0.5), .cyan.opacity(0.5)], startPoint: .leading, endPoint: .trailing), lineWidth: 1))
+                }
+                .buttonStyle(PlainButtonStyle())
+                .disabled(isAIProcessing)
+            }
+
+            // 취소 / 사용 버튼
+            HStack(spacing: DesignSystem.Spacing.xl) {
+                Button(action: {
+                    speechManager.stopRecording()
+                    speechManager.clearText()
+                    onCancel()
+                }) {
+                    HStack(spacing: DesignSystem.Spacing.sm) {
+                        Image(systemName: "xmark")
+                        Text(L.Voice.cancel)
+                    }
+                    .font(DesignSystem.Typography.headline)
+                    .foregroundColor(.white.opacity(0.8))
+                    .padding(.horizontal, DesignSystem.Spacing.xl)
+                    .padding(.vertical, DesignSystem.Spacing.md)
+                    .background(Color.white.opacity(0.2))
+                    .cornerRadius(DesignSystem.CornerRadius.large)
+                }
+                .buttonStyle(PlainButtonStyle())
+                .disabled(isAIProcessing)
+
+                if !speechManager.recognizedText.isEmpty && !speechManager.isRecording {
+                    Button(action: {
+                        onUseText(speechManager.recognizedText)
+                        speechManager.clearText()
+                    }) {
+                        HStack(spacing: DesignSystem.Spacing.sm) {
+                            Image(systemName: "checkmark")
+                            Text(L.Voice.useText)
+                        }
+                        .font(DesignSystem.Typography.headline)
+                        .foregroundColor(.white)
+                        .padding(.horizontal, DesignSystem.Spacing.xl)
+                        .padding(.vertical, DesignSystem.Spacing.md)
+                        .background(DesignSystem.Colors.primary)
+                        .cornerRadius(DesignSystem.CornerRadius.large)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    .disabled(isAIProcessing)
+                }
+            }
+        }
+        .padding(.horizontal, DesignSystem.Spacing.xl)
+    }
+
+    // MARK: - Waveform Update
+
+    private func updateWaveform(level: Float) {
+        guard speechManager.isRecording && !speechManager.isPaused else {
+            // 정지/일시정지 시 잔잔하게
+            waveformLevels = waveformLevels.map { $0 * 0.7 }
+            return
+        }
+        // 레벨 기반 랜덤 파형 (자연스러운 느낌)
+        waveformLevels = waveformLevels.enumerated().map { i, prev in
+            let noise = Float.random(in: -0.15...0.15)
+            let target = max(0.1, min(1.0, level + noise))
+            // 이전 값과 부드럽게 보간
+            return prev * 0.4 + target * 0.6
+        }
+    }
+
     // MARK: - AI Summarization
 
     private func performAISummarization() {
         guard !speechManager.recognizedText.isEmpty else { return }
-
         isAIProcessing = true
         aiErrorMessage = nil
-
         Task {
             do {
                 if #available(iOS 26.0, *) {

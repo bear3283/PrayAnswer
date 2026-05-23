@@ -619,6 +619,60 @@ enum L {
         static let noPlaceholder = NSLocalizedString("answer_note.no_placeholder", value: "결과를 기록해보세요 (선택 입력)", comment: "Placeholder for no storage answer note")
     }
 
+    // MARK: - Settings Tab
+    enum Settings {
+        static let tabTitle = NSLocalizedString("settings.tab_title", value: "설정", comment: "Settings tab title")
+        static let guideSection = NSLocalizedString("settings.guide_section", value: "사용법 가이드", comment: "How to use section title")
+        static let aiSection = NSLocalizedString("settings.ai_section", value: "AI · 음성 설정", comment: "AI and voice settings section")
+        static let aiToggle = NSLocalizedString("settings.ai_toggle", value: "AI 요약 사용", comment: "AI summarization toggle label")
+        static let aiToggleDesc = NSLocalizedString("settings.ai_toggle_desc", value: "음성 녹음 후 Apple Intelligence로 기도문을 자동 정리합니다 (iOS 18.1+, Apple Intelligence 필요)", comment: "AI toggle description")
+        static let bluetoothTip = NSLocalizedString("settings.bluetooth_tip", value: "에어팟·블루투스 마이크를 연결하면 더 선명하게 녹음됩니다", comment: "Bluetooth mic tip")
+        static let voiceChunkingTip = NSLocalizedString("settings.voice_chunking_tip", value: "긴 기도 나눔도 자동으로 이어 녹음됩니다 (1분 이상 지원)", comment: "Long recording tip")
+        static let statsSection = NSLocalizedString("settings.stats_section", value: "기도 통계", comment: "Statistics section")
+        static let statsButton = NSLocalizedString("settings.stats_button", value: "기도 통계 보기", comment: "View statistics button")
+        static let statsDesc = NSLocalizedString("settings.stats_desc", value: "응답률, 카테고리 분포, 월별 기도 추이를 확인하세요", comment: "Statistics description")
+        static let appSection = NSLocalizedString("settings.app_section", value: "앱 정보", comment: "App info section title")
+        static let version = NSLocalizedString("settings.version", value: "버전", comment: "Version label")
+        static let contact = NSLocalizedString("settings.contact", value: "문의하기", comment: "Contact button")
+        static let review = NSLocalizedString("settings.review", value: "앱 평가하기", comment: "Rate app button")
+        static let privacyPolicy = NSLocalizedString("settings.privacy_policy", value: "개인정보 처리방침", comment: "Privacy policy")
+    }
+
+    // MARK: - Feature Guide Cards
+    enum Guide {
+        static let addPrayerTitle = NSLocalizedString("guide.add_prayer_title", value: "기도제목 추가", comment: "")
+        static let addPrayerDesc = NSLocalizedString("guide.add_prayer_desc", value: "하단 '추가' 탭에서 기도제목·내용·카테고리·대상자를 입력하고 저장하세요.", comment: "")
+        static let storageTitle = NSLocalizedString("guide.storage_title", value: "보관소 관리", comment: "")
+        static let storageDesc = NSLocalizedString("guide.storage_desc", value: "Wait·Yes·No 세 보관소로 기도 상태를 추적하세요. 상세 화면에서 보관소를 이동할 수 있습니다.", comment: "")
+        static let peopleTitle = NSLocalizedString("guide.people_title", value: "여러 사람 기도", comment: "")
+        static let peopleDesc = NSLocalizedString("guide.people_desc", value: "'대상자' 탭에서 사람별 기도제목을 한눈에 관리하세요. 가족·친구·공동체별로 정리됩니다.", comment: "")
+        static let favoriteTitle = NSLocalizedString("guide.favorite_title", value: "즐겨찾기", comment: "")
+        static let favoriteDesc = NSLocalizedString("guide.favorite_desc", value: "자주 기도하는 제목에 ♥를 표시하면 위젯과 목록 상단에서 빠르게 접근할 수 있습니다.", comment: "")
+        static let habitTitle = NSLocalizedString("guide.habit_title", value: "기도 습관", comment: "")
+        static let habitDesc = NSLocalizedString("guide.habit_desc", value: "'습관' 탭에서 매일 기도 체크인을 기록하세요. 연속 기도일과 주간 달력으로 꾸준함을 확인할 수 있습니다.", comment: "")
+        static let widgetTitle = NSLocalizedString("guide.widget_title", value: "홈 화면 위젯", comment: "")
+        static let widgetDesc = NSLocalizedString("guide.widget_desc", value: "홈 화면 길게 누르기 → 위젯 추가 → PrayAnswer. 기도제목 확인과 빠른 추가가 잠금 화면에서도 가능합니다.", comment: "")
+        static let exchangeTitle = NSLocalizedString("guide.exchange_title", value: "기도 교환", comment: "")
+        static let exchangeDesc = NSLocalizedString("guide.exchange_desc", value: "기도제목을 상대방과 교환하세요. 앱이 있으면 딥링크로 바로 저장, 없으면 텍스트로 전달됩니다.", comment: "")
+        static let shareExtTitle = NSLocalizedString("guide.share_ext_title", value: "다른 앱에서 가져오기", comment: "")
+        static let shareExtDesc = NSLocalizedString("guide.share_ext_desc", value: "카카오톡·메모 등에서 텍스트를 선택 → 공유 → PrayAnswer를 탭하면 바로 기도제목으로 추가됩니다.", comment: "")
+        static let collectionTitle = NSLocalizedString("guide.collection_title", value: "컬렉션(폴더)", comment: "")
+        static let collectionDesc = NSLocalizedString("guide.collection_desc", value: "기도제목을 주제별 폴더로 묶어 정리하세요. 기도제목 추가·편집 화면에서 폴더를 지정할 수 있습니다.", comment: "")
+        static let answerNoteTitle = NSLocalizedString("guide.answer_note_title", value: "응답 기록", comment: "")
+        static let answerNoteDesc = NSLocalizedString("guide.answer_note_desc", value: "기도가 응답받으면 Yes로 이동할 때 어떻게 응답받았는지 메모를 남겨 하나님의 역사를 기록하세요.", comment: "")
+        static let voiceAITitle = NSLocalizedString("guide.voice_ai_title", value: "음성 AI 기록", comment: "")
+        static let voiceAIDesc = NSLocalizedString("guide.voice_ai_desc", value: "기도제목 추가·편집 화면의 🎤 버튼으로 말하면 Apple Intelligence가 기도문으로 자동 정리해 줍니다.", comment: "")
+    }
+
+    // MARK: - Voice Recording (enhanced)
+    enum VoiceEnhanced {
+        static let pause = NSLocalizedString("voice.pause", value: "일시정지", comment: "Pause recording")
+        static let resume = NSLocalizedString("voice.resume", value: "재개", comment: "Resume recording")
+        static let paused = NSLocalizedString("voice.paused", value: "일시정지됨", comment: "Recording paused state")
+        static let continuing = NSLocalizedString("voice.continuing", value: "계속 녹음 중...", comment: "Auto-chunking in progress")
+        static let timerFormat = NSLocalizedString("voice.timer_format", value: "%02d:%02d", comment: "MM:SS timer format")
+    }
+
     // MARK: - Siri / App Intents
     enum Siri {
         static let addPrayerTitle = NSLocalizedString("siri.add_prayer_title", value: "기도제목 추가", comment: "Siri add prayer intent title")

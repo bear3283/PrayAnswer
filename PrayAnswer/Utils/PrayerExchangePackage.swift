@@ -56,8 +56,8 @@ enum PrayerExchangePackageError: LocalizedError {
 
 enum PrayerExchangePackager {
 
-    // App Store URL — 출시 후 실제 ID로 교체
-    static let appStoreURL = "https://apps.apple.com/kr/app/prayanswer/id6748534851"
+    // App Store URL (라이브 앱 ID, KR·US 스토어프론트 게시됨)
+    static let appStoreURL = "https://apps.apple.com/kr/app/id6748029078"
 
     private static let decoder: JSONDecoder = {
         let d = JSONDecoder()
@@ -136,9 +136,8 @@ enum PrayerExchangePackager {
 
         lines.append("")
         lines.append("─────────────────────")
-        lines.append("📲 PrayAnswer 앱으로 기도제목 받기:")
-        lines.append("• 앱이 있다면: 링크를 눌러 바로 저장")
-        lines.append("• 앱이 없다면: 링크에서 먼저 다운로드 후 저장")
+        lines.append("함께 기도해 주세요 🙏")
+        lines.append("PrayAnswer 앱에서 기도제목을 관리할 수 있어요:")
         lines.append(appStoreURL)
 
         return lines.joined(separator: "\n")

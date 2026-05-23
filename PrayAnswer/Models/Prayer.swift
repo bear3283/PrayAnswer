@@ -61,6 +61,7 @@ final class Prayer {
     var imageFileName: String? // 첨부 이미지 파일명 (레거시 - 위젯 호환용)
     var isMyRequest: Bool = false // 나의 기도제목 (다른 사람이 나를 위해 기도해줄 항목)
     var sortOrder: Int = 0 // 수동 정렬 순서
+    var answerNote: String? // 응답/거절 메모 (yes/no 보관소 이동 시 선택 입력)
 
     /// 첨부 파일 목록 (이미지, PDF) — CloudKit 호환을 위해 Optional
     @Relationship(deleteRule: .cascade) var attachments: [Attachment]?

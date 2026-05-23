@@ -1834,4 +1834,119 @@ struct VoicePermissionAlert: View {
         .shadow(color: DesignSystem.Shadow.large.color, radius: DesignSystem.Shadow.large.radius, x: 0, y: 4)
         .padding(.horizontal, DesignSystem.Spacing.xl)
     }
-} 
+}
+
+// MARK: - Answer Note Sheet
+
+/// 보관소를 yes/no로 이동할 때 응답 메모를 입력받는 바텀 시트
+struct AnswerNoteSheet: View {
+    let storage: PrayerStorage // .yes 또는 .no
+    let onSave: (String?) -> Void   // 메모(nil 허용)와 함께 이동 확정
+    let onCancel: () -> Void
+
+    @State private var noteText = ""
+    @FocusState private var isFocused: Bool
+
+    private var sheetTitle: String {
+        storage == .yes ? L.AnswerNote.sheetTitleYes : L.AnswerNote.sheetTitleNo
+    }
+
+    private var prompt: String {
+        storage == .yes ? L.AnswerNote.sheetPromptYes : L.AnswerNote.sheetPromptNo
+    }
+
+    private var placeholder: String {
+        storage == .yes ? L.AnswerNote.placeholder : L.AnswerNote.noPlaceholder
+    }
+
+    private var accentColor: Color {
+        storage == .yes ? DesignSystem.Colors.answered : DesignSystem.Colors.notAnswered
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            // 드래그 핸들
+            Capsule()
+                .fill(Color.secondary.opacity(0.4))
+                .frame(width: 36, height: 4)
+                .padding(.top, DesignSystem.Spacing.md)
+                .padding(.bottom, DesignSystem.Spacing.lg)
+
+            // 헤더
+            VStack(spacing: DesignSystem.Spacing.sm) {
+                StatusIndicator(storage: storage, size: .large, style: .circleWhite)
+                    .padding(.bottom, DesignSystem.Spacing.xs)
+
+                Text(sheetTitle)
+                    .font(DesignSystem.Typography.title3)
+                    .fontWeight(.bold)
+                    .foregroundColor(DesignSystem.Colors.primaryText)
+
+                Text(prompt)
+                    .font(DesignSystem.Typography.callout)
+                    .foregroundColor(DesignSystem.Colors.secondaryText)
+                    .multilineTextAlignment(.center)
+            }
+            .padding(.horizontal, DesignSystem.Spacing.xl)
+            .padding(.bottom, DesignSystem.Spacing.xl)
+
+            // 메모 입력
+            ZStack(alignment: .topLeading) {
+                TextEditor(text: $noteText)
+                    .font(DesignSystem.Typography.body)
+                    .padding(DesignSystem.Spacing.md)
+                    .scrollContentBackground(.hidden)
+                    .background(DesignSystem.Colors.secondaryBackground)
+                    .frame(height: 130)
+                    .cornerRadius(DesignSystem.CornerRadius.medium)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.medium)
+                            .stroke(isFocused ? accentColor.opacity(0.5) : Color.clear, lineWidth: 1.5)
+                    )
+                    .focused($isFocused)
+
+                if noteText.isEmpty {
+                    Text(placeholder)
+                        .font(DesignSystem.Typography.body)
+                        .foregroundColor(DesignSystem.Colors.tertiaryText)
+                        .padding(.top, DesignSystem.Spacing.md + 8)
+                        .padding(.leading, DesignSystem.Spacing.md + 4)
+                        .allowsHitTesting(false)
+                }
+            }
+            .padding(.horizontal, DesignSystem.Spacing.xl)
+
+            Spacer().frame(height: DesignSystem.Spacing.xl)
+
+            // 액션 버튼
+            VStack(spacing: DesignSystem.Spacing.sm) {
+                Button(action: {
+                    let note = noteText.trimmingCharacters(in: .whitespacesAndNewlines)
+                    onSave(note.isEmpty ? nil : note)
+                }) {
+                    Text(L.AnswerNote.save)
+                        .font(DesignSystem.Typography.body)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, DesignSystem.Spacing.md)
+                        .background(accentColor)
+                        .cornerRadius(DesignSystem.CornerRadius.medium)
+                }
+
+                Button(action: {
+                    onSave(nil)
+                }) {
+                    Text(L.AnswerNote.skip)
+                        .font(DesignSystem.Typography.callout)
+                        .foregroundColor(DesignSystem.Colors.secondaryText)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, DesignSystem.Spacing.sm)
+                }
+            }
+            .padding(.horizontal, DesignSystem.Spacing.xl)
+            .padding(.bottom, DesignSystem.Spacing.xxxl)
+        }
+        .background(DesignSystem.Colors.background)
+    }
+}

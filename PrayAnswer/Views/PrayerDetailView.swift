@@ -23,6 +23,10 @@ struct PrayerDetailView: View {
     @State private var isDeleted = false
     @State private var showingStoragePicker = false
     @State private var showingDeleteAlert = false
+    @State private var showingAnswerNoteSheet = false
+    @State private var pendingStorage: PrayerStorage? = nil
+    @State private var isEditingAnswerNote = false
+    @State private var editingAnswerNoteText = ""
     @State private var prayerViewModel: PrayerViewModel?
     @State private var showingErrorAlert = false
     @State private var errorMessage = ""
@@ -99,10 +103,36 @@ struct PrayerDetailView: View {
             ModernStoragePickerView(
                 currentStorage: prayer.storage,
                 onStorageSelected: { newStorage in
-                    movePrayerToStorage(newStorage)
                     showingStoragePicker = false
+                    if newStorage == .yes || newStorage == .no {
+                        pendingStorage = newStorage
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                            showingAnswerNoteSheet = true
+                        }
+                    } else {
+                        movePrayerToStorage(newStorage)
+                    }
                 }
             )
+        }
+        .sheet(isPresented: $showingAnswerNoteSheet) {
+            if let target = pendingStorage {
+                AnswerNoteSheet(
+                    storage: target,
+                    onSave: { note in
+                        prayer.answerNote = note
+                        movePrayerToStorage(target)
+                        pendingStorage = nil
+                        showingAnswerNoteSheet = false
+                    },
+                    onCancel: {
+                        pendingStorage = nil
+                        showingAnswerNoteSheet = false
+                    }
+                )
+                .presentationDetents([.medium])
+                .presentationDragIndicator(.hidden)
+            }
         }
         .alert(L.Alert.deletePrayer, isPresented: $showingDeleteAlert) {
             Button(L.Button.delete, role: .destructive) {
@@ -408,6 +438,11 @@ struct PrayerDetailView: View {
                 }
                 .padding(DesignSystem.Spacing.lg)
             }
+        }
+
+        // 응답 기록 섹션 (yes/no 보관소에만 표시)
+        if prayer.storage == .yes || prayer.storage == .no {
+            answerNoteSection
         }
 
         // 기도 정보 카드
@@ -810,6 +845,95 @@ struct PrayerDetailView: View {
     private func showError(_ message: String) {
         errorMessage = message
         showingErrorAlert = true
+    }
+
+    // MARK: - Answer Note Section
+
+    @ViewBuilder
+    private var answerNoteSection: some View {
+        ModernCard {
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
+                HStack {
+                    HStack(spacing: DesignSystem.Spacing.sm) {
+                        Image(systemName: prayer.storage == .yes ? "text.bubble.fill" : "text.bubble")
+                            .font(.callout)
+                            .foregroundColor(prayer.storage == .yes ? DesignSystem.Colors.answered : DesignSystem.Colors.notAnswered)
+                        Text(L.AnswerNote.sectionTitle)
+                            .font(DesignSystem.Typography.callout)
+                            .fontWeight(.medium)
+                            .foregroundColor(DesignSystem.Colors.primaryText)
+                    }
+                    Spacer()
+                    Button(action: {
+                        editingAnswerNoteText = prayer.answerNote ?? ""
+                        isEditingAnswerNote = true
+                    }) {
+                        Text(prayer.answerNote == nil ? L.AnswerNote.addNote : L.AnswerNote.editNote)
+                            .font(DesignSystem.Typography.caption)
+                            .foregroundColor(DesignSystem.Colors.primary)
+                    }
+                }
+
+                if isEditingAnswerNote {
+                    VStack(spacing: DesignSystem.Spacing.sm) {
+                        ZStack(alignment: .topLeading) {
+                            TextEditor(text: $editingAnswerNoteText)
+                                .font(DesignSystem.Typography.body)
+                                .padding(DesignSystem.Spacing.sm)
+                                .scrollContentBackground(.hidden)
+                                .background(DesignSystem.Colors.secondaryBackground)
+                                .frame(minHeight: 100)
+                                .cornerRadius(DesignSystem.CornerRadius.medium)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.medium)
+                                        .stroke(DesignSystem.Colors.primary.opacity(0.4), lineWidth: 1.5)
+                                )
+                            if editingAnswerNoteText.isEmpty {
+                                Text(prayer.storage == .yes ? L.AnswerNote.placeholder : L.AnswerNote.noPlaceholder)
+                                    .font(DesignSystem.Typography.body)
+                                    .foregroundColor(DesignSystem.Colors.tertiaryText)
+                                    .padding(.top, DesignSystem.Spacing.sm + 8)
+                                    .padding(.leading, DesignSystem.Spacing.sm + 4)
+                                    .allowsHitTesting(false)
+                            }
+                        }
+                        HStack(spacing: DesignSystem.Spacing.sm) {
+                            Spacer()
+                            Button(L.Button.cancel) {
+                                isEditingAnswerNote = false
+                            }
+                            .font(DesignSystem.Typography.callout)
+                            .foregroundColor(DesignSystem.Colors.secondaryText)
+
+                            Button(L.Button.save) {
+                                let trimmed = editingAnswerNoteText.trimmingCharacters(in: .whitespacesAndNewlines)
+                                prayer.answerNote = trimmed.isEmpty ? nil : trimmed
+                                isEditingAnswerNote = false
+                            }
+                            .font(DesignSystem.Typography.callout)
+                            .fontWeight(.semibold)
+                            .foregroundColor(DesignSystem.Colors.primary)
+                        }
+                    }
+                } else if let note = prayer.answerNote, !note.isEmpty {
+                    Text(note)
+                        .font(DesignSystem.Typography.body)
+                        .foregroundColor(DesignSystem.Colors.primaryText)
+                        .lineSpacing(4)
+                        .frame(maxWidth: .infinity, alignment: .topLeading)
+                        .padding(DesignSystem.Spacing.md)
+                        .background(DesignSystem.Colors.secondaryBackground)
+                        .cornerRadius(DesignSystem.CornerRadius.medium)
+                } else {
+                    Text(L.AnswerNote.noNote)
+                        .font(DesignSystem.Typography.callout)
+                        .foregroundColor(DesignSystem.Colors.tertiaryText)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.vertical, DesignSystem.Spacing.xs)
+                }
+            }
+            .padding(DesignSystem.Spacing.lg)
+        }
     }
 
     // MARK: - Calendar Integration (View Mode)

@@ -409,3 +409,17 @@
 // Errors
 "attachment.error_invalid_document" = "유효하지 않은 문서입니다";
 "attachment.error_unsupported_format" = "지원하지 않는 파일 형식입니다";
+
+// MARK: - Answer Note (응답/거절 메모)
+"answer_note.section_title" = "응답 기록";
+"answer_note.placeholder" = "어떻게 응답받으셨나요? (선택 입력)";
+"answer_note.no_note" = "기록된 내용이 없습니다";
+"answer_note.add_note" = "기록 추가";
+"answer_note.edit_note" = "수정";
+"answer_note.save" = "기록하기";
+"answer_note.skip" = "건너뛰기";
+"answer_note.sheet_title_yes" = "응답받은 기도";
+"answer_note.sheet_title_no" = "응답 거절된 기도";
+"answer_note.sheet_prompt_yes" = "어떻게 응답받으셨나요?";
+"answer_note.sheet_prompt_no" = "어떤 결과였나요?";
+"answer_note.no_placeholder" = "결과를 기록해보세요 (선택 입력)";

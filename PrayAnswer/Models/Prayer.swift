@@ -45,23 +45,26 @@ enum PrayerCategory: String, CaseIterable, Codable {
 // 기도 모델
 @Model
 final class Prayer {
-    var title: String
-    var content: String
-    var createdDate: Date
+    var title: String = ""
+    var content: String = ""
+    var createdDate: Date = Date()
     var modifiedDate: Date?
     var movedDate: Date?
-    var storage: PrayerStorage
-    var category: PrayerCategory
-    var target: String // 기도 대상자
-    var isFavorite: Bool // 즐겨찾기 여부
+    var storage: PrayerStorage = PrayerStorage.wait
+    var category: PrayerCategory = PrayerCategory.personal
+    var target: String = "" // 기도 대상자
+    var isFavorite: Bool = false // 즐겨찾기 여부
     var targetDate: Date? // D-Day 목표 날짜
     var notificationEnabled: Bool = false // 알림 활성화 여부 (기본값으로 마이그레이션 지원)
     var notificationSettingsData: Data? // 알림 세부설정 JSON 저장
     var calendarEventId: String? // 캘린더 이벤트 식별자
     var imageFileName: String? // 첨부 이미지 파일명 (레거시 - 위젯 호환용)
+    var isMyRequest: Bool = false // 나의 기도제목 (다른 사람이 나를 위해 기도해줄 항목)
+    var sortOrder: Int = 0 // 수동 정렬 순서
+    var answerNote: String? // 응답/거절 메모 (yes/no 보관소 이동 시 선택 입력)
 
-    /// 첨부 파일 목록 (이미지, PDF)
-    @Relationship(deleteRule: .cascade) var attachments: [Attachment] = []
+    /// 첨부 파일 목록 (이미지, PDF) — CloudKit 호환을 위해 Optional
+    @Relationship(deleteRule: .cascade) var attachments: [Attachment]?
 
     /// 속한 컬렉션 (폴더). nil이면 미분류
     var collection: PrayerCollection?
@@ -120,6 +123,23 @@ final class Prayer {
     func toggleNotification() {
         self.notificationEnabled.toggle()
         self.modifiedDate = Date()
+    }
+}
+
+// MARK: - Drag & Drop Transfer ID
+
+extension Prayer {
+    /// 드래그 앤 드롭 전송용 ID (PersistentIdentifier JSON 인코딩)
+    var transferID: String {
+        guard let data = try? JSONEncoder().encode(persistentModelID),
+              let str = String(data: data, encoding: .utf8) else { return "" }
+        return str
+    }
+
+    static func find(by transferID: String, in prayers: [Prayer]) -> Prayer? {
+        guard let data = transferID.data(using: .utf8),
+              let id = try? JSONDecoder().decode(PersistentIdentifier.self, from: data) else { return nil }
+        return prayers.first { $0.persistentModelID == id }
     }
 }
 
@@ -184,43 +204,45 @@ extension Prayer {
 
     /// 첨부 파일이 있는지 여부 (레거시 이미지 포함)
     var hasAttachments: Bool {
-        !attachments.isEmpty || hasImage
+        !(attachments ?? []).isEmpty || hasImage
     }
 
     /// 총 첨부 파일 개수 (레거시 이미지 포함)
     var attachmentCount: Int {
-        let legacyCount = (hasImage && attachments.isEmpty) ? 1 : 0
-        return attachments.count + legacyCount
+        let list = attachments ?? []
+        let legacyCount = (hasImage && list.isEmpty) ? 1 : 0
+        return list.count + legacyCount
     }
 
     /// 이미지 첨부 파일만 필터링 (정렬됨)
     var imageAttachments: [Attachment] {
-        attachments.filter { $0.isImage }.sorted { $0.order < $1.order }
+        (attachments ?? []).filter { $0.isImage }.sorted { $0.order < $1.order }
     }
 
     /// PDF 첨부 파일만 필터링 (정렬됨)
     var pdfAttachments: [Attachment] {
-        attachments.filter { $0.isPDF }.sorted { $0.order < $1.order }
+        (attachments ?? []).filter { $0.isPDF }.sorted { $0.order < $1.order }
     }
 
     /// 모든 첨부 파일 (정렬됨)
     var sortedAttachments: [Attachment] {
-        attachments.sorted { $0.order < $1.order }
+        (attachments ?? []).sorted { $0.order < $1.order }
     }
 
     /// 첨부 파일 추가
     func addAttachment(_ attachment: Attachment) {
-        attachment.order = attachments.count
+        attachment.order = (attachments ?? []).count
         attachment.prayer = self
-        attachments.append(attachment)
+        if attachments == nil { attachments = [] }
+        attachments!.append(attachment)
         modifiedDate = Date()
     }
 
     /// 첨부 파일 제거
     func removeAttachment(_ attachment: Attachment) {
-        attachments.removeAll { $0.fileName == attachment.fileName }
+        attachments?.removeAll { $0.fileName == attachment.fileName }
         // 순서 재정렬
-        for (index, att) in attachments.sorted(by: { $0.order < $1.order }).enumerated() {
+        for (index, att) in (attachments ?? []).sorted(by: { $0.order < $1.order }).enumerated() {
             att.order = index
         }
         modifiedDate = Date()

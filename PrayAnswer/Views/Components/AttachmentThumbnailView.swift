@@ -128,10 +128,15 @@ struct AttachmentThumbnailView: View {
     private func loadThumbnail() async {
         isLoadingThumbnail = true
 
+        // Swift 6: non-Sendable @Model 타입이 detached task로 넘어가지 않도록
+        // Sendable 값(String, AttachmentType)을 미리 추출
+        let fileName = attachment.fileName
+        let attachmentType = attachment.type
+
         let loadedThumbnail = await Task.detached(priority: .userInitiated) {
             AttachmentStorageManager.shared.loadThumbnail(
-                fileName: attachment.fileName,
-                type: attachment.type
+                fileName: fileName,
+                type: attachmentType
             )
         }.value
 

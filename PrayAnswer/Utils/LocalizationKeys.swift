@@ -603,6 +603,22 @@ enum L {
         static func tabTitle() -> String { "습관" }
     }
 
+    // MARK: - Answer Note (응답/거절 메모)
+    enum AnswerNote {
+        static let sectionTitle = NSLocalizedString("answer_note.section_title", value: "응답 기록", comment: "Answer note section title")
+        static let placeholder = NSLocalizedString("answer_note.placeholder", value: "어떻게 응답받으셨나요? (선택 입력)", comment: "Answer note placeholder")
+        static let noNote = NSLocalizedString("answer_note.no_note", value: "기록된 내용이 없습니다", comment: "No answer note")
+        static let addNote = NSLocalizedString("answer_note.add_note", value: "기록 추가", comment: "Add answer note button")
+        static let editNote = NSLocalizedString("answer_note.edit_note", value: "수정", comment: "Edit answer note button")
+        static let save = NSLocalizedString("answer_note.save", value: "기록하기", comment: "Save answer note button")
+        static let skip = NSLocalizedString("answer_note.skip", value: "건너뛰기", comment: "Skip answer note button")
+        static let sheetTitleYes = NSLocalizedString("answer_note.sheet_title_yes", value: "응답받은 기도", comment: "Sheet title when moving to yes")
+        static let sheetTitleNo = NSLocalizedString("answer_note.sheet_title_no", value: "응답 거절된 기도", comment: "Sheet title when moving to no")
+        static let sheetPromptYes = NSLocalizedString("answer_note.sheet_prompt_yes", value: "어떻게 응답받으셨나요?", comment: "Prompt for yes answer note")
+        static let sheetPromptNo = NSLocalizedString("answer_note.sheet_prompt_no", value: "어떤 결과였나요?", comment: "Prompt for no answer note")
+        static let noPlaceholder = NSLocalizedString("answer_note.no_placeholder", value: "결과를 기록해보세요 (선택 입력)", comment: "Placeholder for no storage answer note")
+    }
+
     // MARK: - Siri / App Intents
     enum Siri {
         static let addPrayerTitle = NSLocalizedString("siri.add_prayer_title", value: "기도제목 추가", comment: "Siri add prayer intent title")

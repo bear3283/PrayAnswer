@@ -146,12 +146,11 @@ struct ModernPrayerRow: View {
     
     var body: some View {
         ModernCard {
-            VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
-                // 상단: 상태 아이콘 + 대상자 + 카테고리 + 즐겨찾기
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+                // 상단: 상태 + 대상자 + 카테고리 + 첨부 + 알림 + D-Day + 즐겨찾기
                 HStack(alignment: .center, spacing: DesignSystem.Spacing.sm) {
                     StatusIndicator(storage: prayer.storage, size: .medium)
 
-                    // 대상자 표시 (있는 경우)
                     if prayer.hasTarget {
                         Text(prayer.target)
                             .font(DesignSystem.Typography.headline)
@@ -173,6 +172,16 @@ struct ModernPrayerRow: View {
                         .foregroundColor(DesignSystem.Colors.secondaryText)
                     }
 
+                    if prayer.notificationEnabled {
+                        Image(systemName: "bell.fill")
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundColor(DesignSystem.Colors.primary.opacity(0.8))
+                    }
+
+                    if prayer.hasTargetDate {
+                        DDayBadge(prayer: prayer, size: .small)
+                    }
+
                     Spacer()
 
                     if let onFavoriteToggle = onFavoriteToggle {
@@ -182,26 +191,17 @@ struct ModernPrayerRow: View {
                     }
                 }
 
-                // 중간: 기도 내용 (전체 너비 사용, 3줄)
+                // 기도 내용
                 Text(prayer.content)
                     .font(DesignSystem.Typography.body)
                     .foregroundColor(DesignSystem.Colors.primaryText)
                     .lineLimit(3)
                     .frame(maxWidth: .infinity, alignment: .leading)
 
-                // 하단: D-Day + 날짜
-                HStack {
-                    // D-Day 배지 표시
-                    if prayer.hasTargetDate {
-                        DDayBadge(prayer: prayer, size: .small)
-                    }
-
-                    Spacer()
-
-                    Text(prayer.formattedCreatedDate)
-                        .font(DesignSystem.Typography.caption2)
-                        .foregroundColor(DesignSystem.Colors.tertiaryText)
-                }
+                // 날짜 (D-Day 없어도 고정 높이 없이 자연스럽게 표시)
+                Text(prayer.formattedCreatedDate)
+                    .font(DesignSystem.Typography.caption2)
+                    .foregroundColor(DesignSystem.Colors.tertiaryText)
             }
             .padding(DesignSystem.Spacing.lg)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -277,12 +277,16 @@ struct ShareSelectablePrayerRow: View {
 struct ShareSheet: UIViewControllerRepresentable {
     let activityItems: [Any]
     var applicationActivities: [UIActivity]? = nil
+    var onCompletion: ((Bool) -> Void)? = nil
 
     func makeUIViewController(context: Context) -> UIActivityViewController {
         let controller = UIActivityViewController(
             activityItems: activityItems,
             applicationActivities: applicationActivities
         )
+        controller.completionWithItemsHandler = { _, completed, _, _ in
+            onCompletion?(completed)
+        }
         return controller
     }
 
@@ -337,23 +341,25 @@ struct ModernStorageCard: View {
     
     var body: some View {
         Button(action: onTap) {
-            VStack(spacing: DesignSystem.Spacing.sm) {
-                StatusIndicator(storage: storage, size: .medium, style: .circleWhite)
+            HStack(spacing: DesignSystem.Spacing.sm) {
+                StatusIndicator(storage: storage, size: .small, style: .circleWhite)
 
-                VStack(spacing: DesignSystem.Spacing.xs) {
-                    Text(storage.displayName)
-                        .font(DesignSystem.Typography.caption)
-                        .fontWeight(.semibold)
-                        .foregroundColor(isSelected ? .white : DesignSystem.Colors.primaryText)
+                Text(storage.displayName)
+                    .font(DesignSystem.Typography.caption)
+                    .fontWeight(.semibold)
+                    .foregroundColor(isSelected ? .white : DesignSystem.Colors.primaryText)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
 
-                    Text("\(count)")
-                        .font(DesignSystem.Typography.caption2)
-                        .fontWeight(.medium)
-                        .foregroundColor(isSelected ? .white.opacity(0.8) : DesignSystem.Colors.secondaryText)
-                }
+                Spacer()
+
+                Text("\(count)")
+                    .font(DesignSystem.Typography.caption2)
+                    .fontWeight(.medium)
+                    .foregroundColor(isSelected ? .white.opacity(0.8) : DesignSystem.Colors.secondaryText)
             }
-            .padding(.vertical, DesignSystem.Spacing.md)
-            .padding(.horizontal, DesignSystem.Spacing.lg)
+            .padding(.vertical, DesignSystem.Spacing.sm)
+            .padding(.horizontal, DesignSystem.Spacing.md)
             .frame(maxWidth: .infinity)
             .background(
                 isSelected ? storage.color : DesignSystem.Colors.cardBackground
@@ -1828,4 +1834,119 @@ struct VoicePermissionAlert: View {
         .shadow(color: DesignSystem.Shadow.large.color, radius: DesignSystem.Shadow.large.radius, x: 0, y: 4)
         .padding(.horizontal, DesignSystem.Spacing.xl)
     }
-} 
+}
+
+// MARK: - Answer Note Sheet
+
+/// 보관소를 yes/no로 이동할 때 응답 메모를 입력받는 바텀 시트
+struct AnswerNoteSheet: View {
+    let storage: PrayerStorage // .yes 또는 .no
+    let onSave: (String?) -> Void   // 메모(nil 허용)와 함께 이동 확정
+    let onCancel: () -> Void
+
+    @State private var noteText = ""
+    @FocusState private var isFocused: Bool
+
+    private var sheetTitle: String {
+        storage == .yes ? L.AnswerNote.sheetTitleYes : L.AnswerNote.sheetTitleNo
+    }
+
+    private var prompt: String {
+        storage == .yes ? L.AnswerNote.sheetPromptYes : L.AnswerNote.sheetPromptNo
+    }
+
+    private var placeholder: String {
+        storage == .yes ? L.AnswerNote.placeholder : L.AnswerNote.noPlaceholder
+    }
+
+    private var accentColor: Color {
+        storage == .yes ? DesignSystem.Colors.answered : DesignSystem.Colors.notAnswered
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            // 드래그 핸들
+            Capsule()
+                .fill(Color.secondary.opacity(0.4))
+                .frame(width: 36, height: 4)
+                .padding(.top, DesignSystem.Spacing.md)
+                .padding(.bottom, DesignSystem.Spacing.lg)
+
+            // 헤더
+            VStack(spacing: DesignSystem.Spacing.sm) {
+                StatusIndicator(storage: storage, size: .large, style: .circleWhite)
+                    .padding(.bottom, DesignSystem.Spacing.xs)
+
+                Text(sheetTitle)
+                    .font(DesignSystem.Typography.title3)
+                    .fontWeight(.bold)
+                    .foregroundColor(DesignSystem.Colors.primaryText)
+
+                Text(prompt)
+                    .font(DesignSystem.Typography.callout)
+                    .foregroundColor(DesignSystem.Colors.secondaryText)
+                    .multilineTextAlignment(.center)
+            }
+            .padding(.horizontal, DesignSystem.Spacing.xl)
+            .padding(.bottom, DesignSystem.Spacing.xl)
+
+            // 메모 입력
+            ZStack(alignment: .topLeading) {
+                TextEditor(text: $noteText)
+                    .font(DesignSystem.Typography.body)
+                    .padding(DesignSystem.Spacing.md)
+                    .scrollContentBackground(.hidden)
+                    .background(DesignSystem.Colors.secondaryBackground)
+                    .frame(height: 130)
+                    .cornerRadius(DesignSystem.CornerRadius.medium)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.medium)
+                            .stroke(isFocused ? accentColor.opacity(0.5) : Color.clear, lineWidth: 1.5)
+                    )
+                    .focused($isFocused)
+
+                if noteText.isEmpty {
+                    Text(placeholder)
+                        .font(DesignSystem.Typography.body)
+                        .foregroundColor(DesignSystem.Colors.tertiaryText)
+                        .padding(.top, DesignSystem.Spacing.md + 8)
+                        .padding(.leading, DesignSystem.Spacing.md + 4)
+                        .allowsHitTesting(false)
+                }
+            }
+            .padding(.horizontal, DesignSystem.Spacing.xl)
+
+            Spacer().frame(height: DesignSystem.Spacing.xl)
+
+            // 액션 버튼
+            VStack(spacing: DesignSystem.Spacing.sm) {
+                Button(action: {
+                    let note = noteText.trimmingCharacters(in: .whitespacesAndNewlines)
+                    onSave(note.isEmpty ? nil : note)
+                }) {
+                    Text(L.AnswerNote.save)
+                        .font(DesignSystem.Typography.body)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, DesignSystem.Spacing.md)
+                        .background(accentColor)
+                        .cornerRadius(DesignSystem.CornerRadius.medium)
+                }
+
+                Button(action: {
+                    onSave(nil)
+                }) {
+                    Text(L.AnswerNote.skip)
+                        .font(DesignSystem.Typography.callout)
+                        .foregroundColor(DesignSystem.Colors.secondaryText)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, DesignSystem.Spacing.sm)
+                }
+            }
+            .padding(.horizontal, DesignSystem.Spacing.xl)
+            .padding(.bottom, DesignSystem.Spacing.xxxl)
+        }
+        .background(DesignSystem.Colors.background)
+    }
+}

@@ -82,7 +82,7 @@ struct CheckInPrayerHabitIntent: AppIntent {
         for habit in habits {
             guard habit.weekdays.selectedDays.contains(todayWeekday) else { continue }
 
-            let alreadyLogged = habit.logs.contains {
+            let alreadyLogged = (habit.logs ?? []).contains {
                 Calendar.current.startOfDay(for: $0.date) == today && $0.isCompleted
             }
             guard !alreadyLogged else { continue }
@@ -91,7 +91,7 @@ struct CheckInPrayerHabitIntent: AppIntent {
             log.isCompleted = true
             log.completedAt = Date()
             log.habit = habit
-            habit.logs.append(log)
+            if habit.logs == nil { habit.logs = [] }; habit.logs!.append(log)
             context.insert(log)
             checkedIn += 1
         }
@@ -113,9 +113,9 @@ struct PrayAnswerShortcuts: AppShortcutsProvider {
         AppShortcut(
             intent: AddPrayerIntent(),
             phrases: [
-                "\\(.applicationName)에 기도제목 추가",
-                "\\(.applicationName)에 기도 추가해줘",
-                "\\(.applicationName) 기도제목 적어줘"
+                "\(.applicationName)에 기도제목 추가",
+                "\(.applicationName)에 기도 추가해줘",
+                "\(.applicationName) 기도제목 적어줘"
             ],
             shortTitle: "기도제목 추가",
             systemImageName: "hands.clap.fill"
@@ -123,9 +123,9 @@ struct PrayAnswerShortcuts: AppShortcutsProvider {
         AppShortcut(
             intent: CheckInPrayerHabitIntent(),
             phrases: [
-                "\\(.applicationName) 오늘 기도 완료",
-                "\\(.applicationName) 기도 체크",
-                "\\(.applicationName) 기도했어"
+                "\(.applicationName) 오늘 기도 완료",
+                "\(.applicationName) 기도 체크",
+                "\(.applicationName) 기도했어"
             ],
             shortTitle: "기도 완료",
             systemImageName: "checkmark.circle.fill"

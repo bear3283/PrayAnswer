@@ -72,15 +72,13 @@ struct AttachmentGallerySection: View {
                 // 헤더
                 headerView
 
-                // 갤러리 또는 빈 상태
+                // 갤러리 (첨부파일이 있을 때만)
                 if totalCount > 0 {
                     galleryView
-                } else if !readOnly {
-                    emptyStateView
                 }
 
                 // 추가 버튼 (편집 모드, 공간이 있을 때)
-                if !readOnly && canAddMore && totalCount > 0 {
+                if !readOnly && canAddMore {
                     addButtonsView
                 }
 
@@ -183,34 +181,6 @@ struct AttachmentGallerySection: View {
                 }
             }
             .padding(.vertical, DesignSystem.Spacing.xs)
-        }
-    }
-
-    // MARK: - Empty State View
-
-    private var emptyStateView: some View {
-        VStack(spacing: DesignSystem.Spacing.lg) {
-            // 점선 테두리 드롭존
-            VStack(spacing: DesignSystem.Spacing.md) {
-                Image(systemName: "plus.rectangle.on.folder")
-                    .font(.system(size: 40))
-                    .foregroundColor(DesignSystem.Colors.primary.opacity(0.6))
-
-                Text(L.Attachment.addAttachment)
-                    .font(DesignSystem.Typography.callout)
-                    .foregroundColor(DesignSystem.Colors.secondaryText)
-            }
-            .frame(maxWidth: .infinity)
-            .frame(height: 120)
-            .background(DesignSystem.Colors.primary.opacity(0.05))
-            .cornerRadius(DesignSystem.CornerRadius.medium)
-            .overlay(
-                RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.medium)
-                    .stroke(DesignSystem.Colors.primary.opacity(0.3), style: StrokeStyle(lineWidth: 2, dash: [8]))
-            )
-
-            // 추가 버튼
-            addButtonsView
         }
     }
 

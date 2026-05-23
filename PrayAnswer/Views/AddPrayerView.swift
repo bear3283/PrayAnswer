@@ -92,6 +92,18 @@ struct AddPrayerView: View {
                 scrollToTopTrigger.toggle()
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: .sharedPrayerTextReceived)) { notification in
+            guard let text = notification.userInfo?["text"] as? String, !text.isEmpty else { return }
+            guard !draftEntries.isEmpty else { return }
+            // 공유된 텍스트를 현재 활성 entry의 content에 설정
+            if draftEntries[safeIdx].content.isEmpty {
+                draftEntries[safeIdx].content = text
+            } else {
+                draftEntries[safeIdx].content += "\n\n" + text
+            }
+            scrollToTopTrigger.toggle()
+            isContentFieldFocused = true
+        }
     }
 
     // MARK: - iPad Content
@@ -280,7 +292,7 @@ struct AddPrayerView: View {
             .alert(L.Alert.saveComplete, isPresented: $showingSuccessAlert) {
                 Button(L.Button.confirm) {
                     withAnimation(.easeInOut(duration: 0.3)) {
-                        selectedTab = 0
+                        selectedTab = 2
                     }
                 }
             } message: {
@@ -366,6 +378,13 @@ struct AddPrayerView: View {
         let accentColor = isMultiEntryMode ? activeEntry.color : DesignSystem.Colors.primary
         let idx = safeIdx
 
+        // 안전한 Binding<PrayerDraftEntry>: idx가 stale해도 크래시 없이 기본값 반환
+        // (SwiftUI reconciliation 중 자식 뷰 binding getter가 resetForm() 이후에도 호출될 수 있음)
+        let safeEntry = Binding<PrayerDraftEntry>(
+            get: { idx < draftEntries.count ? draftEntries[idx] : PrayerDraftEntry() },
+            set: { if idx < draftEntries.count { draftEntries[idx] = $0 } }
+        )
+
         VStack(spacing: DesignSystem.Spacing.lg) {
             // 기도대상자 선택 (다인원 지원)
             ModernCard {
@@ -405,7 +424,7 @@ struct AddPrayerView: View {
                         }
 
                         ZStack(alignment: .topLeading) {
-                            TextEditor(text: $draftEntries[idx].content)
+                            TextEditor(text: safeEntry.content)
                                 .font(DesignSystem.Typography.body)
                                 .padding(DesignSystem.Spacing.md)
                                 .scrollContentBackground(.hidden)
@@ -418,7 +437,7 @@ struct AddPrayerView: View {
                                         .stroke(Color.clear, lineWidth: 0)
                                 )
 
-                            if draftEntries[idx].content.isEmpty {
+                            if safeEntry.wrappedValue.content.isEmpty {
                                 Text(L.Placeholder.content)
                                     .font(DesignSystem.Typography.body)
                                     .foregroundColor(DesignSystem.Colors.tertiaryText)
@@ -427,7 +446,7 @@ struct AddPrayerView: View {
                                     .allowsHitTesting(false)
                             }
                         }
-                        .animation(DesignSystem.Animation.quick, value: draftEntries[idx].content.isEmpty)
+                        .animation(DesignSystem.Animation.quick, value: safeEntry.wrappedValue.content.isEmpty)
                     }
                 }
                 .padding(DesignSystem.Spacing.lg)
@@ -439,7 +458,7 @@ struct AddPrayerView: View {
 
             // 첨부 파일 섹션
             AttachmentGallerySection(
-                pendingAttachments: $draftEntries[idx].pendingAttachments,
+                pendingAttachments: safeEntry.pendingAttachments,
                 readOnly: false,
                 maxAttachments: 10,
                 onExtractText: { image in
@@ -458,7 +477,7 @@ struct AddPrayerView: View {
             ModernCard {
                 ModernCategoryPicker(
                     title: L.Label.category,
-                    selection: $draftEntries[idx].category
+                    selection: safeEntry.category
                 )
                 .padding(DesignSystem.Spacing.lg)
             }
@@ -470,10 +489,10 @@ struct AddPrayerView: View {
             // D-Day 섹션
             ModernCard {
                 DDayFormSection(
-                    targetDate: $draftEntries[idx].targetDate,
-                    notificationEnabled: $draftEntries[idx].notificationEnabled,
-                    notificationSettings: $draftEntries[idx].notificationSettings,
-                    calendarEnabled: $draftEntries[idx].calendarEnabled
+                    targetDate: safeEntry.targetDate,
+                    notificationEnabled: safeEntry.notificationEnabled,
+                    notificationSettings: safeEntry.notificationSettings,
+                    calendarEnabled: safeEntry.calendarEnabled
                 )
                 .padding(DesignSystem.Spacing.lg)
             }
@@ -528,7 +547,7 @@ struct AddPrayerView: View {
             }
 
             // 생성될 기도 제목 미리보기
-            if !draftEntries[idx].content.isEmpty {
+            if !safeEntry.wrappedValue.content.isEmpty {
                 ModernCard(
                     backgroundColor: DesignSystem.Colors.primary.opacity(0.05),
                     cornerRadius: DesignSystem.CornerRadius.medium,
@@ -747,14 +766,16 @@ struct AddPrayerView: View {
     }
 
     private func updateWidgetData() {
-        // 위젯 데이터 업데이트를 위해 모든 즐겨찾기 기도 다시 로드
         guard let viewModel = prayerViewModel else { return }
 
+        // fetch 직후 즉시 값 타입 변환 (Prayer @Model 참조를 외부로 전달 금지)
         let allFavorites = viewModel.favoritePrayers()
-        let favoritesByStorage = Dictionary(grouping: allFavorites) { $0.storage }
-
-        // 위젯 데이터 매니저를 통해 데이터 공유
-        WidgetDataManager.shared.shareFavoritePrayersByStorage(favoritesByStorage)
+        var dataByStorage: [PrayerStorage: [PrayerWidgetData]] = [:]
+        for prayer in allFavorites {
+            let storage = prayer.storage
+            dataByStorage[storage, default: []].append(prayer.toWidgetData())
+        }
+        WidgetDataManager.shared.shareFavoritePrayersByStorage(dataByStorage)
     }
 
     // MARK: - Image OCR

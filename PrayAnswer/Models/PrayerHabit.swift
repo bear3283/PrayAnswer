@@ -7,15 +7,16 @@ import UserNotifications
 /// 반복 기도 시간 스케줄. 매일 또는 특정 요일에 알림을 보내고 체크인을 기록한다.
 @Model
 final class PrayerHabit {
-    var label: String           // 예: "아침 기도", "저녁 기도"
-    var time: Date              // 시각만 사용 (날짜 부분은 무시)
+    var label: String = ""      // 예: "아침 기도", "저녁 기도"
+    var time: Date = Date()    // 시각만 사용 (날짜 부분은 무시)
     var weekdaysData: Data?     // WeekdaySelection JSON
-    var notificationEnabled: Bool
-    var isActive: Bool
-    var createdDate: Date
+    var notificationEnabled: Bool = false
+    var isActive: Bool = true
+    var createdDate: Date = Date()
+    var sortOrder: Int = 0
 
     @Relationship(deleteRule: .cascade)
-    var logs: [PrayerHabitLog] = []
+    var logs: [PrayerHabitLog]?
 
     init(label: String, time: Date, weekdays: WeekdaySelection = .everyday, notificationEnabled: Bool = true) {
         self.label = label
@@ -51,7 +52,7 @@ final class PrayerHabit {
     /// 특정 날짜의 로그
     func log(for date: Date) -> PrayerHabitLog? {
         let target = Calendar.current.startOfDay(for: date)
-        return logs.first { Calendar.current.startOfDay(for: $0.date) == target }
+        return (logs ?? []).first { Calendar.current.startOfDay(for: $0.date) == target }
     }
 
     /// 오늘 완료 여부
@@ -67,22 +68,32 @@ final class PrayerHabit {
 
     // MARK: - 연속 달성 (streak)
 
-    /// 현재 연속 달성 일수
+    /// 현재 연속 달성 일수 (스케줄된 요일만 카운트, 비스케줄 날은 스킵)
     var currentStreak: Int {
         let calendar = Calendar.current
+        let scheduledDays = weekdays.selectedDays
+        guard !scheduledDays.isEmpty else { return 0 }
+
         var streak = 0
         var checkDate = calendar.startOfDay(for: Date())
 
-        // 오늘 미완료면 어제부터 체크
-        if !isCompletedToday {
+        // 오늘이 스케줄된 날이면서 미완료이면 어제부터 체크
+        let todayWeekday = calendar.component(.weekday, from: checkDate)
+        if scheduledDays.contains(todayWeekday) && !isCompletedToday {
             guard let yesterday = calendar.date(byAdding: .day, value: -1, to: checkDate) else { return 0 }
             checkDate = yesterday
         }
 
-        while true {
-            let dayLog = logs.first { calendar.startOfDay(for: $0.date) == checkDate }
-            guard dayLog?.isCompleted == true else { break }
-            streak += 1
+        // 최대 365일 소급 (무한루프 방지)
+        for _ in 0..<365 {
+            let weekday = calendar.component(.weekday, from: checkDate)
+            if scheduledDays.contains(weekday) {
+                // 스케줄된 날: 완료 로그가 있어야 스트릭 유지
+                let dayLog = (logs ?? []).first { calendar.startOfDay(for: $0.date) == checkDate }
+                guard dayLog?.isCompleted == true else { break }
+                streak += 1
+            }
+            // 비스케줄 날은 카운트 없이 통과 (스트릭 유지)
             guard let prev = calendar.date(byAdding: .day, value: -1, to: checkDate) else { break }
             checkDate = prev
         }
@@ -91,14 +102,14 @@ final class PrayerHabit {
 
     /// 전체 완료 횟수
     var totalCompletedCount: Int {
-        logs.filter { $0.isCompleted }.count
+        (logs ?? []).filter { $0.isCompleted }.count
     }
 
     /// 이번 주 완료 횟수
     var thisWeekCount: Int {
         let calendar = Calendar.current
         let startOfWeek = calendar.dateInterval(of: .weekOfYear, for: Date())?.start ?? Date()
-        return logs.filter { $0.isCompleted && $0.date >= startOfWeek }.count
+        return (logs ?? []).filter { $0.isCompleted && $0.date >= startOfWeek }.count
     }
 }
 
@@ -106,9 +117,9 @@ final class PrayerHabit {
 
 @Model
 final class PrayerHabitLog {
-    var date: Date
+    var date: Date = Date()
     var completedAt: Date?
-    var isCompleted: Bool
+    var isCompleted: Bool = false
 
     var habit: PrayerHabit?
 
@@ -121,13 +132,15 @@ final class PrayerHabitLog {
 // MARK: - 습관 알림 관리 (NotificationManager 확장)
 
 extension NotificationManager {
-    /// 습관 알림 스케줄링
+    /// 습관 알림 스케줄링 (인용구 포함)
     func scheduleHabitNotifications(for habit: PrayerHabit) {
         cancelHabitNotifications(for: habit)
         guard habit.notificationEnabled && habit.isActive else { return }
 
         let calendar = Calendar.current
         let timeComponents = calendar.dateComponents([.hour, .minute], from: habit.time)
+        let habitIDHash = abs(habit.notificationIdentifierPrefix.hashValue)
+        let quote = PrayerQuoteManager.shared.quoteForNotification(habitID: habitIDHash)
 
         for weekday in habit.weekdays.selectedDays {
             var components = DateComponents()
@@ -138,15 +151,17 @@ extension NotificationManager {
             let identifier = "\(habit.notificationIdentifierPrefix)_wd\(weekday)"
 
             let content = UNMutableNotificationContent()
-            content.title = L.Habit.notificationTitle
-            content.body = habit.label.isEmpty ? L.Habit.notificationBody : habit.label
+            content.title = habit.label.isEmpty ? L.Habit.notificationTitle : "🙏 \(habit.label)"
+            content.subtitle = quote.notificationLine
+            content.body = L.Habit.notificationBody
             content.sound = .default
             content.userInfo = ["habitAction": "checkin"]
 
             let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: true)
             let request = UNNotificationRequest(identifier: identifier, content: content, trigger: trigger)
 
-            notificationCenter.add(request) { error in
+            let center = UNUserNotificationCenter.current()
+            center.add(request) { error in
                 #if DEBUG
                 if let error { print("습관 알림 등록 오류 (\(identifier)): \(error)") }
                 else { print("습관 알림 등록 성공: \(identifier)") }
@@ -157,11 +172,12 @@ extension NotificationManager {
 
     /// 습관 알림 전체 취소
     func cancelHabitNotifications(for habit: PrayerHabit) {
-        notificationCenter.getPendingNotificationRequests { [weak self] requests in
+        let center = UNUserNotificationCenter.current()
+        center.getPendingNotificationRequests { requests in
             let prefix = habit.notificationIdentifierPrefix
             let ids = requests.map { $0.identifier }.filter { $0.hasPrefix(prefix) }
             if !ids.isEmpty {
-                self?.notificationCenter.removePendingNotificationRequests(withIdentifiers: ids)
+                center.removePendingNotificationRequests(withIdentifiers: ids)
             }
         }
     }

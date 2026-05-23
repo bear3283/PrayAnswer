@@ -74,9 +74,10 @@ struct PersonDetailView: View {
                         ))
                     }
                     .onDelete { indexSet in
+                        let prayers = filteredPrayers
                         for index in indexSet {
-                            let prayer = filteredPrayers[index]
-                            deletePrayer(prayer)
+                            guard index < prayers.count else { continue }
+                            deletePrayer(prayers[index])
                         }
                     }
                 }

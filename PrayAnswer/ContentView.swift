@@ -12,7 +12,8 @@ import WidgetKit
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    @State private var selectedTab: Int = 0
+    @State private var selectedTab: Int = 2
+    @State private var pendingImportPackage: PrayerExchangePackage?
 
     var body: some View {
         Group {
@@ -23,14 +24,38 @@ struct ContentView: View {
             }
         }
         .onOpenURL { url in
-            handleWidgetURL(url)
+            handleIncomingURL(url)
         }
+        .onReceive(NotificationCenter.default.publisher(for: .pendingSharedPrayerDataAvailable)) { _ in
+            savePendingSharedPrayer()
+        }
+        .sheet(item: $pendingImportPackage) { package in
+            ImportPrayerView(package: package)
+        }
+    }
+
+    // MARK: - 수신 URL 처리 (딥링크 + 파일)
+    func handleIncomingURL(_ url: URL) {
+        // .prayanswer 파일 (AirDrop, Files 앱)
+        if url.pathExtension == "prayanswer" {
+            if let package = try? PrayerExchangePackager.read(from: url) {
+                pendingImportPackage = package
+            }
+            return
+        }
+        handleWidgetURL(url)
     }
 
     private func handleWidgetURL(_ url: URL) {
         guard url.scheme == "prayanswer" else { return }
 
         switch url.host {
+        case "receive":
+            // prayanswer://receive?data=BASE64URL — 기도제목 교환 딥링크
+            if let package = try? PrayerExchangePackager.fromDeepLink(url) {
+                pendingImportPackage = package
+            }
+            return
         case "add":
             // 카테고리 파라미터가 있으면 알림으로 전달
             if let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
@@ -53,24 +78,69 @@ struct ContentView: View {
                     userInfo: ["storage": storageType]
                 )
             }
-            selectedTab = 0
+            selectedTab = 2
 
         case "favorites":
             // prayanswer://favorites → 기도 목록 탭 (즐겨찾기 필터)
             NotificationCenter.default.post(name: .widgetOpenFavorites, object: nil)
-            selectedTab = 0
+            selectedTab = 2
 
         case "people":
             // prayanswer://people → 기도대상자 탭
+            selectedTab = 0
+
+        case "prayers":
+            // prayanswer://prayers → Share Extension 저장 후 기도 목록으로 이동
+            savePendingSharedPrayer()
             selectedTab = 2
 
         case "stats":
             // prayanswer://stats → 통계 탭
-            selectedTab = 3
+            selectedTab = 4
 
         default:
             break
         }
+    }
+
+    // MARK: - Share Extension 직접 저장
+
+    private struct PendingSharedPrayerData: Codable {
+        let content: String
+        let target: String
+        let targetDate: Double?
+        let notificationEnabled: Bool
+    }
+
+    private func savePendingSharedPrayer() {
+        let defaults = UserDefaults(suiteName: "group.prayAnswer.widget")
+        guard let data = defaults?.data(forKey: "pendingSharedPrayerData"),
+              let pending = try? JSONDecoder().decode(PendingSharedPrayerData.self, from: data) else { return }
+
+        defaults?.removeObject(forKey: "pendingSharedPrayerData")
+        defaults?.synchronize()
+
+        let targetDate: Date? = pending.targetDate.map { Date(timeIntervalSince1970: $0) }
+        let title = Prayer.generateTitle(from: pending.target, category: .other)
+        let prayer = Prayer(
+            title: title,
+            content: pending.content,
+            category: .other,
+            target: pending.target,
+            targetDate: targetDate,
+            notificationEnabled: pending.notificationEnabled
+        )
+        modelContext.insert(prayer)
+        try? modelContext.save()
+
+        if pending.notificationEnabled, let date = targetDate {
+            NotificationManager.shared.scheduleNotifications(for: prayer, targetDate: date)
+        }
+
+        WidgetCenter.shared.reloadAllTimelines()
+
+        // 목록 새로고침 트리거 (앱이 실행 중일 때 @Query 자동 갱신이 안 되는 경우 fallback)
+        NotificationCenter.default.post(name: .prayerSavedFromShareExtension, object: nil)
     }
 
 }
@@ -82,14 +152,15 @@ struct iPhoneContentView: View {
 
     var body: some View {
         TabView(selection: $selectedTab) {
-            // 기도 목록 탭 (첫 번째 화면)
-            PrayerListView(selectedTab: selectedTab)
+            // 기도대상자 탭 (0)
+            PeopleListView(selectedTab: selectedTab)
                 .tabItem {
-                    Image(systemName: "list.bullet.rectangle.portrait")
-                    Text(L.Tab.prayerList)
+                    Image(systemName: "person.2")
+                    Text(L.Tab.people)
                 }
                 .tag(0)
-            // 기도 추가 탭 (두 번째로 이동)
+
+            // 기도 추가 탭 (1)
             AddPrayerView(selectedTab: $selectedTab)
                 .tabItem {
                     Image(systemName: "hands.clap")
@@ -97,27 +168,27 @@ struct iPhoneContentView: View {
                 }
                 .tag(1)
 
-            // 기도대상자 탭 (세 번째 화면)
-            PeopleListView(selectedTab: selectedTab)
+            // 기도 목록 탭 (2, 메인)
+            PrayerListView(selectedTab: selectedTab)
                 .tabItem {
-                    Image(systemName: "person.2")
-                    Text(L.Tab.people)
+                    Image(systemName: "list.bullet.rectangle.portrait")
+                    Text(L.Tab.prayerList)
                 }
                 .tag(2)
 
-            // 통계 탭 (네 번째 화면)
-            StatisticsView()
-                .tabItem {
-                    Image(systemName: "chart.bar.xaxis")
-                    Text(L.Tab.statistics)
-                }
-                .tag(3)
-
-            // 기도 습관 탭 (다섯 번째 화면)
+            // 기도 습관 탭 (3)
             HabitView()
                 .tabItem {
                     Image(systemName: "clock.badge.checkmark")
                     Text("습관")
+                }
+                .tag(3)
+
+            // 통계 탭 (4)
+            StatisticsView()
+                .tabItem {
+                    Image(systemName: "chart.bar.xaxis")
+                    Text(L.Tab.statistics)
                 }
                 .tag(4)
         }
@@ -159,6 +230,12 @@ extension Notification.Name {
     static let widgetAddPrayerWithCategory = Notification.Name("WidgetAddPrayerWithCategory")
     static let widgetOpenStorage = Notification.Name("WidgetOpenStorage")
     static let widgetOpenFavorites = Notification.Name("WidgetOpenFavorites")
+    /// Share Extension에서 텍스트를 공유했을 때 발송
+    static let sharedPrayerTextReceived = Notification.Name("SharedPrayerTextReceived")
+    /// Share Extension JSON 데이터가 UserDefaults에 대기 중일 때 발송 (URL scheme 실패 fallback)
+    static let pendingSharedPrayerDataAvailable = Notification.Name("PendingSharedPrayerDataAvailable")
+    /// Share Extension 기도 저장 완료 후 목록 새로고침 트리거
+    static let prayerSavedFromShareExtension = Notification.Name("PrayerSavedFromShareExtension")
 }
 
 // MARK: - iPad Content View (NavigationSplitView-based)
@@ -325,7 +402,7 @@ struct iPadContentView: View {
     private var peopleDetailContent: some View {
         if let person = selectedPerson {
             if person.isEmpty {
-                MyselfPrayerListView()
+                MyProfileView()
             } else {
                 PersonDetailView(target: person)
             }
@@ -1075,384 +1152,6 @@ struct iPadEmptyDetailView: View {
     }
 }
 
-// MARK: - Prayer List View (Adaptive)
-
-struct PrayerListView: View {
-    var selectedTab: Int = 0
-    @Environment(\.modelContext) private var modelContext
-    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    @Query private var allPrayers: [Prayer]
-    @Query(sort: \PrayerCollection.sortOrder) private var collections: [PrayerCollection]
-    @State private var selectedStorage: PrayerStorage = .wait
-    @State private var selectedCollection: PrayerCollection? = nil
-    @State private var showCollectionManager = false
-    @State private var showingErrorAlert = false
-    @State private var errorMessage = ""
-    @State private var prayerViewModel: PrayerViewModel?
-    @State private var scrollOffset: CGFloat = 0
-    @State private var navigationPath = NavigationPath()
-
-    // 공유 기능
-    @State private var isShareMode: Bool = false
-    @State private var selectedPrayersForShare: Set<String> = []  // Prayer ID
-    @State private var showShareSheet: Bool = false
-
-    // 선택된 보관소 + 컬렉션 필터링
-    private var filteredPrayers: [Prayer] {
-        var result = allPrayers.filter { $0.storage == selectedStorage }
-        if let col = selectedCollection {
-            result = result.filter { $0.collection?.persistentModelID == col.persistentModelID }
-        }
-        return result.sorted { $0.createdDate > $1.createdDate }
-    }
-
-    var body: some View {
-        NavigationStack(path: $navigationPath) {
-            ZStack(alignment: .top) {
-                // 메인 컨텐츠
-                if filteredPrayers.isEmpty {
-                    VStack(spacing: 0) {
-                        // 헤더 공간 확보
-                        Color.clear.frame(height: 68)
-
-                        // 보관소 선택 섹션
-                        ModernStorageSelector(selectedStorage: $selectedStorage, allPrayers: allPrayers)
-
-                        // 컬렉션 필터 바
-                        if !collections.isEmpty {
-                            CollectionFilterBar(
-                                collections: collections,
-                                selectedCollection: $selectedCollection,
-                                onManage: { showCollectionManager = true }
-                            )
-                        }
-
-                        EmptyStateView(storage: selectedStorage)
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    }
-                } else {
-                    List {
-                        // 헤더 공간 확보를 위한 상단 여백 + 스크롤 오프셋 감지
-                        Section {
-                            Color.clear.frame(height: 24)
-                                .overlay(alignment: .top) {
-                                    ScrollOffsetDetector()
-                                }
-                        }
-                        .listRowBackground(Color.clear)
-                        .listRowSeparator(.hidden)
-                        .listRowInsets(EdgeInsets())
-
-                        // 보관소 선택 섹션
-                        Section {
-                            ModernStorageSelector(selectedStorage: $selectedStorage, allPrayers: allPrayers)
-                        }
-                        .listRowBackground(Color.clear)
-                        .listRowSeparator(.hidden)
-                        .listRowInsets(EdgeInsets())
-
-                        // 컬렉션 필터 바
-                        if !collections.isEmpty {
-                            Section {
-                                CollectionFilterBar(
-                                    collections: collections,
-                                    selectedCollection: $selectedCollection,
-                                    onManage: { showCollectionManager = true }
-                                )
-                            }
-                            .listRowBackground(Color.clear)
-                            .listRowSeparator(.hidden)
-                            .listRowInsets(EdgeInsets())
-                        }
-
-                        ForEach(filteredPrayers, id: \Prayer.id) { (prayer: Prayer) in
-                            if isShareMode {
-                                // 공유 모드: 선택 가능한 행
-                                let prayerIdString = String(describing: prayer.id)
-                                ShareSelectablePrayerRow(
-                                    prayer: prayer,
-                                    isSelected: selectedPrayersForShare.contains(prayerIdString)
-                                ) {
-                                    if selectedPrayersForShare.contains(prayerIdString) {
-                                        selectedPrayersForShare.remove(prayerIdString)
-                                    } else {
-                                        selectedPrayersForShare.insert(prayerIdString)
-                                    }
-                                }
-                                .listRowBackground(Color.clear)
-                                .listRowSeparator(.hidden)
-                                .listRowInsets(EdgeInsets(
-                                    top: DesignSystem.Spacing.sm,
-                                    leading: DesignSystem.Spacing.md,
-                                    bottom: DesignSystem.Spacing.sm,
-                                    trailing: DesignSystem.Spacing.md
-                                ))
-                            } else {
-                                // 일반 모드: 네비게이션 가능한 행
-                                ZStack {
-                                    // 투명한 NavigationLink로 네비게이션 기능만 유지
-                                    NavigationLink(value: prayer) {
-                                        EmptyView()
-                                    }
-                                    .opacity(0)
-
-                                    // 실제 보이는 UI
-                                    ModernPrayerRow(prayer: prayer) {
-                                        toggleFavorite(prayer)
-                                    }
-                                }
-                                .listRowBackground(Color.clear)
-                                .listRowSeparator(.hidden)
-                                .listRowInsets(EdgeInsets(
-                                    top: DesignSystem.Spacing.sm,
-                                    leading: DesignSystem.Spacing.md,
-                                    bottom: DesignSystem.Spacing.sm,
-                                    trailing: DesignSystem.Spacing.md
-                                ))
-                            }
-                        }
-                        .onDelete { indexSet in
-                            for index in indexSet {
-                                let prayer = filteredPrayers[index]
-                                deletePrayer(prayer)
-                            }
-                        }
-                    }
-                    .listStyle(PlainListStyle())
-                    .scrollContentBackground(.hidden)
-                    .coordinateSpace(name: "scroll")
-                    .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
-                        scrollOffset = value
-                    }
-                }
-
-                // 고정 헤더 오버레이 (iOS 전화 앱 스타일)
-                VStack(spacing: 0) {
-                    HStack {
-                        // 공유 모드 취소 버튼
-                        if isShareMode {
-                            Button(action: {
-                                withAnimation {
-                                    isShareMode = false
-                                    selectedPrayersForShare.removeAll()
-                                }
-                            }) {
-                                Text(L.Share.cancel)
-                                    .font(DesignSystem.Typography.callout)
-                                    .foregroundColor(DesignSystem.Colors.primary)
-                            }
-                            .padding(.leading, DesignSystem.Spacing.lg)
-                        } else {
-                            Color.clear.frame(width: 60)
-                        }
-
-                        Spacer()
-
-                        Text(isShareMode ? L.Share.selectPrayers : L.Nav.prayerList)
-                            .font(.system(size: 17, weight: .semibold))
-                            .foregroundColor(DesignSystem.Colors.primaryText)
-
-                        Spacer()
-
-                        // 공유 버튼
-                        if isShareMode {
-                            Button(action: {
-                                if !selectedPrayersForShare.isEmpty {
-                                    showShareSheet = true
-                                }
-                            }) {
-                                Text(L.Share.share)
-                                    .font(DesignSystem.Typography.callout)
-                                    .fontWeight(.semibold)
-                                    .foregroundColor(selectedPrayersForShare.isEmpty ? DesignSystem.Colors.tertiaryText : DesignSystem.Colors.primary)
-                            }
-                            .disabled(selectedPrayersForShare.isEmpty)
-                            .padding(.trailing, DesignSystem.Spacing.lg)
-                        } else if !filteredPrayers.isEmpty {
-                            Button(action: {
-                                withAnimation {
-                                    isShareMode = true
-                                }
-                            }) {
-                                Image(systemName: "square.and.arrow.up")
-                                    .font(.system(size: 17))
-                                    .foregroundColor(DesignSystem.Colors.primary)
-                            }
-                            .padding(.trailing, DesignSystem.Spacing.lg)
-                        } else {
-                            Color.clear.frame(width: 60)
-                        }
-                    }
-                    .frame(height: 44)
-                    .background(DesignSystem.Colors.background)
-
-                    // 페이드 그라데이션
-                    LinearGradient(
-                        gradient: Gradient(colors: [
-                            DesignSystem.Colors.background,
-                            DesignSystem.Colors.background.opacity(0.8),
-                            DesignSystem.Colors.background.opacity(0.0)
-                        ]),
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                    .frame(height: 16)
-                    .opacity(min(1.0, max(0.0, -scrollOffset / 30.0)))
-                    .allowsHitTesting(false)
-
-                    Spacer()
-                }
-            }
-            .navigationBarHidden(true)
-            .navigationDestination(for: Prayer.self) { prayer in
-                PrayerDetailView(prayer: prayer)
-            }
-            .background(DesignSystem.Colors.background)
-            .onAppear {
-                if prayerViewModel == nil {
-                    prayerViewModel = PrayerViewModel(modelContext: modelContext)
-                }
-
-                // 앱 실행 시 위젯 데이터 업데이트
-                updateWidgetDataOnAppear()
-
-                // 메모리 사용량 로깅
-                PrayerLogger.shared.logMemoryUsage()
-            }
-            .onDisappear {
-                // 뷰가 사라질 때 정리 작업
-                PrayerLogger.shared.viewDidAppear("PrayerListView - onDisappear")
-            }
-            .alert(L.Alert.error, isPresented: $showingErrorAlert) {
-                Button(L.Button.confirm) { }
-            } message: {
-                Text(errorMessage)
-            }
-            .sheet(isPresented: $showShareSheet, onDismiss: {
-                // 공유 완료 후 일반 모드로 복귀
-                withAnimation {
-                    isShareMode = false
-                    selectedPrayersForShare.removeAll()
-                }
-            }) {
-                ShareSheet(activityItems: [generateShareText()])
-                    .presentationDetents([.medium, .large])
-            }
-            .sheet(isPresented: $showCollectionManager) {
-                CollectionManagerView()
-            }
-        }
-        .onChange(of: selectedTab) {
-            navigationPath = NavigationPath()
-            // 탭 변경 시 공유 모드 종료
-            if isShareMode {
-                isShareMode = false
-                selectedPrayersForShare.removeAll()
-            }
-        }
-        .onChange(of: collections) { _, newCollections in
-            // 선택된 컬렉션이 삭제됐을 때 초기화
-            if let sel = selectedCollection,
-               !newCollections.contains(where: { $0.persistentModelID == sel.persistentModelID }) {
-                selectedCollection = nil
-            }
-        }
-    }
-
-    // MARK: - Share Functions
-
-    private func generateShareText() -> String {
-        let selectedPrayers = filteredPrayers.filter { (prayer: Prayer) -> Bool in
-            selectedPrayersForShare.contains(String(describing: prayer.id))
-        }
-
-        let lines = selectedPrayers.map { prayer in
-            let targetName = prayer.target.isEmpty ? L.Target.myself : prayer.target
-            return "\(targetName) - \(prayer.content)"
-        }
-
-        return lines.joined(separator: "\n\n")
-    }
-
-    private func deletePrayer(_ prayer: Prayer) {
-        guard let viewModel = prayerViewModel else {
-            showError(L.Error.deleteFailed)
-            return
-        }
-
-        do {
-            try viewModel.deletePrayer(prayer)
-            PrayerLogger.shared.userAction("목록에서 기도 삭제")
-        } catch {
-            showError(L.Error.deletePrayerFailed)
-            PrayerLogger.shared.prayerOperationFailed("삭제", error: error)
-        }
-    }
-
-    private func toggleFavorite(_ prayer: Prayer) {
-        guard let viewModel = prayerViewModel else {
-            showError(L.Error.favoriteFailed)
-            return
-        }
-
-        do {
-            try viewModel.toggleFavorite(prayer)
-        } catch {
-            showError(L.Error.favoriteToggleFailed)
-            PrayerLogger.shared.prayerOperationFailed("즐겨찾기 토글", error: error)
-        }
-    }
-
-    private func showError(_ message: String) {
-        errorMessage = message
-        showingErrorAlert = true
-    }
-
-    private func updateWidgetDataOnAppear() {
-        // 모든 즐겨찾기 기도들을 가져와서 보관소별로 분류
-        let allFavorites = allPrayers.filter { $0.isFavorite }
-        let favoritesByStorage = Dictionary(grouping: allFavorites) { $0.storage }
-
-        // 위젯 데이터 매니저를 통해 데이터 공유
-        WidgetDataManager.shared.shareFavoritePrayersByStorage(favoritesByStorage)
-    }
-}
-
-// 모던한 보관소 선택 섹션
-struct ModernStorageSelector: View {
-    @Binding var selectedStorage: PrayerStorage
-    let allPrayers: [Prayer]
-
-    // 각 보관소별 기도 개수 계산 (성능 최적화: Dictionary grouping 사용)
-    private var storageCounts: [PrayerStorage: Int] {
-        let grouped = Dictionary(grouping: allPrayers) { $0.storage }
-        var counts: [PrayerStorage: Int] = [:]
-        for storage in PrayerStorage.allCases {
-            counts[storage] = grouped[storage]?.count ?? 0
-        }
-        return counts
-    }
-
-    var body: some View {
-        VStack(spacing: DesignSystem.Spacing.md) {
-            HStack(spacing: DesignSystem.Spacing.sm) {
-                ForEach(PrayerStorage.allCases, id: \.self) { storage in
-                    ModernStorageCard(
-                        storage: storage,
-                        count: storageCounts[storage] ?? 0,
-                        isSelected: selectedStorage == storage
-                    ) {
-                        withAnimation(DesignSystem.Animation.standard) {
-                            selectedStorage = storage
-                        }
-                    }
-                }
-            }
-            .padding(.horizontal, DesignSystem.Spacing.lg)
-        }
-        .padding(.bottom, DesignSystem.Spacing.md)
-    }
-}
 
 #Preview {
     ContentView()

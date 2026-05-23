@@ -8,14 +8,14 @@ import SwiftData
 /// 하나의 Prayer는 최대 하나의 PrayerCollection에만 속할 수 있다.
 @Model
 final class PrayerCollection {
-    var name: String
-    var icon: String
-    var colorIndex: Int
-    var createdDate: Date
-    var sortOrder: Int
+    var name: String = ""
+    var icon: String = "folder.fill"
+    var colorIndex: Int = 0
+    var createdDate: Date = Date()
+    var sortOrder: Int = 0
 
     @Relationship(deleteRule: .nullify, inverse: \Prayer.collection)
-    var prayers: [Prayer] = []
+    var prayers: [Prayer]?
 
     init(name: String, icon: String = "folder.fill", colorIndex: Int = 0, sortOrder: Int = 0) {
         self.name = name
@@ -59,5 +59,5 @@ final class PrayerCollection {
         Self.colorPalette[colorIndex % Self.colorPalette.count]
     }
 
-    var prayerCount: Int { prayers.count }
+    var prayerCount: Int { (prayers ?? []).count }
 }

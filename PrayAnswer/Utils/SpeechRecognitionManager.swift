@@ -202,11 +202,13 @@ final class SpeechRecognitionManager: NSObject {
         }
 
         let audioSession = AVAudioSession.sharedInstance()
-        // 블루투스/에어팟 마이크 지원 + 음성 최적화 모드
+        // 블루투스/에어팟 마이크(HFP) 지원 + 음성 최적화 모드 + 타 오디오 일시 감쇠.
+        // 주의: .allowBluetoothA2DP는 .playAndRecord 카테고리에서만 유효하고
+        //      A2DP는 출력 전용이라 녹음엔 무용 → 사용하지 않음.
         try audioSession.setCategory(
             .record,
-            mode: .default,
-            options: [.allowBluetooth, .allowBluetoothA2DP]
+            mode: .measurement,
+            options: [.allowBluetooth, .duckOthers]
         )
         try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
 

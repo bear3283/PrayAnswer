@@ -125,7 +125,17 @@
       "Bash(wc -l \"/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/PrayAnswer/Views\"/*.swift)",
       "Bash(wc -l \"/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/PrayAnswer/Views/Components\"/*.swift)",
       "Bash(wc -l \"/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/PrayAnswer/Models\"/*.swift)",
-      "Bash(wc -l \"/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/PrayAnswer/Utils\"/*.swift)"
+      "Bash(wc -l \"/Users/bear/Library/Mobile Documents/com~apple~CloudDocs/AppleAcademy/Xcode/PrayAnswer/PrayAnswer/Utils\"/*.swift)",
+      "Bash(gh pr create --title 'feat: 나의 기도 교환 기능 추가 및 UI 전반 개선' --body ' *)",
+      "Bash(git log *)",
+      "Bash(grep -rniE \"requestReview|SKStoreReview|StoreReviewController|reviewCount|requestReviewIfAppropriate|prayerCount.*review|review.*prayerCount\" PrayAnswer PrayerWidget PrayAnswerShareExtension --include=\"*.swift\")",
+      "Bash(grep -rn \"import StoreKit\" PrayAnswer PrayerWidget PrayAnswerShareExtension --include=\"*.swift\")",
+      "WebFetch(domain:apps.apple.com)",
+      "WebFetch(domain:itunes.apple.com)",
+      "Bash(gh pr *)",
+      "Bash(gh repo *)",
+      "Bash(git fetch *)",
+      "Bash(git branch *)"
     ]
   }
 }

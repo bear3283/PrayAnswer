@@ -8,6 +8,8 @@ import SwiftUI
 struct SettingsView: View {
     @State private var showStatistics = false
     @AppStorage("aiFeatureEnabled") private var isAIUserEnabled: Bool = true
+    @AppStorage("onDeviceRecognition") private var onDeviceRecognition: Bool = false
+    @AppStorage("autoPunctuation") private var autoPunctuation: Bool = true
 
     private var appVersion: String {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "-"
@@ -69,6 +71,38 @@ struct SettingsView: View {
                 }
             }
             .tint(DesignSystem.Colors.primary)
+
+            Toggle(isOn: $autoPunctuation) {
+                VStack(alignment: .leading, spacing: 3) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "textformat.abc")
+                            .foregroundColor(.orange)
+                        Text(L.Settings.autoPunctuation)
+                            .font(DesignSystem.Typography.callout)
+                            .foregroundColor(DesignSystem.Colors.primaryText)
+                    }
+                    Text(L.Settings.autoPunctuationDesc)
+                        .font(DesignSystem.Typography.caption2)
+                        .foregroundColor(DesignSystem.Colors.secondaryText)
+                }
+            }
+            .tint(DesignSystem.Colors.primary)
+
+            Toggle(isOn: $onDeviceRecognition) {
+                VStack(alignment: .leading, spacing: 3) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "lock.shield")
+                            .foregroundColor(.green)
+                        Text(L.Settings.onDeviceRecognition)
+                            .font(DesignSystem.Typography.callout)
+                            .foregroundColor(DesignSystem.Colors.primaryText)
+                    }
+                    Text(L.Settings.onDeviceRecognitionDesc)
+                        .font(DesignSystem.Typography.caption2)
+                        .foregroundColor(DesignSystem.Colors.secondaryText)
+                }
+            }
+            .tint(.green)
 
             HStack(alignment: .top, spacing: DesignSystem.Spacing.md) {
                 Image(systemName: "airpodspro")

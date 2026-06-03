@@ -15,6 +15,8 @@ struct AISummaryPreviewView: View {
     let onApply: () -> Void
     let onCancel: () -> Void
     let onRetry: () -> Void
+    /// 스트리밍 생성 중 여부 — true일 때 Apply 버튼 비활성화, 생성 중 표시
+    var isStreaming: Bool = false
 
     @State private var selectedTab: PreviewTab = .summarized
     @State private var isEditing: Bool = false
@@ -81,9 +83,26 @@ struct AISummaryPreviewView: View {
                         .foregroundColor(DesignSystem.Colors.primaryText)
                 }
 
-                Text(L.AI.summaryResultDescription)
-                    .font(DesignSystem.Typography.caption)
-                    .foregroundColor(DesignSystem.Colors.secondaryText)
+                if isStreaming {
+                    HStack(spacing: DesignSystem.Spacing.xs) {
+                        ProgressView()
+                            .scaleEffect(0.7)
+                            .tint(DesignSystem.Colors.primary)
+                        Text("생성 중...")
+                            .font(DesignSystem.Typography.caption)
+                            .foregroundStyle(
+                                LinearGradient(
+                                    colors: [.purple, .blue, .cyan],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
+                    }
+                } else {
+                    Text(L.AI.summaryResultDescription)
+                        .font(DesignSystem.Typography.caption)
+                        .foregroundColor(DesignSystem.Colors.secondaryText)
+                }
             }
 
             Spacer()
@@ -295,7 +314,7 @@ struct AISummaryPreviewView: View {
             Divider()
 
             HStack(spacing: DesignSystem.Spacing.md) {
-                // 다시 시도 버튼
+                // 다시 시도 버튼 (스트리밍 완료 후만 활성)
                 Button(action: onRetry) {
                     HStack(spacing: DesignSystem.Spacing.sm) {
                         Image(systemName: "arrow.clockwise")
@@ -310,6 +329,7 @@ struct AISummaryPreviewView: View {
                     .cornerRadius(DesignSystem.CornerRadius.large)
                 }
                 .buttonStyle(PlainButtonStyle())
+                .disabled(isStreaming)
 
                 // 원본 사용 버튼
                 Button(action: {
@@ -329,11 +349,18 @@ struct AISummaryPreviewView: View {
                     .cornerRadius(DesignSystem.CornerRadius.large)
                 }
                 .buttonStyle(PlainButtonStyle())
+                .disabled(isStreaming)
 
-                // 적용 버튼
+                // 적용 버튼 (스트리밍 완료 후 활성)
                 Button(action: onApply) {
                     HStack(spacing: DesignSystem.Spacing.sm) {
-                        Image(systemName: "checkmark")
+                        if isStreaming {
+                            ProgressView()
+                                .scaleEffect(0.8)
+                                .tint(.white)
+                        } else {
+                            Image(systemName: "checkmark")
+                        }
                         Text(L.AI.apply)
                     }
                     .font(DesignSystem.Typography.callout)
@@ -341,10 +368,11 @@ struct AISummaryPreviewView: View {
                     .foregroundColor(.white)
                     .padding(.horizontal, DesignSystem.Spacing.xl)
                     .padding(.vertical, DesignSystem.Spacing.md)
-                    .background(DesignSystem.Colors.primary)
+                    .background(isStreaming ? DesignSystem.Colors.primary.opacity(0.5) : DesignSystem.Colors.primary)
                     .cornerRadius(DesignSystem.CornerRadius.large)
                 }
                 .buttonStyle(PlainButtonStyle())
+                .disabled(isStreaming)
             }
             .padding(.horizontal, DesignSystem.Spacing.lg)
             .padding(.bottom, DesignSystem.Spacing.lg)

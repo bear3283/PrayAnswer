@@ -1446,7 +1446,8 @@ struct VoiceRecordingOverlay: View {
                 onRetry: {
                     showAISummaryPreview = false
                     performAISummarization()
-                }
+                },
+                isStreaming: isAIProcessing
             )
             .presentationDetents([.large])
             .presentationDragIndicator(.visible)
@@ -1752,26 +1753,28 @@ struct VoiceRecordingOverlay: View {
         guard !speechManager.recognizedText.isEmpty else { return }
         isAIProcessing = true
         aiErrorMessage = nil
-        Task {
-            do {
-                if #available(iOS 26.0, *) {
-                    let result = try await AISummarizationManager.shared.summarize(text: speechManager.recognizedText)
-                    await MainActor.run {
-                        summarizedText = result
-                        isAIProcessing = false
-                        showAISummaryPreview = true
+        summarizedText = ""
+
+        Task { @MainActor in
+            if #available(iOS 26.0, *) {
+                // 프리뷰 시트를 먼저 표시 후 스트리밍 텍스트가 실시간으로 채워짐
+                showAISummaryPreview = true
+                let stream = AISummarizationManager.shared.makeStreamSummarize(
+                    text: speechManager.recognizedText
+                )
+                do {
+                    for try await partial in stream {
+                        summarizedText = partial
                     }
-                } else {
-                    await MainActor.run {
-                        aiErrorMessage = L.AI.errorRequiresiOS26
-                        isAIProcessing = false
-                    }
-                }
-            } catch {
-                await MainActor.run {
+                    isAIProcessing = false
+                } catch {
                     aiErrorMessage = error.localizedDescription
                     isAIProcessing = false
+                    if summarizedText.isEmpty { showAISummaryPreview = false }
                 }
+            } else {
+                aiErrorMessage = L.AI.errorRequiresiOS26
+                isAIProcessing = false
             }
         }
     }

@@ -218,6 +218,26 @@ final class SpeechRecognitionManager: NSObject {
         }
         recognitionRequest.shouldReportPartialResults = true
 
+        // 자동 문장 부호 (iOS 16+): 마침표·쉼표 자동 삽입 → 기도문 가독성 향상
+        recognitionRequest.addsPunctuation = UserDefaults.standard.bool(forKey: "autoPunctuation")
+
+        // 받아쓰기 모드: 연속 구술 발화에 최적화 (기도 녹음 특성에 적합)
+        recognitionRequest.taskHint = .dictation
+
+        // 기기 내 인식: 사용자 설정에 따라 서버 전송 없이 처리
+        recognitionRequest.requiresOnDeviceRecognition = UserDefaults.standard.bool(forKey: "onDeviceRecognition")
+
+        // 기도 관련 한국어 어휘 힌트: 음성 인식 엔진이 이 단어들을 우선 인식
+        recognitionRequest.contextualStrings = [
+            "하나님", "예수님", "성령님", "아버지", "주님", "그리스도",
+            "감사합니다", "간구합니다", "기도합니다", "용서해주세요",
+            "축복해주세요", "인도해주세요", "치유해주세요", "도와주세요",
+            "아멘", "할렐루야", "예수 그리스도", "성경", "말씀",
+            "시편", "요한복음", "창세기", "십자가", "부활",
+            "은혜", "평안", "회복", "구원", "믿음", "소망", "사랑",
+            "교회", "성도", "찬양", "예배", "선교"
+        ]
+
         guard let speechRecognizer, speechRecognizer.isAvailable else {
             throw SpeechRecognitionError.recognizerNotAvailable
         }
@@ -346,7 +366,12 @@ final class SpeechRecognitionManager: NSObject {
 
         var rms: Float = 0.0
         vDSP_rmsqv(channelData, 1, &rms, frameCount)
-        let normalized = min(rms * 20, 1.0)
+
+        // 로그 스케일 정규화: -50dB~-10dB → 0.0~1.0
+        // 선형 스케일(×20)은 작은 소리에 과민·큰 소리에 클리핑 발생
+        // 로그 스케일은 사람 청각 특성과 일치해 파형 시각화가 더 자연스러움
+        let db = rms > 1e-7 ? 20.0 * log10(rms) : -140.0
+        let normalized = min(1.0, max(0.0, (db + 50.0) / 40.0))
 
         DispatchQueue.main.async {
             self.audioLevel = normalized

@@ -30,6 +30,9 @@ final class AISummarizationManager {
     /// 마지막 요약 결과
     var lastSummarizedText: String = ""
 
+    /// 스트리밍 중인 누적 텍스트 (실시간 미리보기용)
+    var streamingText: String = ""
+
     // MARK: - Private Properties
 
     /// 기도문 정리를 위한 시스템 지시사항 (Apple 권장 패턴 적용)
@@ -131,7 +134,10 @@ final class AISummarizationManager {
 
         do {
             let session = LanguageModelSession(instructions: instructions)
-            let response = try await session.respond(to: text)
+            // temperature 0.3: 낮은 무작위성 → 일관된 기도문 형식 유지
+            // maximumResponseTokens 600: 긴 기도문도 충분히 처리하되 과도한 생성 방지
+            let options = GenerationOptions(temperature: 0.3, maximumResponseTokens: 600)
+            let response = try await session.respond(to: text, options: options)
             let summarized = response.content
 
             await MainActor.run {
@@ -150,9 +156,64 @@ final class AISummarizationManager {
         #endif
     }
 
+    /// 스트리밍 방식으로 기도문 요약 (실시간 미리보기 지원)
+    /// - Returns: 각 부분 결과를 순서대로 방출하는 AsyncThrowingStream
+    @MainActor
+    func makeStreamSummarize(text: String) -> AsyncThrowingStream<String, Error> {
+        AsyncThrowingStream { continuation in
+            Task { @MainActor in
+                guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                    continuation.finish(throwing: AISummarizationError.emptyInput)
+                    return
+                }
+
+                #if canImport(FoundationModels)
+                guard self.isAvailable else {
+                    continuation.finish(
+                        throwing: AISummarizationError.notAvailable(
+                            self.unavailabilityReason ?? L.AI.errorUnknown
+                        )
+                    )
+                    return
+                }
+
+                self.isProcessing = true
+                self.errorMessage = nil
+                self.streamingText = ""
+
+                do {
+                    let session = LanguageModelSession(instructions: self.instructions)
+                    let options = GenerationOptions(temperature: 0.3, maximumResponseTokens: 600)
+                    let stream = session.streamResponse(to: text, options: options)
+
+                    for try await snapshot in stream {
+                        // Snapshot.content = String.PartiallyGenerated (누적 텍스트)
+                        let partial = snapshot.content
+                        self.streamingText = partial
+                        continuation.yield(partial)
+                    }
+
+                    self.lastSummarizedText = self.streamingText
+                    self.isProcessing = false
+                    continuation.finish()
+                } catch {
+                    self.isProcessing = false
+                    self.errorMessage = L.AI.errorSummarizationFailed
+                    continuation.finish(throwing: AISummarizationError.summarizationFailed(error))
+                }
+                #else
+                continuation.finish(
+                    throwing: AISummarizationError.notAvailable(L.AI.errorNotAvailable)
+                )
+                #endif
+            }
+        }
+    }
+
     /// 마지막 결과 초기화
     func clearResult() {
         lastSummarizedText = ""
+        streamingText = ""
         errorMessage = nil
     }
 }

@@ -1913,6 +1913,13 @@ struct AnswerNoteSheet: View {
                             .stroke(isFocused ? accentColor.opacity(0.5) : Color.clear, lineWidth: 1.5)
                     )
                     .focused($isFocused)
+                    .onChange(of: noteText) { _, newValue in
+                        // 엔터 키 → 키보드 내리기 (짧은 응답 메모에는 줄바꿈 불필요)
+                        if newValue.hasSuffix("\n") {
+                            noteText = String(newValue.dropLast())
+                            isFocused = false
+                        }
+                    }
 
                 if noteText.isEmpty {
                     Text(placeholder)

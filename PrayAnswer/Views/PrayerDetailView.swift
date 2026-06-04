@@ -27,6 +27,7 @@ struct PrayerDetailView: View {
     @State private var pendingStorage: PrayerStorage? = nil
     @State private var isEditingAnswerNote = false
     @State private var editingAnswerNoteText = ""
+    @FocusState private var isAnswerNoteFocused: Bool
     @State private var prayerViewModel: PrayerViewModel?
     @State private var showingErrorAlert = false
     @State private var errorMessage = ""
@@ -888,6 +889,13 @@ struct PrayerDetailView: View {
                                     RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.medium)
                                         .stroke(DesignSystem.Colors.primary.opacity(0.4), lineWidth: 1.5)
                                 )
+                                .focused($isAnswerNoteFocused)
+                                .onChange(of: editingAnswerNoteText) { _, newValue in
+                                    if newValue.hasSuffix("\n") {
+                                        editingAnswerNoteText = String(newValue.dropLast())
+                                        isAnswerNoteFocused = false
+                                    }
+                                }
                             if editingAnswerNoteText.isEmpty {
                                 Text(prayer.storage == .yes ? L.AnswerNote.placeholder : L.AnswerNote.noPlaceholder)
                                     .font(DesignSystem.Typography.body)

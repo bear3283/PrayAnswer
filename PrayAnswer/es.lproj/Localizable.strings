@@ -126,7 +126,7 @@
 
 // MARK: - Target (Destinatario)
 "target.myself" = "Yo mismo";
-"target.select_target" = "Seleccionar Destinatario";
+"target.select_target" = "Destinatario";
 "target.add_new" = "Agregar Nuevo Destinatario";
 "target.new_placeholder" = "Ingrese nombre del destinatario";
 "target.title_format" = "Oración de %@ para %@";
@@ -268,3 +268,30 @@
 // Errors
 "attachment.error_invalid_document" = "Documento no válido";
 "attachment.error_unsupported_format" = "Formato de archivo no compatible";
+
+// MARK: - Line Numbering
+"numbering.apply" = "Numerar líneas";
+"numbering.remove" = "Quitar números";
+"numbering.renumber" = "Renumerar";
+"numbering.hint" = "Cada línea nueva recibe un número";
+"numbering.disordered_hint" = "Los números están desordenados";
+"numbering.count_hint" = "%d oraciones";
+
+// MARK: - Attribute Bar
+"attribute_bar.not_set" = "Sin definir";
+"attribute_bar.expand_hint" = "Toca dos veces para abrir";
+"attribute_bar.collapse_hint" = "Toca dos veces para cerrar";
+"attribute_bar.attachment_count" = "%d adjuntos";
+
+// MARK: - Completion Overlay
+"completion.confirm" = "Listo";
+"completion.open_list" = "Abrir lista de oraciones";
+"completion.moved_title_yes" = "La respuesta es SÍ.";
+"completion.moved_title_no" = "La respuesta es NO.";
+"completion.moved_title_wait" = "La respuesta es ESPERA.";
+"completion.moved_message_yes" = "Un tiempo para experimentar la gracia de Dios.";
+"completion.moved_message_no" = "¿Qué querrá mostrarte Dios?";
+"completion.moved_message_wait" = "Sigamos orando y esperando la respuesta de Dios.";
+"completion.saved_title" = "Oración guardada";
+"completion.saved_title_multiple" = "%d oraciones guardadas";
+"completion.saved_message" = "Esperando respuesta en %@";

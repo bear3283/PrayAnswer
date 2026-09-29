@@ -23,8 +23,6 @@ struct PrayerDetailView: View {
     @State private var isDeleted = false
     @State private var showingStoragePicker = false
     @State private var showingDeleteAlert = false
-    @State private var showingAnswerNoteSheet = false
-    @State private var pendingStorage: PrayerStorage? = nil
     @State private var isEditingAnswerNote = false
     @State private var editingAnswerNoteText = ""
     @FocusState private var isAnswerNoteFocused: Bool
@@ -101,39 +99,21 @@ struct PrayerDetailView: View {
             }
         }
         .sheet(isPresented: $showingStoragePicker) {
-            ModernStoragePickerView(
+            // 보관소 선택 → 응답 메모까지 시트 하나로 이어진다 (닫았다 여는 중 요청이 무시되던 문제)
+            StorageMoveSheet(
                 currentStorage: prayer.storage,
-                onStorageSelected: { newStorage in
+                onComplete: { target, note in
                     showingStoragePicker = false
-                    if newStorage == .yes || newStorage == .no {
-                        pendingStorage = newStorage
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                            showingAnswerNoteSheet = true
-                        }
-                    } else {
-                        movePrayerToStorage(newStorage)
+                    // note가 nil(건너뛰기)이면 기존 응답 기록을 지우지 않고 유지
+                    if let note {
+                        prayer.answerNote = note
                     }
+                    movePrayerToStorage(target)
+                },
+                onCancel: {
+                    showingStoragePicker = false
                 }
             )
-        }
-        .sheet(isPresented: $showingAnswerNoteSheet) {
-            if let target = pendingStorage {
-                AnswerNoteSheet(
-                    storage: target,
-                    onSave: { note in
-                        prayer.answerNote = note
-                        movePrayerToStorage(target)
-                        pendingStorage = nil
-                        showingAnswerNoteSheet = false
-                    },
-                    onCancel: {
-                        pendingStorage = nil
-                        showingAnswerNoteSheet = false
-                    }
-                )
-                .presentationDetents([.medium])
-                .presentationDragIndicator(.hidden)
-            }
         }
         .alert(L.Alert.deletePrayer, isPresented: $showingDeleteAlert) {
             Button(L.Button.delete, role: .destructive) {
@@ -282,39 +262,49 @@ struct PrayerDetailView: View {
 
     // MARK: - Viewing Mode View
 
+    /// 대상자 표시 이름 (비어 있으면 "본인")
+    private var targetDisplayName: String {
+        prayer.target.isEmpty ? L.Target.myself : prayer.target
+    }
+
     @ViewBuilder
     private var viewingView: some View {
-        // 제목과 카테고리 섹션
+        // 기도대상자와 카테고리 섹션
+        // (제목은 대상자+카테고리로 자동 생성되므로, 둘을 그대로 보여주는 편이 읽기 쉽다)
         ModernCard {
-            VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
+            HStack(alignment: .top, spacing: DesignSystem.Spacing.md) {
                 VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-                    HStack(alignment: .top, spacing: DesignSystem.Spacing.md) {
-                        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-                            Text(L.Label.title)
-                                .font(DesignSystem.Typography.callout)
-                                .foregroundColor(DesignSystem.Colors.primaryText)
-                                .fontWeight(.medium)
+                    Text(L.Label.prayerTarget)
+                        .font(DesignSystem.Typography.callout)
+                        .foregroundColor(DesignSystem.Colors.primaryText)
+                        .fontWeight(.medium)
 
-                            Text(prayer.title)
-                                .font(DesignSystem.Typography.body)
-                                .foregroundColor(DesignSystem.Colors.primaryText)
-                                .padding(DesignSystem.Spacing.md)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .frame(minHeight: 48)
-                                .background(DesignSystem.Colors.secondaryBackground)
-                                .cornerRadius(DesignSystem.CornerRadius.medium)
-                        }
+                    HStack(spacing: DesignSystem.Spacing.sm) {
+                        Image(systemName: "person.fill")
+                            .font(.callout)
+                            .foregroundColor(DesignSystem.Colors.secondary)
 
-                        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-                            Text(L.Label.category)
-                                .font(DesignSystem.Typography.callout)
-                                .foregroundColor(DesignSystem.Colors.primaryText)
-                                .fontWeight(.medium)
+                        Text(targetDisplayName)
+                            .font(DesignSystem.Typography.body)
+                            .foregroundColor(DesignSystem.Colors.primaryText)
 
-                            CategoryTag(category: prayer.category, size: .medium)
-                                .padding(.top, DesignSystem.Spacing.sm)
-                        }
+                        Spacer(minLength: 0)
                     }
+                    .padding(DesignSystem.Spacing.md)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .frame(minHeight: 48)
+                    .background(DesignSystem.Colors.secondaryBackground)
+                    .cornerRadius(DesignSystem.CornerRadius.medium)
+                }
+
+                VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+                    Text(L.Label.category)
+                        .font(DesignSystem.Typography.callout)
+                        .foregroundColor(DesignSystem.Colors.primaryText)
+                        .fontWeight(.medium)
+
+                    CategoryTag(category: prayer.category, size: .medium)
+                        .padding(.top, DesignSystem.Spacing.sm)
                 }
             }
             .padding(DesignSystem.Spacing.lg)
@@ -355,36 +345,6 @@ struct PrayerDetailView: View {
                     showAttachmentPreview = true
                 }
             )
-        }
-
-        // 기도 대상자 섹션
-        if !prayer.target.isEmpty {
-            ModernCard {
-                VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
-                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-                        Text(L.Label.prayerTarget)
-                            .font(DesignSystem.Typography.callout)
-                            .foregroundColor(DesignSystem.Colors.primaryText)
-                            .fontWeight(.medium)
-
-                        HStack(spacing: DesignSystem.Spacing.md) {
-                            Image(systemName: "person.fill")
-                                .font(.title3)
-                                .foregroundColor(DesignSystem.Colors.secondary)
-
-                            Text(prayer.target)
-                                .font(DesignSystem.Typography.body)
-                                .foregroundColor(DesignSystem.Colors.primaryText)
-                                .padding(DesignSystem.Spacing.md)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .frame(minHeight: 48)
-                                .background(DesignSystem.Colors.secondaryBackground)
-                                .cornerRadius(DesignSystem.CornerRadius.medium)
-                        }
-                    }
-                }
-                .padding(DesignSystem.Spacing.lg)
-            }
         }
 
         // D-Day 섹션 (보기 모드)
@@ -814,6 +774,14 @@ struct PrayerDetailView: View {
             try viewModel.movePrayer(prayer, to: newStorage)
             PrayerLogger.shared.userAction("기도 보관소 이동")
 
+            // 목적지 보관소 목록으로 돌아가 완료 표시를 보여준다
+            NotificationCenter.default.post(
+                name: .prayerMovedToStorage,
+                object: nil,
+                userInfo: ["storage": newStorage.rawValue]
+            )
+            dismiss()
+
             // "응답 받음"으로 이동 시 앱스토어 리뷰 요청 (감사의 순간)
             if newStorage == .yes {
                 if ReviewRequestManager.shared.recordPrayerAnswered() {
@@ -916,6 +884,8 @@ struct PrayerDetailView: View {
                             Button(L.Button.save) {
                                 let trimmed = editingAnswerNoteText.trimmingCharacters(in: .whitespacesAndNewlines)
                                 prayer.answerNote = trimmed.isEmpty ? nil : trimmed
+                                prayer.modifiedDate = Date()
+                                try? modelContext.save()
                                 isEditingAnswerNote = false
                             }
                             .font(DesignSystem.Typography.callout)

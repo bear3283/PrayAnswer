@@ -55,9 +55,8 @@ struct MultiTargetPicker: View {
     var body: some View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
             Text(L.Target.selectTarget)
-                .font(DesignSystem.Typography.callout)
+                .font(DesignSystem.Typography.title3)
                 .foregroundColor(DesignSystem.Colors.primaryText)
-                .fontWeight(.medium)
 
             // 칩 목록: 나 + 추가된 인원
             ScrollView(.horizontal, showsIndicators: false) {

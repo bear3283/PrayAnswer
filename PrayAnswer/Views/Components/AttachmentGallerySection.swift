@@ -31,6 +31,9 @@ struct AttachmentGallerySection: View {
     /// 전체 OCR 추출 액션
     let onExtractAllText: (() -> Void)?
 
+    /// 속성 패널 안에 들어갈 때: 카드 배경과 헤더를 생략한다 (칩이 이미 "첨부 n"을 말하므로)
+    let embedded: Bool
+
     @State private var selectedPhotoItems: [PhotosPickerItem] = []
     @State private var isLoadingImages = false
     @State private var showDocumentPicker = false
@@ -55,7 +58,8 @@ struct AttachmentGallerySection: View {
         maxAttachments: Int = 10,
         onTapAttachment: ((Int) -> Void)? = nil,
         onExtractText: ((UIImage) -> Void)? = nil,
-        onExtractAllText: (() -> Void)? = nil
+        onExtractAllText: (() -> Void)? = nil,
+        embedded: Bool = false
     ) {
         self._attachments = attachments
         self._pendingAttachments = pendingAttachments
@@ -64,30 +68,19 @@ struct AttachmentGallerySection: View {
         self.onTapAttachment = onTapAttachment
         self.onExtractText = onExtractText
         self.onExtractAllText = onExtractAllText
+        self.embedded = embedded
     }
 
     var body: some View {
-        ModernCard {
-            VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
-                // 헤더
-                headerView
-
-                // 갤러리 (첨부파일이 있을 때만)
-                if totalCount > 0 {
-                    galleryView
-                }
-
-                // 추가 버튼 (편집 모드, 공간이 있을 때)
-                if !readOnly && canAddMore {
-                    addButtonsView
-                }
-
-                // 전체 OCR 버튼 (이미지가 2개 이상일 때)
-                if !readOnly && hasMultipleImages {
-                    extractAllButton
+        Group {
+            if embedded {
+                sectionBody
+            } else {
+                ModernCard {
+                    sectionBody
+                        .padding(DesignSystem.Spacing.lg)
                 }
             }
-            .padding(DesignSystem.Spacing.lg)
         }
         .onChange(of: selectedPhotoItems) { _, newValue in
             Task {
@@ -103,6 +96,32 @@ struct AttachmentGallerySection: View {
             Button(L.Button.confirm) { }
         } message: {
             Text(L.Attachment.maxReachedMessage(maxAttachments))
+        }
+    }
+
+    // MARK: - Section Body
+
+    private var sectionBody: some View {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
+            // 헤더 (속성 패널 안에서는 칩이 대신 말해주므로 생략)
+            if !embedded {
+                headerView
+            }
+
+            // 갤러리 (첨부파일이 있을 때만)
+            if totalCount > 0 {
+                galleryView
+            }
+
+            // 추가 버튼 (편집 모드, 공간이 있을 때)
+            if !readOnly && canAddMore {
+                addButtonsView
+            }
+
+            // 전체 OCR 버튼 (이미지가 2개 이상일 때)
+            if !readOnly && hasMultipleImages {
+                extractAllButton
+            }
         }
     }
 

@@ -126,7 +126,7 @@
 
 // MARK: - Target (Prayer Target)
 "target.myself" = "Myself";
-"target.select_target" = "Select Prayer Target";
+"target.select_target" = "Prayer Target";
 "target.add_new" = "Add New Target";
 "target.new_placeholder" = "Enter new target name";
 "target.search_or_add_placeholder" = "Search or add new target";
@@ -270,3 +270,30 @@
 // Errors
 "attachment.error_invalid_document" = "Invalid document";
 "attachment.error_unsupported_format" = "Unsupported file format";
+
+// MARK: - Line Numbering
+"numbering.apply" = "Number lines";
+"numbering.remove" = "Remove numbers";
+"numbering.renumber" = "Renumber";
+"numbering.hint" = "Each new line gets a number";
+"numbering.disordered_hint" = "Numbers are out of order";
+"numbering.count_hint" = "%d prayers";
+
+// MARK: - Attribute Bar
+"attribute_bar.not_set" = "Not set";
+"attribute_bar.expand_hint" = "Double tap to expand";
+"attribute_bar.collapse_hint" = "Double tap to collapse";
+"attribute_bar.attachment_count" = "%d attached";
+
+// MARK: - Completion Overlay
+"completion.confirm" = "Done";
+"completion.open_list" = "Open prayer list";
+"completion.moved_title_yes" = "The answer is YES.";
+"completion.moved_title_no" = "The answer is NO.";
+"completion.moved_title_wait" = "The answer is WAIT.";
+"completion.moved_message_yes" = "A time of experiencing God's grace.";
+"completion.moved_message_no" = "What might God be showing you?";
+"completion.moved_message_wait" = "Let us keep praying and waiting for God's answer.";
+"completion.saved_title" = "Prayer saved";
+"completion.saved_title_multiple" = "%d prayers saved";
+"completion.saved_message" = "Waiting for an answer in %@";

@@ -1,0 +1,142 @@
+# PrayAnswer 배포 자동화
+#
+# 비밀값(API 키 ID·발급자 ID·키 파일 경로)은 이 파일에 적지 않는다.
+# 저장소가 공개되어 있으므로 gitignore된 fastlane/.env 에서만 읽는다.
+# 설정 방법은 fastlane/.env.example 참고.
+
+default_platform(:ios)
+
+SCHEME = "PrayAnswer"
+XCODEPROJ = "PrayAnswer.xcodeproj"
+
+platform :ios do
+
+  # MARK: - 공통
+
+  # App Store Connect API 키 로드 (.env 값 사용)
+  private_lane :asc_key do
+    missing = %w[ASC_KEY_ID ASC_ISSUER_ID ASC_KEY_PATH].reject { |k| ENV[k].to_s.strip != "" }
+    unless missing.empty?
+      UI.user_error!(
+        "fastlane/.env 에 다음 값이 없습니다: #{missing.join(', ')}\n" \
+        "fastlane/.env.example 을 복사해 채워주세요."
+      )
+    end
+
+    key_path = File.expand_path(ENV["ASC_KEY_PATH"])
+    UI.user_error!("API 키 파일을 찾을 수 없습니다: #{key_path}") unless File.exist?(key_path)
+
+    app_store_connect_api_key(
+      key_id: ENV["ASC_KEY_ID"],
+      issuer_id: ENV["ASC_ISSUER_ID"],
+      key_filepath: key_path,
+      duration: 1200,
+      in_house: false
+    )
+  end
+
+  # 현재 프로젝트의 버전·빌드 번호
+  private_lane :version_info do
+    version = get_version_number(xcodeproj: XCODEPROJ, target: SCHEME)
+    build = get_build_number(xcodeproj: XCODEPROJ)
+    { version: version, build: build }
+  end
+
+  # MARK: - 레인
+
+  desc "버전·빌드 번호와 App Store Connect 연결 상태만 확인 (업로드 없음)"
+  lane :check do
+    info = version_info
+    UI.message("프로젝트 버전: #{info[:version]} (빌드 #{info[:build]})")
+
+    api_key = asc_key
+    latest = latest_testflight_build_number(
+      api_key: api_key,
+      app_identifier: "com.restart.PrayAnswer",
+      version: info[:version],
+      initial_build_number: 0
+    )
+    UI.success("App Store Connect 연결 성공")
+    UI.message("TestFlight의 #{info[:version]} 최신 빌드: #{latest}")
+
+    if info[:build].to_i <= latest.to_i
+      UI.important(
+        "현재 빌드 번호(#{info[:build]})가 TestFlight 최신(#{latest}) 이하입니다. " \
+        "업로드하려면 bump_build 레인으로 올리세요."
+      )
+    else
+      UI.success("빌드 번호 #{info[:build]} 는 업로드 가능합니다.")
+    end
+  end
+
+  desc "빌드 번호를 TestFlight 최신 +1 로 맞춘다"
+  lane :bump_build do
+    info = version_info
+    api_key = asc_key
+
+    latest = latest_testflight_build_number(
+      api_key: api_key,
+      app_identifier: "com.restart.PrayAnswer",
+      version: info[:version],
+      initial_build_number: 0
+    )
+    next_build = latest.to_i + 1
+
+    increment_build_number(xcodeproj: XCODEPROJ, build_number: next_build)
+    UI.success("빌드 번호를 #{info[:build]} → #{next_build} 로 변경했습니다.")
+  end
+
+  desc "아카이브만 만든다 (업로드 없음). 서명·빌드 문제를 미리 잡기 위한 레인"
+  lane :build_only do
+    asc_key # 키가 유효한지 먼저 확인
+    build_ios_app(
+      scheme: SCHEME,
+      configuration: "Release",
+      export_method: "app-store",
+      output_directory: "build",
+      output_name: "PrayAnswer.ipa",
+      clean: true,
+      include_bitcode: false,
+      include_symbols: true
+    )
+    UI.success("아카이브 완료: build/PrayAnswer.ipa")
+  end
+
+  desc "빌드해서 TestFlight에 업로드"
+  lane :beta do
+    info = version_info
+    api_key = asc_key
+
+    UI.message("업로드 대상: #{info[:version]} (빌드 #{info[:build]})")
+
+    build_ios_app(
+      scheme: SCHEME,
+      configuration: "Release",
+      export_method: "app-store",
+      output_directory: "build",
+      output_name: "PrayAnswer.ipa",
+      clean: true,
+      include_bitcode: false,
+      include_symbols: true
+    )
+
+    upload_to_testflight(
+      api_key: api_key,
+      app_identifier: "com.restart.PrayAnswer",
+      # 처리 완료까지 기다리지 않는다 (10분 이상 걸릴 수 있음)
+      skip_waiting_for_build_processing: true,
+      # 내부 테스터에게 자동 배포하지 않는다 — App Store Connect에서 직접 고른다
+      distribute_external: false,
+      notify_external_testers: false
+    )
+
+    UI.success("TestFlight 업로드 완료: #{info[:version]} (빌드 #{info[:build]})")
+    UI.message("처리에 몇 분 걸립니다. App Store Connect에서 확인하세요.")
+  end
+
+  # MARK: - 실패 처리
+
+  error do |lane, exception|
+    UI.error("#{lane} 레인 실패: #{exception.message}")
+  end
+end

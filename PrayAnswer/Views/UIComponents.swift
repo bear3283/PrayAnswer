@@ -498,16 +498,19 @@ struct ModernTextEditor: View {
 
 // 모던한 카테고리 피커
 struct ModernCategoryPicker: View {
+    /// 빈 문자열이면 제목 줄을 그리지 않는다 (속성 패널처럼 칩이 이미 이름을 말하는 경우)
     let title: String
     @Binding var selection: PrayerCategory
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-            Text(title)
-                .font(DesignSystem.Typography.callout)
-                .foregroundColor(DesignSystem.Colors.primaryText)
-                .fontWeight(.medium)
-            
+            if !title.isEmpty {
+                Text(title)
+                    .font(DesignSystem.Typography.callout)
+                    .foregroundColor(DesignSystem.Colors.primaryText)
+                    .fontWeight(.medium)
+            }
+
             Menu {
                 ForEach(PrayerCategory.allCases, id: \.self) { category in
                     Button(action: {
@@ -635,8 +638,10 @@ struct ModernDateInfoRow: View {
 struct ModernStoragePickerView: View {
     let currentStorage: PrayerStorage
     let onStorageSelected: (PrayerStorage) -> Void
+    /// 닫기 동작을 바깥에서 제어할 때 사용 (nil이면 시트를 그냥 닫는다)
+    var onCancel: (() -> Void)? = nil
     @Environment(\.presentationMode) var presentationMode
-    
+
     var body: some View {
         NavigationView {
             VStack(spacing: DesignSystem.Spacing.xl) {
@@ -680,7 +685,11 @@ struct ModernStoragePickerView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(L.Button.cancel) {
-                        presentationMode.wrappedValue.dismiss()
+                        if let onCancel {
+                            onCancel()
+                        } else {
+                            presentationMode.wrappedValue.dismiss()
+                        }
                     }
                     .foregroundColor(DesignSystem.Colors.secondaryText)
                 }
@@ -845,6 +854,8 @@ struct DDayFormSection: View {
     @Binding var calendarEnabled: Bool  // 캘린더 추가 토글
     @Binding var calendarEventId: String?
     var prayer: Prayer?
+    /// 속성 패널 안에 들어갈 때: 칩이 이미 "D-Day"를 말하므로 제목 줄을 생략한다
+    var showsTitle: Bool = true
     @State private var showDatePicker = false
     @State private var showNotificationSettings = false
     @State private var showCalendarPermissionAlert = false
@@ -853,22 +864,25 @@ struct DDayFormSection: View {
     @State private var isCalendarLoading = false
     @State private var tempDate = Date()
 
-    init(targetDate: Binding<Date?>, notificationEnabled: Binding<Bool>, notificationSettings: Binding<NotificationSettings>? = nil, calendarEnabled: Binding<Bool>? = nil, calendarEventId: Binding<String?>? = nil, prayer: Prayer? = nil) {
+    init(targetDate: Binding<Date?>, notificationEnabled: Binding<Bool>, notificationSettings: Binding<NotificationSettings>? = nil, calendarEnabled: Binding<Bool>? = nil, calendarEventId: Binding<String?>? = nil, prayer: Prayer? = nil, showsTitle: Bool = true) {
         self._targetDate = targetDate
         self._notificationEnabled = notificationEnabled
         self._notificationSettings = notificationSettings ?? .constant(NotificationSettings())
         self._calendarEnabled = calendarEnabled ?? .constant(false)
         self._calendarEventId = calendarEventId ?? .constant(nil)
         self.prayer = prayer
+        self.showsTitle = showsTitle
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
             // 섹션 타이틀
-            Text(L.DDay.title)
-                .font(DesignSystem.Typography.callout)
-                .foregroundColor(DesignSystem.Colors.primaryText)
-                .fontWeight(.medium)
+            if showsTitle {
+                Text(L.DDay.title)
+                    .font(DesignSystem.Typography.callout)
+                    .foregroundColor(DesignSystem.Colors.primaryText)
+                    .fontWeight(.medium)
+            }
 
             // 날짜 선택 버튼
             Button(action: {
@@ -1842,6 +1856,60 @@ struct VoicePermissionAlert: View {
         .cornerRadius(DesignSystem.CornerRadius.large)
         .shadow(color: DesignSystem.Shadow.large.color, radius: DesignSystem.Shadow.large.radius, x: 0, y: 4)
         .padding(.horizontal, DesignSystem.Spacing.xl)
+    }
+}
+
+// MARK: - Storage Move Sheet
+
+/// 보관소 선택 → (yes/no면) 응답 메모 입력까지를 **시트 하나 안에서** 처리한다.
+///
+/// 시트를 닫고 다시 여는 방식은 iOS가 "닫히는 중"에 들어온 두 번째 표시 요청을 무시해
+/// 아무 일도 일어나지 않는 경우가 있다. 그래서 화면 전환 대신 내용만 교체한다.
+struct StorageMoveSheet: View {
+    let currentStorage: PrayerStorage
+    /// 이동 확정 — 목적지 보관소와 응답 메모(없으면 nil)
+    let onComplete: (PrayerStorage, String?) -> Void
+    let onCancel: () -> Void
+
+    /// nil이면 보관소 선택 단계, 값이 있으면 그 보관소의 응답 메모 입력 단계
+    @State private var noteTarget: PrayerStorage? = nil
+    @State private var detent: PresentationDetent = .large
+
+    var body: some View {
+        Group {
+            if let target = noteTarget {
+                AnswerNoteSheet(
+                    storage: target,
+                    onSave: { note in
+                        onComplete(target, note)
+                    },
+                    onCancel: {
+                        // 메모 단계에서 취소하면 보관소 선택으로 되돌아간다
+                        withAnimation(DesignSystem.Animation.quick) {
+                            noteTarget = nil
+                            detent = .large
+                        }
+                    }
+                )
+            } else {
+                ModernStoragePickerView(
+                    currentStorage: currentStorage,
+                    onStorageSelected: { newStorage in
+                        if newStorage == .yes || newStorage == .no {
+                            withAnimation(DesignSystem.Animation.quick) {
+                                noteTarget = newStorage
+                                detent = .medium
+                            }
+                        } else {
+                            onComplete(newStorage, nil)
+                        }
+                    },
+                    onCancel: onCancel
+                )
+            }
+        }
+        .presentationDetents([.medium, .large], selection: $detent)
+        .presentationDragIndicator(.hidden)
     }
 }
 

@@ -29,6 +29,10 @@ struct ContentView: View {
         .onReceive(NotificationCenter.default.publisher(for: .pendingSharedPrayerDataAvailable)) { _ in
             savePendingSharedPrayer()
         }
+        .onReceive(NotificationCenter.default.publisher(for: .prayerMovedToStorage)) { _ in
+            // 어느 화면에서 옮겼든 기도 목록 탭으로 데려간다 (보관소 선택은 목록이 처리)
+            selectedTab = 2
+        }
         .sheet(item: $pendingImportPackage) { package in
             ImportPrayerView(package: package)
         }
@@ -236,6 +240,9 @@ extension Notification.Name {
     static let pendingSharedPrayerDataAvailable = Notification.Name("PendingSharedPrayerDataAvailable")
     /// Share Extension 기도 저장 완료 후 목록 새로고침 트리거
     static let prayerSavedFromShareExtension = Notification.Name("PrayerSavedFromShareExtension")
+    /// 기도를 다른 보관소로 옮긴 직후 발송 — 목적지 보관소로 이동하고 완료 표시를 띄운다
+    /// userInfo["storage"]: PrayerStorage.rawValue
+    static let prayerMovedToStorage = Notification.Name("PrayerMovedToStorage")
 }
 
 // MARK: - iPad Content View (NavigationSplitView-based)

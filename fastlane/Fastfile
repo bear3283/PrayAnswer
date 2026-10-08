@@ -1,0 +1,203 @@
+# PrayAnswer 배포 자동화
+#
+# 비밀값(API 키 ID·발급자 ID·키 파일 경로)은 이 파일에 적지 않는다.
+# 저장소가 공개되어 있으므로 gitignore된 fastlane/.env 에서만 읽는다.
+# 설정 방법은 fastlane/.env.example 참고.
+
+default_platform(:ios)
+
+SCHEME = "PrayAnswer"
+XCODEPROJ = "PrayAnswer.xcodeproj"
+APP_IDENTIFIER = "com.restart.PrayAnswer"
+TEAM_ID = "36CPZWS26C"
+
+platform :ios do
+
+  # MARK: - 공통
+
+  # .env 에서 App Store Connect API 키 설정을 읽는다
+  private_lane :asc_config do
+    missing = %w[ASC_KEY_ID ASC_ISSUER_ID ASC_KEY_PATH].reject { |k| ENV[k].to_s.strip != "" }
+    unless missing.empty?
+      UI.user_error!(
+        "fastlane/.env 에 다음 값이 없습니다: #{missing.join(', ')}\n" \
+        "fastlane/.env.example 을 복사해 채워주세요."
+      )
+    end
+
+    key_path = File.expand_path(ENV["ASC_KEY_PATH"])
+    UI.user_error!("API 키 파일을 찾을 수 없습니다: #{key_path}") unless File.exist?(key_path)
+
+    { key_id: ENV["ASC_KEY_ID"], issuer_id: ENV["ASC_ISSUER_ID"], key_path: key_path }
+  end
+
+  # fastlane 액션에 넘길 API 키 객체
+  private_lane :asc_key do
+    cfg = asc_config
+    app_store_connect_api_key(
+      key_id: cfg[:key_id],
+      issuer_id: cfg[:issuer_id],
+      key_filepath: cfg[:key_path],
+      duration: 1200,
+      in_house: false
+    )
+  end
+
+  # 자동 서명으로 배포용 프로파일을 만들려면 xcodebuild가 직접
+  # App Store Connect에 접속해야 한다. 그 인증 인자들.
+  private_lane :signing_xcargs do
+    cfg = asc_config
+    [
+      "-allowProvisioningUpdates",
+      "-authenticationKeyPath", "'#{cfg[:key_path]}'",
+      "-authenticationKeyID", cfg[:key_id],
+      "-authenticationKeyIssuerID", cfg[:issuer_id]
+    ].join(" ")
+  end
+
+  # 현재 프로젝트의 버전·빌드 번호
+  private_lane :version_info do
+    version = get_version_number(xcodeproj: XCODEPROJ, target: SCHEME)
+    build = get_build_number(xcodeproj: XCODEPROJ)
+    { version: version, build: build }
+  end
+
+  # MARK: - 레인
+
+  desc "버전·빌드 번호와 App Store Connect 연결 상태만 확인 (업로드 없음)"
+  lane :check do
+    info = version_info
+    UI.message("프로젝트 버전: #{info[:version]} (빌드 #{info[:build]})")
+
+    api_key = asc_key
+    latest = latest_testflight_build_number(
+      api_key: api_key,
+      app_identifier: APP_IDENTIFIER,
+      version: info[:version],
+      initial_build_number: 0
+    )
+    UI.success("App Store Connect 연결 성공")
+    UI.message("TestFlight의 #{info[:version]} 최신 빌드: #{latest}")
+
+    if info[:build].to_i <= latest.to_i
+      UI.important(
+        "현재 빌드 번호(#{info[:build]})가 TestFlight 최신(#{latest}) 이하입니다. " \
+        "업로드하려면 bump_build 레인으로 올리세요."
+      )
+    else
+      UI.success("빌드 번호 #{info[:build]} 는 업로드 가능합니다.")
+    end
+  end
+
+  desc "빌드 번호를 TestFlight 최신 +1 로 맞춘다"
+  lane :bump_build do
+    info = version_info
+    api_key = asc_key
+
+    latest = latest_testflight_build_number(
+      api_key: api_key,
+      app_identifier: APP_IDENTIFIER,
+      version: info[:version],
+      initial_build_number: 0
+    )
+    next_build = latest.to_i + 1
+
+    increment_build_number(xcodeproj: XCODEPROJ, build_number: next_build)
+    UI.success("빌드 번호를 #{info[:build]} → #{next_build} 로 변경했습니다.")
+  end
+
+  # 배포용 아카이브 + IPA 생성 (두 레인이 공유)
+  private_lane :archive_for_store do
+    build_ios_app(
+      scheme: SCHEME,
+      configuration: "Release",
+      export_method: "app-store",
+      output_directory: "build",
+      output_name: "PrayAnswer.ipa",
+      clean: true,
+      include_bitcode: false,
+      include_symbols: true,
+      # 자동 서명: 앱 + 위젯 + 공유 확장 세 개의 배포 프로파일을
+      # Xcode가 알아서 만들고 내려받게 한다
+      xcargs: signing_xcargs,
+      export_options: {
+        signingStyle: "automatic",
+        teamID: TEAM_ID
+      }
+    )
+  end
+
+  desc "아카이브만 만든다 (업로드 없음). 서명·빌드 문제를 미리 잡기 위한 레인"
+  lane :build_only do
+    archive_for_store
+    UI.success("아카이브 완료: build/PrayAnswer.ipa")
+  end
+
+  desc "빌드해서 TestFlight에 업로드"
+  lane :beta do
+    info = version_info
+    api_key = asc_key
+
+    UI.message("업로드 대상: #{info[:version]} (빌드 #{info[:build]})")
+
+    archive_for_store
+
+    upload_to_testflight(
+      api_key: api_key,
+      app_identifier: APP_IDENTIFIER,
+      # 처리 완료까지 기다리지 않는다 (10분 이상 걸릴 수 있음)
+      skip_waiting_for_build_processing: true,
+      # 내부 테스터에게 자동 배포하지 않는다 — App Store Connect에서 직접 고른다
+      distribute_external: false,
+      notify_external_testers: false
+    )
+
+    UI.success("TestFlight 업로드 완료: #{info[:version]} (빌드 #{info[:build]})")
+    UI.message("처리에 몇 분 걸립니다. App Store Connect에서 확인하세요.")
+  end
+
+  desc "TestFlight에 올라간 현재 빌드를 App Store 심사에 제출 (빌드 업로드 없음)"
+  desc "업데이트 노트는 fastlane/release_notes/<locale>.txt 에서 읽는다"
+  lane :release do
+    info = version_info
+    api_key = asc_key
+
+    notes_dir = File.expand_path("release_notes", __dir__)
+    release_notes = Dir[File.join(notes_dir, "*.txt")].to_h do |path|
+      [File.basename(path, ".txt"), File.read(path).strip]
+    end
+    UI.user_error!("업데이트 노트가 없습니다: #{notes_dir}/<locale>.txt") if release_notes.empty?
+
+    UI.message("심사 제출 대상: #{info[:version]} (빌드 #{info[:build]}), 노트: #{release_notes.keys.join(', ')}")
+
+    upload_to_app_store(
+      api_key: api_key,
+      app_identifier: APP_IDENTIFIER,
+      app_version: info[:version],
+      build_number: info[:build].to_s,
+      # 바이너리는 beta 레인에서 이미 올렸다
+      skip_binary_upload: true,
+      skip_screenshots: true,
+      # 업데이트 노트만 넣고 설명·키워드 등 나머지 메타데이터는 건드리지 않는다
+      release_notes: release_notes,
+      skip_app_version_update: false,
+      force: true,
+      run_precheck_before_submit: false,
+      submit_for_review: true,
+      automatic_release: true,
+      submission_information: {
+        add_id_info_uses_idfa: false,
+        # 표준 HTTPS 외 암호화를 쓰지 않는다
+        export_compliance_uses_encryption: false
+      }
+    )
+
+    UI.success("심사 제출 완료: #{info[:version]} (빌드 #{info[:build]})")
+  end
+
+  # MARK: - 실패 처리
+
+  error do |lane, exception|
+    UI.error("#{lane} 레인 실패: #{exception.message}")
+  end
+end

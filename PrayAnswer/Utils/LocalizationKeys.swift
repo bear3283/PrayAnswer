@@ -50,6 +50,65 @@ enum L {
         static let classification = NSLocalizedString("label.classification", comment: "Classification label")
     }
 
+    // MARK: - Completion Overlay
+    enum Completion {
+        static let confirm = NSLocalizedString("completion.confirm", value: "확인", comment: "Completion overlay confirm button")
+        static let openList = NSLocalizedString("completion.open_list", value: "기도 목록 열기", comment: "Completion overlay button to open prayer list")
+
+        /// 보관소마다 다른 문구 — 결과를 알리는 데서 그치지 않고 그 보관소의 의미를 말한다
+        static func movedTitle(_ storage: PrayerStorage) -> String {
+            switch storage {
+            case .yes:
+                return NSLocalizedString("completion.moved_title_yes", value: "기도 응답이 YES입니다.", comment: "Title after moving a prayer to Yes")
+            case .no:
+                return NSLocalizedString("completion.moved_title_no", value: "기도 응답이 NO입니다.", comment: "Title after moving a prayer to No")
+            case .wait:
+                return NSLocalizedString("completion.moved_title_wait", value: "기도 응답이 WAIT입니다.", comment: "Title after moving a prayer to Wait")
+            }
+        }
+
+        static func movedMessage(_ storage: PrayerStorage) -> String {
+            switch storage {
+            case .yes:
+                return NSLocalizedString("completion.moved_message_yes", value: "하나님의 은혜를 경험하는 시간이었습니다.", comment: "Message after moving a prayer to Yes")
+            case .no:
+                return NSLocalizedString("completion.moved_message_no", value: "하나님께서는 무엇을 보여주고 싶으실까요?", comment: "Message after moving a prayer to No")
+            case .wait:
+                return NSLocalizedString("completion.moved_message_wait", value: "하나님의 응답을 기도하며 기다려봅시다.", comment: "Message after moving a prayer to Wait")
+            }
+        }
+
+        static let savedTitle = NSLocalizedString("completion.saved_title", value: "기도를 저장했어요", comment: "Title after saving one prayer")
+        static func savedTitleMultiple(_ count: Int) -> String {
+            String(format: NSLocalizedString("completion.saved_title_multiple", value: "기도 %d개를 저장했어요", comment: "Title after saving multiple prayers"), count)
+        }
+        static func savedMessage(_ storage: String) -> String {
+            String(format: NSLocalizedString("completion.saved_message", value: "%@ 보관소에서 응답을 기다립니다", comment: "Message after saving a prayer"), storage)
+        }
+    }
+
+    // MARK: - Attribute Bar
+    enum AttributeBar {
+        static let notSet = NSLocalizedString("attribute_bar.not_set", value: "설정 안 됨", comment: "Attribute chip value when empty")
+        static let expandHint = NSLocalizedString("attribute_bar.expand_hint", value: "두 번 탭하면 펼쳐집니다", comment: "Accessibility hint to expand attribute panel")
+        static let collapseHint = NSLocalizedString("attribute_bar.collapse_hint", value: "두 번 탭하면 닫힙니다", comment: "Accessibility hint to collapse attribute panel")
+        static func attachmentCount(_ count: Int) -> String {
+            String(format: NSLocalizedString("attribute_bar.attachment_count", value: "첨부 %d", comment: "Attachment chip label with count"), count)
+        }
+    }
+
+    // MARK: - Line Numbering
+    enum Numbering {
+        static let apply = NSLocalizedString("numbering.apply", value: "번호 매기기", comment: "Apply line numbering button")
+        static let remove = NSLocalizedString("numbering.remove", value: "번호 해제", comment: "Remove line numbering button")
+        static let renumber = NSLocalizedString("numbering.renumber", value: "번호 다시 매기기", comment: "Renumber lines button when numbering is out of order")
+        static let hint = NSLocalizedString("numbering.hint", value: "줄바꿈마다 번호가 붙습니다", comment: "Line numbering hint")
+        static let disorderedHint = NSLocalizedString("numbering.disordered_hint", value: "번호 순서가 어긋났어요", comment: "Hint when numbering is out of order")
+        static func countHint(_ count: Int) -> String {
+            String(format: NSLocalizedString("numbering.count_hint", value: "기도제목 %d개", comment: "Numbered prayer item count"), count)
+        }
+    }
+
     // MARK: - Placeholders
     enum Placeholder {
         static let title = NSLocalizedString("placeholder.title", comment: "Title placeholder")

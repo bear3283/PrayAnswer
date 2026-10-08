@@ -126,7 +126,7 @@
 
 // MARK: - Target (기도대상자)
 "target.myself" = "본인";
-"target.select_target" = "기도대상자 선택";
+"target.select_target" = "기도대상자";
 "target.add_new" = "새 대상자 추가";
 "target.new_placeholder" = "새 대상자 이름 입력";
 "target.search_or_add_placeholder" = "이름 검색 또는 새 대상자 추가";
@@ -471,3 +471,30 @@
 "answer_note.sheet_prompt_yes" = "어떻게 응답받으셨나요?";
 "answer_note.sheet_prompt_no" = "어떤 결과였나요?";
 "answer_note.no_placeholder" = "결과를 기록해보세요 (선택 입력)";
+
+// MARK: - Line Numbering
+"numbering.apply" = "번호 매기기";
+"numbering.remove" = "번호 해제";
+"numbering.renumber" = "번호 다시 매기기";
+"numbering.hint" = "줄바꿈마다 번호가 붙습니다";
+"numbering.disordered_hint" = "번호 순서가 어긋났어요";
+"numbering.count_hint" = "기도제목 %d개";
+
+// MARK: - Attribute Bar
+"attribute_bar.not_set" = "설정 안 됨";
+"attribute_bar.expand_hint" = "두 번 탭하면 펼쳐집니다";
+"attribute_bar.collapse_hint" = "두 번 탭하면 닫힙니다";
+"attribute_bar.attachment_count" = "첨부 %d";
+
+// MARK: - Completion Overlay
+"completion.confirm" = "확인";
+"completion.open_list" = "기도 목록 열기";
+"completion.moved_title_yes" = "기도 응답이 YES입니다.";
+"completion.moved_title_no" = "기도 응답이 NO입니다.";
+"completion.moved_title_wait" = "기도 응답이 WAIT입니다.";
+"completion.moved_message_yes" = "하나님의 은혜를 경험하는 시간이었습니다.";
+"completion.moved_message_no" = "하나님께서는 무엇을 보여주고 싶으실까요?";
+"completion.moved_message_wait" = "하나님의 응답을 기도하며 기다려봅시다.";
+"completion.saved_title" = "기도를 저장했어요";
+"completion.saved_title_multiple" = "기도 %d개를 저장했어요";
+"completion.saved_message" = "%@ 보관소에서 응답을 기다립니다";

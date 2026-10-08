@@ -6,13 +6,22 @@
 import SwiftUI
 import SwiftData
 import WidgetKit
+import StoreKit
 
 // MARK: - Prayer List View
 
 struct PrayerListView: View {
+    /// 컨텍스트 메뉴에서 yes/no 보관소로 이동 요청된 기도 (응답 메모 입력 대기)
+    private struct PendingStorageMove: Identifiable {
+        let id = UUID()
+        let prayer: Prayer
+        let storage: PrayerStorage
+    }
+
     var selectedTab: Int = 0
     @Environment(\.modelContext) private var modelContext
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.requestReview) private var requestReview
     @Query private var allPrayers: [Prayer]
     @Query(sort: \PrayerCollection.sortOrder) private var collections: [PrayerCollection]
     @State private var selectedStorage: PrayerStorage = .wait
@@ -23,6 +32,11 @@ struct PrayerListView: View {
     @State private var prayerViewModel: PrayerViewModel?
     @State private var scrollOffset: CGFloat = 0
     @State private var navigationPath = NavigationPath()
+
+    // 보관소 이동 (컨텍스트 메뉴 → 응답 메모 시트)
+    @State private var pendingMove: PendingStorageMove? = nil
+    /// 이동이 끝나 완료 표시를 보여줄 보관소
+    @State private var completedMove: PrayerStorage? = nil
 
     // 기도제목 보내기
     @State private var showMyPrayerExchange = false
@@ -190,12 +204,12 @@ struct PrayerListView: View {
                                 }
                                 if prayer.storage != .no {
                                     Button { changeStorage(prayer, to: .no) } label: {
-                                        Label("'NO' 보관함으로 이동", systemImage: "clock.arrow.circlepath")
+                                        Label("'NO' 보관함으로 이동", systemImage: "xmark.circle")
                                     }
                                 }
                                 if prayer.storage != .wait {
                                     Button { changeStorage(prayer, to: .wait) } label: {
-                                        Label("'WAIT' 보관함으로 이동", systemImage: "hands.sparkles")
+                                        Label("'WAIT' 보관함으로 이동", systemImage: "clock")
                                     }
                                 }
 
@@ -369,6 +383,20 @@ struct PrayerListView: View {
             .sheet(isPresented: $showMyPrayerExchange) {
                 PrayerExchangeView()
             }
+            .sheet(item: $pendingMove) { move in
+                AnswerNoteSheet(
+                    storage: move.storage,
+                    onSave: { note in
+                        performMove(move.prayer, to: move.storage, note: note)
+                        pendingMove = nil
+                    },
+                    onCancel: {
+                        pendingMove = nil
+                    }
+                )
+                .presentationDetents([.medium])
+                .presentationDragIndicator(.hidden)
+            }
             .onReceive(NotificationCenter.default.publisher(for: .prayerSavedFromShareExtension)) { _ in
                 shareExtensionRefreshID = UUID()
             }
@@ -416,6 +444,22 @@ struct PrayerListView: View {
                 await MainActor.run { debouncedSearchText = newValue }
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: .prayerMovedToStorage)) { notification in
+            guard let raw = notification.userInfo?["storage"] as? String,
+                  let storage = PrayerStorage(rawValue: raw) else { return }
+            // 옮긴 기도가 도착한 보관소를 열어두고, 그 위에 완료 표시를 띄운다
+            navigationPath = NavigationPath()
+            selectedStorage = storage
+            isSearchActive = false
+            completedMove = storage
+        }
+        .overlay {
+            if let storage = completedMove {
+                CompletionOverlay.moved(to: storage) {
+                    completedMove = nil
+                }
+            }
+        }
     }
 
     // MARK: - Private Helpers
@@ -450,9 +494,48 @@ struct PrayerListView: View {
     }
 
     private func changeStorage(_ prayer: Prayer, to storage: PrayerStorage) {
-        prayer.storage = storage
-        try? modelContext.save()
-        updateWidgetDataOnAppear()
+        // yes/no로 옮길 때는 상세 화면과 동일하게 응답 메모를 먼저 입력받는다
+        if storage == .yes || storage == .no {
+            pendingMove = PendingStorageMove(prayer: prayer, storage: storage)
+        } else {
+            performMove(prayer, to: storage, note: nil)
+        }
+    }
+
+    /// 실제 보관소 이동. movedDate·로그·위젯 갱신·리뷰 요청을 viewModel 경유로 일관 처리한다.
+    private func performMove(_ prayer: Prayer, to storage: PrayerStorage, note: String?) {
+        guard let viewModel = prayerViewModel else {
+            showError(L.Error.moveFailed)
+            return
+        }
+
+        // note가 nil(건너뛰기)이면 기존 응답 기록을 지우지 않고 유지
+        if let note {
+            prayer.answerNote = note
+        }
+
+        do {
+            try viewModel.movePrayer(prayer, to: storage)
+            PrayerLogger.shared.userAction("목록에서 기도 보관소 이동")
+
+            // 상세 화면에서 옮겼을 때와 같은 완료 흐름을 탄다
+            NotificationCenter.default.post(
+                name: .prayerMovedToStorage,
+                object: nil,
+                userInfo: ["storage": storage.rawValue]
+            )
+
+            // "응답 받음"으로 이동 시 앱스토어 리뷰 요청 (감사의 순간)
+            if storage == .yes, ReviewRequestManager.shared.recordPrayerAnswered() {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                    requestReview()
+                    ReviewRequestManager.shared.didRequestReview()
+                }
+            }
+        } catch {
+            showError(L.Error.movePrayerFailed)
+            PrayerLogger.shared.prayerOperationFailed("이동", error: error)
+        }
     }
 
     private func toggleFavorite(_ prayer: Prayer) {

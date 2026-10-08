@@ -41,3 +41,19 @@ playground.xcworkspace
 
 # Claude
 .claude/settings.local.json
+
+# fastlane — 비밀값·산출물은 절대 커밋하지 않는다
+fastlane/.env
+fastlane/.env.*
+!fastlane/.env.example
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output/
+*.p8
+*.mobileprovision
+*.ipa
+*.dSYM.zip
+
+# 이 저장소와 무관한 디렉터리
+musicon-website/

@@ -47,6 +47,16 @@ For _fastlane_ installation instructions, see [Installing _fastlane_](https://do
 
 빌드해서 TestFlight에 업로드
 
+### ios release
+
+```sh
+[bundle exec] fastlane ios release
+```
+
+TestFlight에 올라간 현재 빌드를 App Store 심사에 제출 (빌드 업로드 없음)
+
+업데이트 노트는 fastlane/release_notes/<locale>.txt 에서 읽는다
+
 ----
 
 This README.md is auto-generated and will be re-generated every time [_fastlane_](https://fastlane.tools) is run.

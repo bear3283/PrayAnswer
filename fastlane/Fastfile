@@ -156,6 +156,45 @@ platform :ios do
     UI.message("처리에 몇 분 걸립니다. App Store Connect에서 확인하세요.")
   end
 
+  desc "TestFlight에 올라간 현재 빌드를 App Store 심사에 제출 (빌드 업로드 없음)"
+  desc "업데이트 노트는 fastlane/release_notes/<locale>.txt 에서 읽는다"
+  lane :release do
+    info = version_info
+    api_key = asc_key
+
+    notes_dir = File.expand_path("release_notes", __dir__)
+    release_notes = Dir[File.join(notes_dir, "*.txt")].to_h do |path|
+      [File.basename(path, ".txt"), File.read(path).strip]
+    end
+    UI.user_error!("업데이트 노트가 없습니다: #{notes_dir}/<locale>.txt") if release_notes.empty?
+
+    UI.message("심사 제출 대상: #{info[:version]} (빌드 #{info[:build]}), 노트: #{release_notes.keys.join(', ')}")
+
+    upload_to_app_store(
+      api_key: api_key,
+      app_identifier: APP_IDENTIFIER,
+      app_version: info[:version],
+      build_number: info[:build].to_s,
+      # 바이너리는 beta 레인에서 이미 올렸다
+      skip_binary_upload: true,
+      skip_screenshots: true,
+      # 업데이트 노트만 넣고 설명·키워드 등 나머지 메타데이터는 건드리지 않는다
+      release_notes: release_notes,
+      skip_app_version_update: false,
+      force: true,
+      run_precheck_before_submit: false,
+      submit_for_review: true,
+      automatic_release: true,
+      submission_information: {
+        add_id_info_uses_idfa: false,
+        # 표준 HTTPS 외 암호화를 쓰지 않는다
+        export_compliance_uses_encryption: false
+      }
+    )
+
+    UI.success("심사 제출 완료: #{info[:version]} (빌드 #{info[:build]})")
+  end
+
   # MARK: - 실패 처리
 
   error do |lane, exception|

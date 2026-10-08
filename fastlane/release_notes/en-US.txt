@@ -1,0 +1,6 @@
+v2.1 Update note
+  • Redesigned the Add Prayer screen — attachments, category, D-Day and collections now live in a single row of chips
+  • New button to number each line when writing several prayer requests at once
+  • Moving a prayer now takes you to its new storage with a completion card
+  • Fixed several bugs, including the answer note sheet not appearing after moving a prayer
+  • Improved the app icon for iOS 18 tinted mode
